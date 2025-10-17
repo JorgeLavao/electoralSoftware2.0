@@ -1,0 +1,130 @@
+input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not(.clear), textarea:not(.clear) {
+    @apply
+    px-5
+    py-2
+    w-full
+    border
+    border-grey-300
+    transition-[color,box-shadow]
+    outline-none
+    focus-visible:border-ring
+    focus-visible:ring-ring/50
+    focus-visible:ring-[3px]
+    rounded-xl
+    bg-white;
+}
+
+input::placeholder{
+    @apply text-[14px]
+    text-grey-200
+    justify-between
+    font-primary;
+}
+
+textarea:not(.clear) {
+    @apply min-h-[100px];
+}
+
+/* ------------------------------------------------------------
+    GROUPS
+--------------------------------------------------------------- */
+.group-form {
+    @apply w-full md:w-auto;
+}
+
+.group-form label, .group-form-v label {
+    @apply inline-block md:mb-1;
+}
+
+.group-form-h, .group-form-v {
+    @apply flex flex-col sm:flex-row sm:space-x-4 sm:items-center;
+}
+
+.group-form-h {
+    @apply w-full md:flex-1;
+}
+
+.group-form-h label {
+    @apply min-w-[80px] sm:text-right;
+}
+
+.group-form-h :last-child {
+    @apply flex-1;
+}
+
+.group-form-v {
+    @apply items-start sm:flex-col;
+}
+
+/* group-form-elements */
+
+.group-form-elements {
+    @apply flex flex-row justify-between items-stretch m-0 gap-0;
+}
+.group-form-elements > * , .group-form-v>:not([hidden])~:not([hidden]) {
+    @apply !m-0;
+}
+
+.group-form-elements > *:first-child {
+    @apply !rounded-r-none;
+}
+
+.group-form-elements > *:last-child {
+    @apply !rounded-l-none;
+}
+
+/* ------------------------------------------------------------
+  BUTTONS
+--------------------------------------------------------------- */
+
+button {
+    @apply cursor-pointer;
+}
+
+/* default */
+[type=button]:not(.btn-icon), [type=reset]:not(.btn-icon), [type=submit]:not(.btn-icon), a.button:not(.btn-icon), .sequence-links a:not(.btn-icon) {
+    @apply inline-flex
+    flex-wrap items-center gap-2 px-4 py-1
+    font-sans text-base
+    leading-5
+    border
+    rounded-lg
+    cursor-pointer
+    justify-center;
+}
+
+[type=button].all-w, [type=reset].all-w, [type=submit].all-w, a.button.all-w, .sequence-links a.all-w {
+    @apply w-full;
+}
+
+/*primary*/
+[type=button].btn-primary, [type=reset].btn-primary, [type=submit].btn-primary, a.button.btn-primary, .sequence-links a.btn-primary {
+    @apply font-extrabold
+    text-white
+    bg-primary
+    border-primary;
+}
+
+/* tertiary*/
+[type=button].btn-tertiary, [type=reset].btn-tertiary, [type=submit].btn-tertiary, a.button.btn-tertiary, .sequence-links a.btn-tertiary {
+    @apply font-extrabold
+    text-white
+    bg-grey-400
+    border-white;
+}
+
+/*icon on the right*/
+button.btn-icon{
+    @apply absolute
+    right-3
+    top-1/2
+    transform
+    -translate-y-1/2
+    text-gray-400
+    hover:text-gray-600;
+}
+
+/*disabled*/
+button[disabled], input[type="button"][disabled], input[type="reset"][disabled], input[type="submit"][disabled] {
+    @apply !bg-primary/90 !cursor-not-allowed opacity-70;
+}

@@ -1,0 +1,38 @@
+import React, { useState, InputHTMLAttributes } from 'react';
+interface PasswordInputProps extends InputHTMLAttributes<HTMLInputElement> {
+    name: string;
+    error?: string;
+    className?: string;
+}
+
+export const PasswordInput: React.FC<PasswordInputProps> = ({
+    name,
+    id,
+    value,
+    onChange,
+    error,
+    placeholder = 'Digite su contraseña',
+    className = '',
+    ...props
+}) => {
+    const [showPassword, setShowPassword] = useState(false);
+    const togglePasswordVisibility = () => {
+        setShowPassword(!showPassword);
+    };
+
+    return (
+        <div className="relative">
+            <input type={showPassword ? 'text' : 'password'} placeholder="Digite su Clave"
+                id={id} name={name} value={value} onChange={onChange} {...props}/>
+            <button className="btn-icon" type='button' onClick={togglePasswordVisibility} tabIndex={3}
+                aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+                    <g fill="none">
+                        <path stroke="currentColor" stroke-width="2" d="M12 5c-5.444 0-8.469 4.234-9.544 6.116c-.221.386-.331.58-.32.868c.013.288.143.476.402.852C3.818 14.694 7.294 19 12 19s8.182-4.306 9.462-6.164c.26-.376.39-.564.401-.852s-.098-.482-.319-.868C20.47 9.234 17.444 5 12 5Z"/>
+                        <circle cx="12" cy="12" r="4" fill="currentColor"/>
+                    </g>
+                </svg>
+            </button>
+        </div>
+    );
+};
