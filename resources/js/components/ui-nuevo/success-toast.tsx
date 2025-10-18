@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 
 interface SuccessToastProps {
     message: string;
-    className?: string;
     duration?: number;
     autoShow?: boolean;
     onHide?: () => void;
@@ -10,11 +9,9 @@ interface SuccessToastProps {
 
 export const SuccessToast: React.FC<SuccessToastProps> = ({
     message,
-    className = '',
     duration = 5000,
     autoShow = true,
     onHide,
-    ...props
 }) => {
     const [isVisible, setIsVisible] = useState(autoShow);
 

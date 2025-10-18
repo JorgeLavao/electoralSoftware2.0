@@ -1,8 +1,8 @@
 import React, { useState, InputHTMLAttributes } from 'react';
 interface PasswordInputProps extends InputHTMLAttributes<HTMLInputElement> {
     name: string;
-    error?: string;
     className?: string;
+    placeholder: string;
 }
 
 export const PasswordInput: React.FC<PasswordInputProps> = ({
@@ -10,8 +10,7 @@ export const PasswordInput: React.FC<PasswordInputProps> = ({
     id,
     value,
     onChange,
-    error,
-    placeholder = 'Digite su contraseña',
+    placeholder,
     className = '',
     ...props
 }) => {
@@ -22,8 +21,8 @@ export const PasswordInput: React.FC<PasswordInputProps> = ({
 
     return (
         <div className="relative">
-            <input type={showPassword ? 'text' : 'password'} placeholder="Digite su Clave"
-                id={id} name={name} value={value} onChange={onChange} {...props}/>
+            <input type={showPassword ? 'text' : 'password'} placeholder={placeholder}
+                id={id} name={name} value={value} onChange={onChange} className={className} {...props}/>
             <button className="btn-icon" type='button' onClick={togglePasswordVisibility} tabIndex={3}
                 aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}>
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">

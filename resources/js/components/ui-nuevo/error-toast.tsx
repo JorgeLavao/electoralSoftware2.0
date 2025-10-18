@@ -2,17 +2,12 @@ import React, { useState } from 'react';
 
 interface ErrorToastProps {
     message: string;
-    className?: string;
-    onHide?: () => void;
 }
 
 export const ErrorToast: React.FC<ErrorToastProps> = ({
     message,
-    className = '',
-    onHide,
-    ...props
 }) => {
-    const [isVisible, setIsVisible] = useState(true);
+    const [isVisible] = useState(true);
     if (!isVisible) return null;
     return message ? (
         <div className="bg-white rounded-lg shadow-md p-2 mx-auto border border-red-200">
