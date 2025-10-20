@@ -2,61 +2,50 @@
 
 namespace Tests\Feature\Settings;
 
+use App\Livewire\Settings\Password;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class PasswordUpdateTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_password_update_page_is_displayed()
+    public function test_password_can_be_updated(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create([
+            'password' => Hash::make('password'),
+        ]);
 
-        $response = $this
-            ->actingAs($user)
-            ->get(route('password.edit'));
+        $this->actingAs($user);
 
-        $response->assertStatus(200);
-    }
+        $response = Livewire::test(Password::class)
+            ->set('current_password', 'password')
+            ->set('password', 'new-password')
+            ->set('password_confirmation', 'new-password')
+            ->call('updatePassword');
 
-    public function test_password_can_be_updated()
-    {
-        $user = User::factory()->create();
-
-        $response = $this
-            ->actingAs($user)
-            ->from(route('password.edit'))
-            ->put(route('password.update'), [
-                'current_password' => 'password',
-                'password' => 'new-password',
-                'password_confirmation' => 'new-password',
-            ]);
-
-        $response
-            ->assertSessionHasNoErrors()
-            ->assertRedirect(route('password.edit'));
+        $response->assertHasNoErrors();
 
         $this->assertTrue(Hash::check('new-password', $user->refresh()->password));
     }
 
-    public function test_correct_password_must_be_provided_to_update_password()
+    public function test_correct_password_must_be_provided_to_update_password(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create([
+            'password' => Hash::make('password'),
+        ]);
 
-        $response = $this
-            ->actingAs($user)
-            ->from(route('password.edit'))
-            ->put(route('password.update'), [
-                'current_password' => 'wrong-password',
-                'password' => 'new-password',
-                'password_confirmation' => 'new-password',
-            ]);
+        $this->actingAs($user);
 
-        $response
-            ->assertSessionHasErrors('current_password')
-            ->assertRedirect(route('password.edit'));
+        $response = Livewire::test(Password::class)
+            ->set('current_password', 'wrong-password')
+            ->set('password', 'new-password')
+            ->set('password_confirmation', 'new-password')
+            ->call('updatePassword');
+
+        $response->assertHasErrors(['current_password']);
     }
 }
