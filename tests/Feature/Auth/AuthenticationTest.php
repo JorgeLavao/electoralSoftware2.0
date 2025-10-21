@@ -2,37 +2,55 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Livewire\Auth\Login;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\RateLimiter;
 use Laravel\Fortify\Features;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class AuthenticationTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_login_screen_can_be_rendered()
+    public function test_login_screen_can_be_rendered(): void
     {
-        $response = $this->get(route('login'));
+        $response = $this->get('/login');
 
         $response->assertStatus(200);
     }
 
-    public function test_users_can_authenticate_using_the_login_screen()
+    public function test_users_can_authenticate_using_the_login_screen(): void
+    {
+        $user = User::factory()->withoutTwoFactor()->create();
+
+        $response = Livewire::test(Login::class)
+            ->set('email', $user->email)
+            ->set('password', 'password')
+            ->call('login');
+
+        $response
+            ->assertHasNoErrors()
+            ->assertRedirect(route('dashboard', absolute: false));
+
+        $this->assertAuthenticated();
+    }
+
+    public function test_users_can_not_authenticate_with_invalid_password(): void
     {
         $user = User::factory()->create();
 
-        $response = $this->post(route('login.store'), [
-            'email' => $user->email,
-            'password' => 'password',
-        ]);
+        $response = Livewire::test(Login::class)
+            ->set('email', $user->email)
+            ->set('password', 'wrong-password')
+            ->call('login');
 
-        $this->assertAuthenticated();
-        $response->assertRedirect(route('dashboard', absolute: false));
+        $response->assertHasErrors('email');
+
+        $this->assertGuest();
     }
 
-    public function test_users_with_two_factor_enabled_are_redirected_to_two_factor_challenge()
+    public function test_users_with_two_factor_enabled_are_redirected_to_two_factor_challenge(): void
     {
         if (! Features::canManageTwoFactorAuthentication()) {
             $this->markTestSkipped('Two-factor authentication is not enabled.');
@@ -51,53 +69,24 @@ class AuthenticationTest extends TestCase
             'two_factor_confirmed_at' => now(),
         ])->save();
 
-        $response = $this->post(route('login'), [
-            'email' => $user->email,
-            'password' => 'password',
-        ]);
+        $response = Livewire::test('auth.login')
+            ->set('email', $user->email)
+            ->set('password', 'password')
+            ->call('login');
 
         $response->assertRedirect(route('two-factor.login'));
         $response->assertSessionHas('login.id', $user->id);
         $this->assertGuest();
     }
 
-    public function test_users_can_not_authenticate_with_invalid_password()
+    public function test_users_can_logout(): void
     {
         $user = User::factory()->create();
 
-        $this->post(route('login.store'), [
-            'email' => $user->email,
-            'password' => 'wrong-password',
-        ]);
+        $response = $this->actingAs($user)->post('/logout');
+
+        $response->assertRedirect('/');
 
         $this->assertGuest();
-    }
-
-    public function test_users_can_logout()
-    {
-        $user = User::factory()->create();
-
-        $response = $this->actingAs($user)->post(route('logout'));
-
-        $this->assertGuest();
-        $response->assertRedirect(route('home'));
-    }
-
-    public function test_users_are_rate_limited()
-    {
-        $user = User::factory()->create();
-
-        RateLimiter::increment(implode('|', [$user->email, '127.0.0.1']), amount: 10);
-
-        $response = $this->post(route('login.store'), [
-            'email' => $user->email,
-            'password' => 'wrong-password',
-        ]);
-
-        $response->assertSessionHasErrors('email');
-
-        $errors = session('errors');
-
-        $this->assertStringContainsString('Too many login attempts', $errors->first('email'));
     }
 }

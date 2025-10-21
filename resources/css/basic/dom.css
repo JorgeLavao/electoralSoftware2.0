@@ -4,15 +4,15 @@ body {
 }
 
 h1{
-    @apply text-[60px] font-extrabold;
+    @apply text-[48px] font-extrabold;
 }
 
 h2{
-    @apply text-[50px] font-semibold;
+    @apply text-[34px] font-semibold;
 }
 
 h3{
-    @apply text-[38px] font-bold;
+    @apply text-[28px] font-bold;
 }
 
 h4{
@@ -20,7 +20,7 @@ h4{
 }
 
 h5{
-    @apply text-[22px] font-semibold;
+    @apply text-[16px] font-semibold;
 }
 
 p{
