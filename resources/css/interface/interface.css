@@ -1,0 +1,12 @@
+/* links */
+a.darkened {
+    @apply underline;
+}
+a.darkened:hover, a.darkened:focus {
+    @apply text-grey-400/90;
+}
+
+/*div number*/
+.number{
+    @apply bg-primary rounded-full px-3 text-white;
+}

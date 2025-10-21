@@ -1,0 +1,27 @@
+.full-center{
+    @apply items-center justify-center w-full min-h-screen md:flex;
+}
+/*-----------------------------------------------
+    LOGIN CONTAINER
+-------------------------------------------------*/
+.login-container {
+    @apply flex flex-col items-center justify-center min-h-screen px-4 py-4 xl:py-12 xl:px-0 w-full;
+}
+
+.login-login {
+    @apply relative w-full min-[503px]:w-[440px] mx-auto flex flex-col items-stretch bg-light shadow-2xl rounded-2xl mt-6;
+}
+
+.login-login > div {
+    @apply w-full;
+}
+
+.form-login{
+    @apply py-6 px-[43px];
+}
+.register-area{
+    @apply bg-grey-400 items-stretch flex min-[471px]:flex-row flex-col justify-between px-6 py-3 rounded-b-2xl gap-4;
+}
+.steps{
+    @apply flex items-center gap-2;
+}

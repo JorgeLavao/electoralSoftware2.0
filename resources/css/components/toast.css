@@ -1,0 +1,29 @@
+@layer components {
+    .toast {
+        @apply flex flex-wrap items-stretch justify-between pr-1 overflow-hidden border rounded-lg bg-light border-primary;
+    }
+
+    .toast div:first-child {
+        @apply flex items-center justify-center mr-1 text-xl text-white w-14 bg-primary;
+    }
+
+    .toast div:last-child {
+        @apply flex flex-wrap items-center justify-between flex-1;
+    }
+
+    .toast div:last-child p {
+        @apply flex-1 m-2;
+    }
+
+    .toast div:last-child button {
+        @apply min-h-[30px] px-3;
+    }
+
+    .toast.error {
+        @apply text-error border-error;
+    }
+
+    .toast.error div:first-child {
+        @apply bg-error;
+    }
+}
