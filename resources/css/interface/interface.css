@@ -8,5 +8,8 @@ a.darkened:hover, a.darkened:focus {
 
 /*div number*/
 .number{
-    @apply bg-primary rounded-full px-3 text-white;
+    @apply bg-primary rounded-full px-2 text-white flex items-center;
+}
+.number > h4 {
+    @apply !text-[18px];
 }
