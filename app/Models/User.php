@@ -20,7 +20,13 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
-        'name',
+        'document_type_id',
+        'document_number',
+        'first_name',
+        'middle_name',
+        'paternal_surname',
+        'maternal_surname',
+        'celphone',
         'email',
         'password',
     ];
@@ -60,5 +66,9 @@ class User extends Authenticatable
             ->take(2)
             ->map(fn ($word) => Str::substr($word, 0, 1))
             ->implode('');
+    }
+
+    public function foreign_document_type(){
+        $this->belongsTo(DocumentType::class);
     }
 }

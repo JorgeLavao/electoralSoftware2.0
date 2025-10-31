@@ -27,12 +27,21 @@ input::placeholder{
 textarea:not(.clear) {
     @apply min-h-[100px];
 }
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not(.clear):disabled, select:not(.clear):disabled, textarea:not(.clear):disabled {
+    @apply border-gray-400 placeholder-gray-600 text-gray-600 cursor-not-allowed;
+}
+
+input:not([type="checkbox"]):not([type="radio"]).error, select.error, textarea.error  {
+    @apply border-error;
+}
+
 /*--------------------------------------------------------------
     SELECTS
 */
 select:not(.clear) {
     @apply
-    px-2 md:px-4 py-1 md:py-3
+    px-2 px-4 py-3
     w-full
     border
     border-grey-300

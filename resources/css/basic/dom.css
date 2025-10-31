@@ -36,7 +36,15 @@ hr {
 }
 
 .base-bold{
-    @apply font-extrabold text-[14px];
+    @apply font-bold text-[14px];
+}
+
+.base-medium{
+    @apply font-medium text-[14px];
+}
+
+.base-semibold{
+    @apply font-semibold text-[14px];
 }
 
 label, .label {
