@@ -84,3 +84,4 @@ select:focus[data-flux-control] {
 @import './interface/interface.css';
 @import './interface/grid.css';
 @import './components/toast.css';
+@import './components/modal.css';

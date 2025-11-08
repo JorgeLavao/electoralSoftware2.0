@@ -36,6 +36,45 @@ input:not([type="checkbox"]):not([type="radio"]).error, select.error, textarea.e
     @apply border-error;
 }
 
+/* ------------------------------------------------------------
+  RADIO & CHECKS
+  --------------------------------------------------------------- */
+
+  input[type="radio"], input[type="checkbox"] {
+    @apply
+    appearance-none
+    border
+    border-gray-700
+    rounded-full
+    ;
+    width: 1em;
+    height: 1em;
+  }
+
+  input[type="radio"] {
+    @apply rounded-full;
+  }
+
+  input[type="checkbox"] {
+    @apply rounded;
+  }
+
+  input[type="radio"]:checked, input[type="checkbox"]:checked {
+    @apply
+    border-primary
+    bg-primary
+    ;
+  }
+
+  input[type="radio"]:checked {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='2' fill='%23fff'/%3e%3c/svg%3e");
+  }
+
+  input[type="checkbox"]:checked {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='M6 10l3 3l6-6'/%3e%3c/svg%3e");
+  }
+
+
 /*--------------------------------------------------------------
     SELECTS
 */
@@ -133,6 +172,24 @@ button {
     bg-primary
     border-primary;
 }
+
+/*extra-primary*/
+[type=button].btn-extra-primary, [type=reset].btn-extra-primary, [type=submit].btn-extra-primary, a.button.btn-extra-primary, .sequence-links a.btn-extra-primary {
+    @apply text-primary
+    !rounded-2xl
+    !px-3
+    border-primary;
+}
+
+/*secondary*/
+[type=button].btn-secondary, [type=reset].btn-secondary, [type=submit].btn-secondary, a.button.btn-secondary, .sequence-links a.btn-secondary {
+    @apply text-grey-400
+    bg-grey-50
+    !rounded-2xl
+    !px-3
+    border-grey-200;
+}
+
 
 /* tertiary*/
 [type=button].btn-tertiary, [type=reset].btn-tertiary, [type=submit].btn-tertiary, a.button.btn-tertiary, .sequence-links a.btn-tertiary {

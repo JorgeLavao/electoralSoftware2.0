@@ -69,6 +69,10 @@ class User extends Authenticatable
     }
 
     public function foreign_document_type(){
-        $this->belongsTo(DocumentType::class);
+       return $this->belongsTo(DocumentType::class);
+    }
+
+    public function foreing_aditional_info(){
+        return $this->hasOne(UserProfile::class);
     }
 }

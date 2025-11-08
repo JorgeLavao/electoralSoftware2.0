@@ -1,6 +1,7 @@
 <?php
 
 use App\Livewire\Settings\Appearance;
+use App\Livewire\Settings\CompleteInfo;
 use App\Livewire\Settings\Password;
 use App\Livewire\Settings\Profile;
 use App\Livewire\Settings\TwoFactor;
@@ -10,10 +11,10 @@ use Laravel\Fortify\Features;
 Route::get('/', function () {return  redirect()->route('dashboard');})->name('home');
 
 Route::view('dashboard', 'dashboard')
-    ->middleware(['auth', 'verified'])
+    ->middleware(['auth', 'verified', 'complete-info'])
     ->name('dashboard');
 
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', 'complete-info'])->group(function () {
     Route::redirect('settings', 'settings/profile');
 
     Route::get('settings/profile', Profile::class)->name('settings.profile');
@@ -28,8 +29,8 @@ Route::middleware(['auth'])->group(function () {
                 ['password.confirm'],
                 [],
             ),
-        )
-        ->name('two-factor.show');
-});
+        )->name('two-factor.show');
+    });
+    Route::get('/completar-registro', CompleteInfo::class)->name('profile.complete-register')->middleware(['auth']);
 
 require __DIR__.'/auth.php';

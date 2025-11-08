@@ -1,0 +1,46 @@
+@layer components {
+    .modal-container {
+        @apply fixed top-0 left-0 right-0 bottom-0 p-4;
+        z-index: 200;
+        pointer-events: none;
+        background-color: rgb(26,25,32,0.7);
+        visibility: hidden;
+        opacity: 0;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+
+    .modal-container.show {
+        opacity: 1;
+        pointer-events: auto;
+        visibility: visible;
+    }
+
+    body.modal-open {
+        overflow: hidden;
+    }
+
+    .modal-container .modal-inner {
+        @apply relative top-1/2 left-1/2 w-full max-w-7xl p-6 bg-white rounded-3xl;
+        display: flex;
+        flex-direction: column;
+        max-height: 90%;
+        overflow: hidden;
+        transform: translate(-50%, -50%);
+    }
+
+    .modal-container .modal-inner.modal-md {
+        @apply max-w-4xl;
+    }
+
+    .modal-container .modal-inner.modal-sm {
+        max-width: 600px;
+    }
+
+    .modal-container .modal-close {
+        @apply absolute z-10 top-6 right-6 mr-4 py-2.5 bg-primary text-white;
+    }
+
+    .modal-container .modal-inner__data {
+        @apply pr-4 h-full overflow-auto;
+    }
+}
