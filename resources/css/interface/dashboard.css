@@ -1,0 +1,239 @@
+.dashboard {
+    @apply grid py-4 md:py-11 px-4;
+    & p {
+        @apply text-base;
+    }
+}
+
+.dashboard__container {
+    @apply grid grid-rows-[auto_1fr] gap-3.5 m-auto max-w-7xl w-full;
+    height: 100%;
+}
+
+.dashboard__header--profile {
+    @apply flex items-center;
+}
+
+.dashboard__header {
+    @apply grid xs:flex xs:justify-between;
+
+    & h1 {
+        @apply text-[36px] xs:text-[48px] ml-12 md:ml-0;
+    }
+}
+
+.dashboard__header--profile {
+    @apply relative gap-2 justify-end;
+}
+
+.dashboard__header--profile--name {
+    @apply hidden md:flex;
+}
+
+/* ----------------------------------------------------------------- */
+
+.dashboard__main {
+    @apply
+    grid
+    grid-cols-1
+    md:grid-cols-[280px_1fr]
+    gap-5
+    overflow-hidden
+    bg-light
+    rounded-3xl
+    shadow-lg
+    ;
+}
+
+/* ----------------------------------------------------------------- */
+
+.dashboard__main__aside {
+    @apply
+    absolute
+    z-50
+    md:relative
+    top-6
+    xs:top-8
+    md:top-0
+    w-[calc(100%-2rem)]
+    md:w-auto
+    md:grid
+    md:p-7
+    md:bg-white
+    ;
+
+    & .menu {
+        @apply grid gap-3.5;
+    }
+}
+
+.dashboard__main__aside--data__info {
+    @apply mb-4 pb-2 border-b border-b-2 border-gray-100;
+}
+
+.dashboard__main__aside--vote {
+    @apply
+    mt-4
+    mb-4
+    md:m-0
+    pt-4
+    md:pt-40
+    border-t
+    border-t-2
+    border-gray-100
+    md:border-none
+    ;
+}
+
+/* ----------------------------------------------------------------- */
+
+.dashboard__main__aside a, .item, .pagination button {
+    @apply
+    flex
+    items-center
+    gap-2
+    pt-2
+    pb-1.5
+    px-2.5
+    border
+    border-light
+    rounded-3xl
+    ;
+
+    &.item__secondary {
+        @apply border-gray-100;
+
+        &:hover, &:focus {
+            .iconify {
+                @apply text-primary;
+            }
+        }
+    }
+
+    & .iconify {
+        @apply w-[18px] h-[18px] text-gray-300;
+    }
+
+    /* &.item__accent, &:hover, &:focus { */
+    &:is(a):hover,
+    &:is(button):hover,
+    &:is(a):focus,
+    &:is(button):focus {
+        @apply border-primary;
+    }
+
+    &.item__active {
+        @apply text-light bg-primary border-primary;
+    }
+
+    &.item__accent {
+        &, & .iconify {
+            @apply text-primary;
+        }
+
+        &:hover, &:focus {
+            @apply bg-gray-50;
+        }
+    }
+}
+
+div, span {
+    &.item {
+        @apply border-gray-100;
+
+        &.valid {
+            @apply border-valid;
+
+            .iconify {
+                @apply text-valid;
+            }
+        }
+
+        &.invalid {
+            @apply border-invalid;
+
+            .iconify {
+                @apply text-invalid;
+            }
+        }
+    }
+}
+
+.container-v.area-3 a {
+    @apply justify-between border-gray-100;
+
+    &:hover, &:focus {
+        @apply border-gray-300;
+
+        & .iconify {
+            @apply text-gray-400;
+        }
+    }
+}
+
+/* ----------------------------------------------------------------- */
+
+.dashboard__main__section {
+    @apply p-5 md:p-7 md:pl-0;
+}
+
+.dashboard__main__section .pagination button {
+    @apply pt-1 pb-0.5 px-4 border-gray-100 rounded-2xl;
+
+    &[disabled] {
+        @apply hidden;
+    }
+
+    &:hover, &:focus {
+        @apply border-primary;
+    }
+
+    &.active {
+        @apply text-light bg-primary;
+    }
+}
+
+/* ----------------------------------------------------------------- */
+
+.breadcrumbs {
+    @apply mb-2 pb-2 font-semibold text-gray-400 border-b border-gray-100;
+
+    & a {
+        @apply underline;
+
+        &:hover, &:focus {
+            @apply text-black;
+        }
+    }
+}
+
+.dashboard__main__section__article {
+    @apply grid gap-5 py-4;
+}
+
+ul.wrap-primary > li, div.wrap-primary {
+    @apply border border-primary overflow-hidden rounded-2xl;
+}
+
+div.wrap-primary {
+    @apply p-5;
+}
+
+ul.wrap-primary > li {
+
+    & > div, & > a {
+        @apply p-5;
+    }
+
+    & > a {
+        @apply block;
+
+        &:hover, &:focus {
+            @apply bg-gray-100;
+        }
+    }
+
+    & p {
+        @apply text-gray-400;
+    }
+}

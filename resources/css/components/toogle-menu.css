@@ -1,0 +1,46 @@
+@layer components {
+  .container-lateral-menu > div {
+    @apply hidden md:block;
+  }
+
+  .container-lateral-menu input[type="checkbox"].hide-input:checked ~ div {
+    @apply block;
+    @apply
+    bg-light
+    md:bg-transparent
+    shadow-lg
+    md:shadow-none
+    p-3.5
+    md:p-0
+    rounded-3xl
+    ;
+  }
+
+  .container-lateral-menu input[type="checkbox"] {
+    @apply absolute opacity-0;
+  }
+
+  .container-lateral-menu label {
+    @apply
+    inline-block md:hidden
+    p-1.5
+    text-primary
+    cursor-pointer
+    border border-primary
+    rounded-4xl
+    ;
+  }
+  .container-lateral-menu label .icon-open {
+    @apply block;
+  }
+  .container-lateral-menu label .icon-close {
+    @apply hidden;
+  }
+
+  .container-lateral-menu input[type="checkbox"].hide-input:checked + label .icon-open {
+    @apply hidden;
+  }
+  .container-lateral-menu input[type="checkbox"].hide-input:checked + label .icon-close {
+    @apply block;
+  }
+}

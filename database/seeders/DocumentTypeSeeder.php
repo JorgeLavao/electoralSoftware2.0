@@ -24,8 +24,8 @@ class DocumentTypeSeeder extends Seeder
         ];
         foreach ($documents as $doc) {
             DB::table('document_types')->updateOrInsert(
-                ['code' => $doc['code']], // condición de búsqueda
-                ['name' => $doc['name']]  // valores a actualizar o insertar
+                ['code' => $doc['code']],
+                ['name' => $doc['name']]
             );
         }
     }

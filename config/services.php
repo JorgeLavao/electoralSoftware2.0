@@ -34,5 +34,11 @@ return [
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
-
+    'maps' => [
+        'web_api'   => env('GOOGLE_MAPS_BROWSER_KEY'),
+        'back_api'  => env('GOOGLE_MAPS_API_KEY'),
+        'libraries' => 'places',
+        'region'    => 'CO',
+        'language'  => 'es'
+    ]
 ];

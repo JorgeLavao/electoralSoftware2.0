@@ -4,7 +4,6 @@ namespace App\Livewire\Auth;
 
 use App\Models\DocumentType;
 use App\Models\User;
-use Illuminate\Auth\Events\Registered;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Validation\Rule;

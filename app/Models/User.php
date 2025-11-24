@@ -8,6 +8,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
 use Laravel\Fortify\TwoFactorAuthenticatable;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 
 class User extends Authenticatable
 {
@@ -56,19 +57,33 @@ class User extends Authenticatable
         ];
     }
 
-    /**
-     * Get the user's initials
-     */
-    public function initials(): string
+    public function scopeSearch($query, $search)
     {
-        return Str::of($this->name)
-            ->explode(' ')
-            ->take(2)
-            ->map(fn ($word) => Str::substr($word, 0, 1))
-            ->implode('');
+        return $query->where(function($q) use ($search) {
+            $q->where('first_name', 'like', "%{$search}%")
+              ->orWhere('middle_name', 'like', "%{$search}%")
+              ->orWhere('paternal_surname', 'like', "%{$search}%")
+              ->orWhere('maternal_surname', 'like', "%{$search}%")
+              ->orWhereRaw("CONCAT_WS(' ', first_name, middle_name, paternal_surname, maternal_surname) like ?", ["%{$search}%"]);
+        });
+    }
+
+    protected function fullName(): Attribute {
+        return Attribute::get(fn () => trim(
+            implode(' ', array_filter([
+                $this->first_name,
+                $this->middle_name,
+                $this->paternal_surname,
+                $this->maternal_surname,
+            ]))
+        ));
     }
 
     public function foreign_document_type(){
-        $this->belongsTo(DocumentType::class);
+       return $this->belongsTo(DocumentType::class);
+    }
+
+    public function foreing_aditional_info(){
+        return $this->hasOne(UserProfile::class);
     }
 }

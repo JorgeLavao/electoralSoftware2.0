@@ -26,6 +26,40 @@
     @apply flex items-center gap-2;
 }
 
+/* ------------------------------------------------------------
+SECTION
+--------------------------------------------------------------- */
+.section-header {
+    @apply relative;
+}
+.section-header .section-header__title {
+    @apply block;
+}
+.section-header h1 {
+    @apply mb-2;
+}
+.section-header h2 {
+    @apply mb-1;
+}
+/* navegation companys */
+.navegations-company {
+    @apply relative top-0 right-0 sm:absolute md:right-14 xl:right-0 ;
+}
+.navegations-company select {
+    @apply md:min-w-[200px] lg:min-w-[300px] bg-gray-200;
+}
+/* edition-area */
+.edition-area {
+    @apply relative flex-col justify-between lg:flex-row;
+}
+.edition-area > *:first-child {
+    @apply w-full lg:flex-1;
+}
+.edition-area > *:last-child {
+    @apply w-full text-right lg:w-auto;
+}
+
+
 /*----------------------------------------------
     REGISTER COMPONENT
 ------------------------------------------------*/

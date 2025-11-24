@@ -1,7 +1,7 @@
 /*-----------------------------------------------------------------------
     INPUTS
 -----------------------------------------------------------------------*/
-input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not(.clear), textarea:not(.clear) {
+input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not(.clear):not(.numInput), textarea:not(.clear) {
     @apply
     px-5
     py-2
@@ -35,6 +35,45 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not(.clear)
 input:not([type="checkbox"]):not([type="radio"]).error, select.error, textarea.error  {
     @apply border-error;
 }
+
+/* ------------------------------------------------------------
+  RADIO & CHECKS
+  --------------------------------------------------------------- */
+
+  input[type="radio"], input[type="checkbox"] {
+    @apply
+    appearance-none
+    border
+    border-gray-700
+    rounded-full
+    ;
+    width: 1em;
+    height: 1em;
+  }
+
+  input[type="radio"] {
+    @apply rounded-full;
+  }
+
+  input[type="checkbox"] {
+    @apply rounded;
+  }
+
+  input[type="radio"]:checked, input[type="checkbox"]:checked {
+    @apply
+    border-primary
+    bg-primary
+    ;
+  }
+
+  input[type="radio"]:checked {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='2' fill='%23fff'/%3e%3c/svg%3e");
+  }
+
+  input[type="checkbox"]:checked {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='M6 10l3 3l6-6'/%3e%3c/svg%3e");
+  }
+
 
 /*--------------------------------------------------------------
     SELECTS
@@ -74,7 +113,7 @@ select:not(.clear) {
 }
 
 .group-form-h label {
-    @apply min-w-[80px] sm:text-right;
+    @apply sm:text-right;
 }
 
 .group-form-h :last-child {
@@ -111,13 +150,18 @@ button {
 }
 
 /* default */
-[type=button]:not(.btn-icon), [type=reset]:not(.btn-icon), [type=submit]:not(.btn-icon), a.button:not(.btn-icon), .sequence-links a:not(.btn-icon) {
+/* [type=button]:not(.btn-icon), [type=reset]:not(.btn-icon), [type=submit]:not(.btn-icon), a.button:not(.btn-icon), .sequence-links a:not(.btn-icon) { */
+[type=button]:not(.btn-icon):not(.pagination *),
+[type=reset]:not(.btn-icon):not(.pagination *),
+[type=submit]:not(.btn-icon):not(.pagination *),
+a.button:not(.btn-icon):not(.pagination *),
+.sequence-links a:not(.btn-icon):not(.pagination *) {
     @apply inline-flex
     flex-wrap items-center gap-2 px-4 py-2
-    font-sans text-base
+    font-normal
     leading-5
     border
-    rounded-lg
+    rounded-3xl
     cursor-pointer
     justify-center;
 }
@@ -131,7 +175,24 @@ button {
     @apply font-extrabold
     text-white
     bg-primary
+    border-primary
+    ;
+
+    &:hover, &:focus {
+        @apply text-primary bg-gray-100;
+    }
+}
+
+/* secondary*/
+[type=button].btn-secondary, [type=reset].btn-secondary, [type=submit].btn-secondary, a.button.btn-secondary, .sequence-links a.btn-secondary {
+    @apply font-extrabold
+    text-primary
+    bg-light
     border-primary;
+
+    &:hover, &:focus {
+        @apply text-gray-500 bg-gray-100;
+    }
 }
 
 /* tertiary*/
@@ -156,4 +217,9 @@ button.btn-icon{
 /*disabled*/
 button[disabled], input[type="button"][disabled], input[type="reset"][disabled], input[type="submit"][disabled] {
     @apply !bg-primary/90 !cursor-not-allowed opacity-70;
+}
+
+button.clear {
+    @apply font-primary text-base border-none;
+    padding: 0;
 }

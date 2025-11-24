@@ -19,7 +19,7 @@
                     <div class='group-form-v'>
                         <label for="type_doc">Tipo de Documento</label>
                         <select id="type_doc" wire:model='doc_type' required wire:loading.attr="disabled">
-                            <option value="">Seleccione</option>
+                            <option value="" hidden>Seleccione</option>
                             @foreach ($documents_type as $document_type)
                                 <option value="{{ $document_type->id }}"> {{ $document_type->code }} - {{ $document_type->name }} </option>
                             @endforeach

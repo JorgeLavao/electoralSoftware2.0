@@ -1,6 +1,8 @@
 
-body {
-    @apply bg-grey-50 text-black font-primary text-base overflow-x-hidden;
+@layer base {
+    body {
+        @apply bg-grey-50 text-black font-primary text-base overflow-x-hidden;
+    }
 }
 
 h1{
@@ -12,11 +14,11 @@ h2{
 }
 
 h3{
-    @apply text-[28px] font-bold;
+    @apply text-[28px] font-bold text-base/8;
 }
 
 h4{
-    @apply text-[22px] font-semibold;
+    @apply text-[18px] font-semibold;
 }
 
 h5{
@@ -24,7 +26,13 @@ h5{
 }
 
 p{
-    @apply text-[24px];
+    @apply grid text-[24px];
+
+    & a {
+        &:hover, &:focus {
+            @apply text-black;
+        }
+    }
 }
 
 p.regular{
@@ -33,6 +41,12 @@ p.regular{
 
 hr {
     @apply my-4 border-t-2 border-grey-100;
+}
+
+a, button {
+    &, & img, & .iconify {
+        transition: all .3s ease;
+    }
 }
 
 .base-bold{
@@ -54,6 +68,23 @@ label, .label {
     --color-scrollbar-thumb: #CDCDCD;
     --color-scrollbar-track: #EFEFEF;
 }
+
+.hide-mobile {
+    @apply hidden md:block
+}
+
+.hide-desktop {
+    @apply visible md:hidden
+}
+
+.hide-input {
+    @apply hidden;
+}
+
+.tag {
+    @apply flex items-center py-1 px-4 w-auto text-sm text-sm/4 bg-gray-100 rounded-3xl;
+}
+
 /* ===== Scrollbar CSS ===== */
 /* Firefox */
 * {
