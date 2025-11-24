@@ -25,8 +25,6 @@ function loadMaps(callback) {
 let map, marker, autocomplete, geocoder;
 
 function initUbicacionModal() {
-    console.log('dfdfdfdf');
-
     if (!document.getElementById('map')) return;
 
     const COLOMBIA_CENTER = { lat: 4.5709, lng: -74.2973 };

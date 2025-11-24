@@ -34,54 +34,38 @@
     --color-grey-300:#ABABAB;
     --color-grey-400:#747474;
 
+    --color-gray-50:#F2F2F2;
+    --color-gray-100:#EEEEEE;
+    --color-gray-200:#C4C4C4;
+    --color-gray-300:#ABABAB;
+    --color-gray-400:#747474;
+
     --color-error:#e8070f;
+
+    --color-valid:#0FA609;
+    --color-invalid:#FF0000;
 
     --color-accent: var(--color-neutral-800);
     --color-accent-content: var(--color-neutral-800);
     --color-accent-foreground: var(--color-white);
+
+    --breakpoint-xs: 480px;
 }
-
-@layer theme {
-    .dark {
-        --color-accent: var(--color-white);
-        --color-accent-content: var(--color-white);
-        --color-accent-foreground: var(--color-neutral-800);
-    }
-}
-
-@layer base {
-
-    *,
-    ::after,
-    ::before,
-    ::backdrop,
-    ::file-selector-button {
-        border-color: var(--color-gray-200, currentColor);
-    }
-}
-
-[data-flux-field]:not(ui-radio, ui-checkbox) {
-    @apply grid gap-2;
-}
-
-[data-flux-label] {
-    @apply  !mb-0 !leading-tight;
-}
-
-input:focus[data-flux-control],
-textarea:focus[data-flux-control],
-select:focus[data-flux-control] {
-    @apply outline-hidden ring-2 ring-accent ring-offset-2 ring-offset-accent-foreground;
-}
-
-/* \[:where(&)\]:size-4 {
-    @apply size-4;
-} */
 
 @import './basic/dom.css';
 @import './basic/form.css';
+@import './basic/table.css';
 @import './template/template.css';
 @import './interface/interface.css';
 @import './interface/grid.css';
+@import './interface/dashboard.css';
+
 @import './components/toast.css';
+@import './components/notifications.css';
+@import './components/profile.css';
+@import './components/toogle-menu.css';
+@import './components/lateral-menu.css';
+@import './components/pagination.css';
+@import './components/lists.css';
+@import './components/news.css';
 @import './components/modal.css';

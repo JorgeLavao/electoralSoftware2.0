@@ -1,0 +1,29 @@
+@layer components {
+    .news {
+        @apply grid gap-10;
+
+        & li {
+            & a {
+                @apply grid grid-cols-1 md:grid-cols-[260px_1fr] gap-5;
+
+                & figure {
+                    width: 260px;
+                    height: 150px;
+                    @apply bg-primary overflow-hidden rounded-3xl;
+
+                    & img {
+                        @apply object-cover;
+                    }
+                }
+
+                &:hover, &:focus {
+                    @apply text-primary;
+
+                    & img {
+                        @apply opacity-80;
+                    }
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,52 @@
+@layer components {
+  .container-profile {
+    @apply
+    absolute
+    z-40
+    top-0
+    right-0
+    ;
+  }
+
+  .profile-data {
+    @apply relative w-full flex flex-col gap-3 items-end;
+  }
+
+  .profile-data__avatar {
+    @apply w-8 h-8 p-1.25 text-center bg-gray-200 rounded-4xl;
+  }
+
+  .profile-data div.profile-data__display {
+    @apply hidden;
+    @apply p-3.5 bg-light rounded-xl shadow-lg;
+    margin-top: -5px;
+
+   & ul {
+    @apply grid gap-2;
+   }
+
+   & a {
+    @apply flex items-center gap-1;
+
+    & .iconify {
+        @apply text-gray-300;
+    }
+   }
+
+    & button {
+      @apply !p-0;
+    }
+
+      & a, button {
+        &:hover, &:focus {
+            &, & .iconify {
+                @apply text-primary;
+            }
+        }
+    }
+  }
+
+  .profile-data input[type="checkbox"].hide-input:checked ~ div {
+    @apply block w-36;
+  }
+}

@@ -1,0 +1,52 @@
+@layer components {
+  :root {
+    --notifiacion-spacing: 32px;
+  }
+
+  .container-notifications {
+    @apply
+    absolute
+    z-40
+    top-0
+    right-0
+    ;
+  }
+
+  .notifications {
+    @apply relative w-full flex flex-col gap-3;
+    padding-top: var(--notifiacion-spacing);
+  }
+
+  .notification_icon {
+    @apply w-8 h-8 p-1.25 text-white bg-primary rounded-4xl;
+  }
+
+  .notifications label {
+    @apply
+    absolute
+    right-0
+    flex
+    justify-center
+    items-center
+    text-white
+    cursor-pointer
+    rounded-full;
+    margin-top: calc(-1 * var(--notifiacion-spacing));
+    width: var(--notifiacion-spacing);
+    height: var(--notifiacion-spacing);
+  }
+
+  .notifications label .bubble {
+    @apply absolute -top-3 -right-2 min-w-[26px] p-1 text-center text-xs text-gray-800 bg-gray-300 border-gray-600 rounded-full;
+  }
+
+
+  .notifications div.notifications-display {
+   @apply hidden;
+  }
+
+  .notifications input[type="checkbox"].hide-input:checked ~ div {
+    @apply block w-80 xs:w-96 mt-2;
+    @apply absolute xs:relative right-[-40px] xs:right-0;
+  }
+}

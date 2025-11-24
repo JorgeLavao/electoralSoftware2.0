@@ -61,7 +61,7 @@
                 </div>
                 <hr/>
                 <div class="justify-between flex w-full">
-                    <button type="button" class="btn-secondary">
+                    <button type="button" class="btn-secondary" wire:click='closeModal'>
                         <x-icons.close/> Cancelar
                     </button>
                     <button type="button" class="btn-primary" wire:click='saveAdrress'>

@@ -1,0 +1,13 @@
+@layer components {
+  .pagination {
+      @apply
+      flex
+      flex-wrap
+      items-stretch
+      justify-end
+      gap-2
+      mt-5
+      overflow-hidden
+      ;
+  }
+}

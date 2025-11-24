@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Users\SearchUserController;
+use App\Livewire\Campaign\IndexCampaign;
 use App\Livewire\Settings\Appearance;
 use App\Livewire\Settings\CompleteInfo;
 use App\Livewire\Settings\Password;
@@ -20,6 +22,9 @@ Route::middleware(['auth', 'complete-info'])->group(function () {
     Route::get('settings/profile', Profile::class)->name('settings.profile');
     Route::get('settings/password', Password::class)->name('settings.password');
     Route::get('settings/appearance', Appearance::class)->name('settings.appearance');
+
+    Route::get('campañas', IndexCampaign::class)->name('campaign.index');
+    Route::get('api/buscar-usuarios', SearchUserController::class)->middleware('axios');
 
     Route::get('settings/two-factor', TwoFactor::class)
         ->middleware(

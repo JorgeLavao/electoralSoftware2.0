@@ -1,7 +1,7 @@
 /*-----------------------------------------------------------------------
     INPUTS
 -----------------------------------------------------------------------*/
-input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not(.clear), textarea:not(.clear) {
+input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not(.clear):not(.numInput), textarea:not(.clear) {
     @apply
     px-5
     py-2
@@ -113,7 +113,7 @@ select:not(.clear) {
 }
 
 .group-form-h label {
-    @apply min-w-[80px] sm:text-right;
+    @apply sm:text-right;
 }
 
 .group-form-h :last-child {
@@ -150,13 +150,18 @@ button {
 }
 
 /* default */
-[type=button]:not(.btn-icon), [type=reset]:not(.btn-icon), [type=submit]:not(.btn-icon), a.button:not(.btn-icon), .sequence-links a:not(.btn-icon) {
+/* [type=button]:not(.btn-icon), [type=reset]:not(.btn-icon), [type=submit]:not(.btn-icon), a.button:not(.btn-icon), .sequence-links a:not(.btn-icon) { */
+[type=button]:not(.btn-icon):not(.pagination *),
+[type=reset]:not(.btn-icon):not(.pagination *),
+[type=submit]:not(.btn-icon):not(.pagination *),
+a.button:not(.btn-icon):not(.pagination *),
+.sequence-links a:not(.btn-icon):not(.pagination *) {
     @apply inline-flex
     flex-wrap items-center gap-2 px-4 py-2
-    font-sans text-base
+    font-normal
     leading-5
     border
-    rounded-lg
+    rounded-3xl
     cursor-pointer
     justify-center;
 }
@@ -170,26 +175,25 @@ button {
     @apply font-extrabold
     text-white
     bg-primary
-    border-primary;
+    border-primary
+    ;
+
+    &:hover, &:focus {
+        @apply text-primary bg-gray-100;
+    }
 }
 
-/*extra-primary*/
-[type=button].btn-extra-primary, [type=reset].btn-extra-primary, [type=submit].btn-extra-primary, a.button.btn-extra-primary, .sequence-links a.btn-extra-primary {
-    @apply text-primary
-    !rounded-2xl
-    !px-3
-    border-primary;
-}
-
-/*secondary*/
+/* secondary*/
 [type=button].btn-secondary, [type=reset].btn-secondary, [type=submit].btn-secondary, a.button.btn-secondary, .sequence-links a.btn-secondary {
-    @apply text-grey-400
-    bg-grey-50
-    !rounded-2xl
-    !px-3
-    border-grey-200;
-}
+    @apply font-extrabold
+    text-primary
+    bg-light
+    border-primary;
 
+    &:hover, &:focus {
+        @apply text-gray-500 bg-gray-100;
+    }
+}
 
 /* tertiary*/
 [type=button].btn-tertiary, [type=reset].btn-tertiary, [type=submit].btn-tertiary, a.button.btn-tertiary, .sequence-links a.btn-tertiary {
@@ -213,4 +217,9 @@ button.btn-icon{
 /*disabled*/
 button[disabled], input[type="button"][disabled], input[type="reset"][disabled], input[type="submit"][disabled] {
     @apply !bg-primary/90 !cursor-not-allowed opacity-70;
+}
+
+button.clear {
+    @apply font-primary text-base border-none;
+    padding: 0;
 }

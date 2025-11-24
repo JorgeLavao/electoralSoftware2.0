@@ -1,0 +1,9 @@
+@layer components {
+    [class^="list-"] {
+        @apply grid grid-cols-1 gap-4;
+    }
+
+    .list-horizontal {
+        @apply lg:grid-cols-3;
+    }
+}
