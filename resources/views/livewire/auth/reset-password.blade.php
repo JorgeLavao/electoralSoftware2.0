@@ -1,45 +1,34 @@
-<div class="flex flex-col gap-6">
-    <x-auth-header :title="__('Reset password')" :description="__('Please enter your new password below')" />
-
-    <!-- Session Status -->
-    <x-auth-session-status class="text-center" :status="session('status')" />
-
-    <form method="POST" wire:submit="resetPassword" class="flex flex-col gap-6">
-        <!-- Email Address -->
-        <flux:input
-            wire:model="email"
-            :label="__('Email')"
-            type="email"
-            required
-            autocomplete="email"
-        />
-
-        <!-- Password -->
-        <flux:input
-            wire:model="password"
-            :label="__('Password')"
-            type="password"
-            required
-            autocomplete="new-password"
-            :placeholder="__('Password')"
-            viewable
-        />
-
-        <!-- Confirm Password -->
-        <flux:input
-            wire:model="password_confirmation"
-            :label="__('Confirm password')"
-            type="password"
-            required
-            autocomplete="new-password"
-            :placeholder="__('Confirm password')"
-            viewable
-        />
-
-        <div class="flex items-center justify-end">
-            <flux:button type="submit" variant="primary" class="w-full">
-                {{ __('Reset password') }}
-            </flux:button>
-        </div>
-    </form>
+<div class="flex flex-col gap-2 w-full">
+    <h1 class='text-center'>Smart<span class='text-primary'>E</span>lect</h1>
+    <div class="login-login">
+        <form method="POST" wire:submit="resetPassword" class="form-login space-y-2">
+            <h3>Cambiar Contraseña</h3>
+            <div class="group-form">
+                <label for="email">Correo: </label>
+                <input type="text" wire:model='email' id="email" disabled required>
+            </div>
+            <div class="group-form">
+                <label for="password">Nueva Contraseña</label>
+                <x-password-input id="password" placeholder="Digite la nueva Contraseña" wire:model.defer="password" autoComplete="new-password" required/>
+            </div>
+            <div class="group-form">
+                <label for="con-pass">Confirme Contraseña</label>
+                <x-password-input id="con-pass" placeholder="Repita la Contraseña" wire:model="password_confirmation" autocomplete="new-password" required/>
+            </div>
+            @error('password')
+                <div>
+                    <x-toast.error-toast :message="$message"/>
+                </div>
+            @enderror
+            @error('email')
+                <div>
+                    <x-toast.error-toast :message="$message"/>
+                </div>
+            @enderror
+            
+            <div class="mt-4">
+                <button type="submit" class="btn-primary all-w">Establecer Contraseña</button>
+            </div>
+        </form>
+    </div>
 </div>

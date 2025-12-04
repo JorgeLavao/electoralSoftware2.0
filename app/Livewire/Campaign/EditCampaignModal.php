@@ -5,6 +5,7 @@ namespace App\Livewire\Campaign;
 use App\Models\Campaign;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
@@ -30,15 +31,16 @@ class EditCampaignModal extends Component
     #[Validate('max:100',   message: 'El nombre del cargo no debe exceder 100 caracteres.')]
     public $position;
 
-    #[Validate('required',              message: 'Debe ingresar el código de la campaña.')]
-    #[Validate('string',                message: 'El código de la campaña debe ser texto.')]
-    #[Validate('max:50',                message: 'El código de campaña no debe exceder los 50 caracteres.')]
-    #[Validate('unique:campaigns,code', message: 'El código de la campaña ya esta en uso.')]
+    #[Validate('required',                                          message: 'Debe ingresar el código de la campaña.')]
+    #[Validate('string',                                            message: 'El código de la campaña debe ser texto.')]
+    #[Validate('max:50',                                            message: 'El código de campaña no debe exceder los 50 caracteres.')]
+    #[Validate('regex:/^[a-zA-Z0-9]+[a-zA-Z0-9\-_]*[a-zA-Z0-9]+$/', message: 'El código de campaña no tiene un formato válido.')]
+    // #[Validate('unique:campaigns,code',                             message: 'El código de la campaña ya esta en uso.')]
     public $cpg_code;
 
     #[Validate('required',              message: 'Debe seleccionar el inicio de la campaña.')]
     #[Validate('date',                  message: 'La fecha de inicio no tiene un formato válido.')]
-    #[Validate('after_or_equal:today',  message: 'La fecha de inicio no puede ser en el pasado.')]
+    // #[Validate('after_or_equal:today',  message: 'La fecha de inicio no puede ser en el pasado.')]
     public $start_date;
 
     #[Validate('required',          message: 'Debe seleccionar la finalización de la campaña.')]
@@ -50,6 +52,20 @@ class EditCampaignModal extends Component
     #[Validate('array',             message: 'Revisa la información e intentar nuevamente')]
     #[Validate('min:1',             message: 'Debe seleecionar al menos 1 administrador de la campaña')]
     public Array $user_ids = [];
+
+    public function rules(){
+        return [
+            'cpg_code' => [
+                Rule::unique('campaigns', 'code')->ignore($this->campaign->id ?? null),
+            ],
+        ];
+    }
+
+    public function messages(){
+        return [
+            'cpg_code.unique'   => 'El código de la campaña ya está en uso.',
+        ];
+    }
 
     #[On('openEditModal')]
     public function showModal(Campaign $campaign){
@@ -101,9 +117,8 @@ class EditCampaignModal extends Component
         }
     }
 
-    protected function createCampaign(){
+    protected function updateCampaign(){
         return DB::transaction(function(){
-
             $this->campaign->update([
                 'name'              => $this->cpg_name,
                 'candidate_name'    => $this->cand_name,
