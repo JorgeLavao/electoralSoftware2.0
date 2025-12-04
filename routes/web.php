@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Users\SearchUserController;
+use App\Livewire\Campaign\AcceptCampaign;
+use App\Livewire\Campaign\AddSupporter;
 use App\Livewire\Campaign\IndexCampaign;
 use App\Livewire\Settings\Appearance;
 use App\Livewire\Settings\CompleteInfo;
@@ -16,6 +18,8 @@ Route::view('dashboard', 'dashboard')
     ->middleware(['auth', 'verified', 'complete-info'])
     ->name('dashboard');
 
+Route::get('api/buscar-usuarios', SearchUserController::class)->middleware('axios', 'auth');
+
 Route::middleware(['auth', 'complete-info'])->group(function () {
     Route::redirect('settings', 'settings/profile');
 
@@ -23,8 +27,8 @@ Route::middleware(['auth', 'complete-info'])->group(function () {
     Route::get('settings/password', Password::class)->name('settings.password');
     Route::get('settings/appearance', Appearance::class)->name('settings.appearance');
 
-    Route::get('campañas', IndexCampaign::class)->name('campaign.index');
-    Route::get('api/buscar-usuarios', SearchUserController::class)->middleware('axios');
+    Route::get('campanias', IndexCampaign::class)->name('campaign.index');
+    Route::get('campanias/{campaign:code}/referir-simpatizante', AddSupporter::class)->name('campaign.add-supporter');
 
     Route::get('settings/two-factor', TwoFactor::class)
         ->middleware(
@@ -35,7 +39,9 @@ Route::middleware(['auth', 'complete-info'])->group(function () {
                 [],
             ),
         )->name('two-factor.show');
-    });
-    Route::get('/completar-registro', CompleteInfo::class)->name('profile.complete-register')->middleware(['auth']);
+});
+
+Route::get('/completar-registro',           CompleteInfo::class)->name('profile.complete-register')->middleware(['auth']);
+Route::get('/invitaciones/aceptar/{invitation:token}', AcceptCampaign::class)->name('campaign.accept-invitation');
 
 require __DIR__.'/auth.php';

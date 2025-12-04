@@ -22,7 +22,7 @@
                         @endforeach
                     </a>
                     <div class="container-h">
-                        <a href="ererer" class="button btn-secundary">
+                        <a href="" class="button btn-secundary">
                             ingresar <x-icons.right-fill/>
                         </a>
                         <button type="button" class="btn-secundary" wire:click='editCampaign({{ $campaign->id }})'>

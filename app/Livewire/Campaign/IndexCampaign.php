@@ -19,7 +19,7 @@ class IndexCampaign extends Component
    public function render()
     {
         return view('livewire.campaign.index-campaign', [
-            'campaigns' => Campaign::latest()->paginate(3)
+            'campaigns' => Campaign::latest()->paginate(6)
         ]);
     }
 }

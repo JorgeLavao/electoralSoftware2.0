@@ -39,6 +39,10 @@ p.regular{
     @apply text-sm font-normal leading-none text-black;
 }
 
+p.small{
+    @apply text-[12px] font-normal leading-none text-black;
+}
+
 hr {
     @apply my-4 border-t-2 border-grey-100;
 }

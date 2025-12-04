@@ -31,6 +31,7 @@
                                             </li>
                                             <li>
                                                 <form method="POST" action="{{ route('logout') }}" class="w-full">
+                                                    @csrf
                                                     <button type="submit" class="clear">
                                                         <x-icons.right-fill/> Salir
                                                     </button>
@@ -106,7 +107,7 @@
                           <li><a href="#">Diagnósticos Generados</a></li>
                         </ul>
                       </li> -->
-                                        {{-- <li><a href="" class="item__accent">Referir Simpatizante <span class="iconify" data-icon="mingcute:right-fill"></span></a></li> --}}
+                                        <li><a href="{{ route('campaign.add-supporter', 'PEND-007') }}" class="{{ request()->routeIs('campaign.add-supporter') ? 'item__active' : '' }}" class="item__accent">Referir Simpatizante <span class="iconify" data-icon="mingcute:right-fill"></span></a></li>
                                     </ul>
                                 </nav>
                                 <div class="dashboard__main__aside--vote">
