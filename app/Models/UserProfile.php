@@ -12,6 +12,7 @@ class UserProfile extends Model
     protected $fillable = [
         'user_id',
         'gender_id',
+        'age_range_id',
         'occupation_id',
         'vehicle',
         'zone',
@@ -34,5 +35,9 @@ class UserProfile extends Model
 
     public function foreign_user(){
         return $this->belongsTo(User::class);
+    }
+
+    public function foreign_range_age(){
+        return $this->belongsTo(AgeRange::class);
     }
 }

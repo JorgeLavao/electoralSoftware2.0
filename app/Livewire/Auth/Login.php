@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Auth;
 
+use App\Models\Campaign;
 use App\Models\User;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Support\Facades\Auth;
@@ -46,12 +47,13 @@ class Login extends Component
 
             return;
         }
-
         Auth::login($user, $this->remember);
 
         RateLimiter::clear($this->throttleKey());
         Session::regenerate();
 
+        $campaign = Campaign::firstWhere('code',  Auth::user()->current_campaign);
+        session(['current_campaign' => $campaign]);
         $this->redirectIntended(default: route('dashboard', absolute: false), navigate: true);
     }
 

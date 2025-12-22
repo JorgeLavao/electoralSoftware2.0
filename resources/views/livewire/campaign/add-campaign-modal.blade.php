@@ -16,7 +16,7 @@
                     <header class="section-header">
                         <div class="section-header__title">
                             <hgroup>
-                                <h3 class="text-grey-400">{{}}</h3>
+                                <h3 class="text-grey-400">Agregar Campaña</h3>
                             </hgroup>
                         </div>
                         <hr>

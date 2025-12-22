@@ -22,5 +22,6 @@ class DatabaseSeeder extends Seeder
         // ]);
         $this->call([DocumentTypeSeeder::class]);
         $this->call([GeederSeeder::class]);
+        $this->call(AgeRangeSeeder::class);
     }
 }

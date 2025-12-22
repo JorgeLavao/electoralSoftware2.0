@@ -17,6 +17,7 @@ return new class extends Migration
             $table->foreignId('gender_id')->constrained('genders');
             $table->foreignId('occupation_id')->constrained('occupations');
             $table->boolean('vehicle');
+            $table->foreignId('age_range_id')->constrained('age_ranges');
             $table->enum('zone', ['urbana', 'rural']);
             $table->json('department');
             $table->json('municipality');

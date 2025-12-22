@@ -29,6 +29,7 @@ class User extends Authenticatable
         'middle_name',
         'paternal_surname',
         'maternal_surname',
+        'current_campaign',
         'celphone',
         'email',
         'password',
@@ -59,14 +60,15 @@ class User extends Authenticatable
         ];
     }
 
-    public function scopeSearch($query, $search)
-    {
-        return $query->where(function($q) use ($search) {
-            $q->where('first_name', 'like', "%{$search}%")
-              ->orWhere('middle_name', 'like', "%{$search}%")
-              ->orWhere('paternal_surname', 'like', "%{$search}%")
-              ->orWhere('maternal_surname', 'like', "%{$search}%")
-              ->orWhereRaw("CONCAT_WS(' ', first_name, middle_name, paternal_surname, maternal_surname) like ?", ["%{$search}%"]);
+    public function scopeSearch($query, $search){
+        if(empty($search)){
+            return $query;
+        }
+        return $query->where(function ($q) use ($search) {
+            $q->whereRaw(
+                "TRIM(CONCAT_WS(' ', first_name, middle_name, paternal_surname, maternal_surname)) LIKE ?",
+                ["%{$search}%"]
+            )->orWhere('document_number', 'like', "%{$search}%");
         });
     }
 
@@ -90,5 +92,13 @@ class User extends Authenticatable
 
     public function foreing_aditional_info(){
         return $this->hasOne(UserProfile::class);
+    }
+
+    public function foreign_campaings(){
+        return $this->belongsToMany(Campaign::class)->withPivot('validate');
+    }
+
+    public function foreign_lists(){
+        return $this->belongsToMany(CampaignList::class, 'list_user', 'user_id', 'list_id');
     }
 }

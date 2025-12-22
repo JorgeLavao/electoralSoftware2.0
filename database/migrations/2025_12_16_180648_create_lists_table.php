@@ -11,15 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('invitations', function (Blueprint $table) {
+        Schema::create('lists', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->foreignId('campaign_id')->constrained()->onDelete('cascade');
-            $table->string('token')->unique();
-            $table->string('reffer_id');
-            $table->timestamp('expires_at')->nullable();
-            $table->timestamp('accepted_at')->nullable();
-            $table->boolean('active')->default(true);
+            $table->string('name');
+            $table->boolean('status');
             $table->timestamps();
         });
     }
@@ -29,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('invitations');
+        Schema::dropIfExists('lists');
     }
 };

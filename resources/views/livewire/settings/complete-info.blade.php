@@ -18,7 +18,7 @@
             </div>
             <hr/>
             <form class="space-y-3" method="POST" wire:submit="sendForm">
-                <div class="grop-columns-3">
+                <div class="grop-columns-2">
                     <div class="container-v">
                         <div class="group-form-v">
                             <label for="gender">Género<span class="text-red-500">*</span></label>
@@ -35,6 +35,24 @@
                             @enderror
                         </div>
                     </div>
+                    <div class="container-v">
+                        <div class="group-form-v">
+                            <label for="age">Rango de edad <span class="text-red-500">*</span></label>
+                            <select id="age" required wire:model='age_id'>
+                                <option value="" hidden>Seleccione</option>
+                                @foreach ($age_ranges as $age)
+                                    <option value="{{ $age->id }}">{{ $age->range }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            @error('age_id')
+                                <x-toast.error-toast :message="$message"/>
+                            @enderror
+                        </div>
+                    </div>
+                </div>
+                <div class="grop-columns-2">
                     <div class="container-v">
                         <div class="group-form-v">
                             <label for="occupation">Ocupación<span class="text-red-500">*</span></label>
