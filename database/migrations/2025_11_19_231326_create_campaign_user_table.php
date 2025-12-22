@@ -14,6 +14,9 @@ return new class extends Migration
         Schema::create('campaign_user', function (Blueprint $table) {
             $table->foreignId('campaign_id')->constrained('campaigns')->cascadeOnDelete();
             $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
+            $table->foreignId('reffer_by')->nullable()->constrained('users')->cascadeOnDelete();
+            $table->smallInteger('approach');
+            $table->smallInteger('validate');
             $table->primary(['campaign_id', 'user_id']);
             $table->timestamps();
         });

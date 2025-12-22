@@ -203,6 +203,14 @@ a.button:not(.btn-icon):not(.pagination *),
     border-white;
 }
 
+/*extra primary*/
+[type=button].btn-extra-primary, [type=reset].btn-extra-primary, [type=submit].btn-extra-primary, a.btn-extra-primary, .sequence-links a.btn-extra-primary {
+    @apply font-extrabold
+    text-white
+    bg-grey-400
+    border-white;
+}
+
 /*icon on the right*/
 button.btn-icon{
     @apply absolute

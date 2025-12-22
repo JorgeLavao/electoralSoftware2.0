@@ -7,6 +7,7 @@ use App\Models\Campaign;
 use App\Models\DocumentType;
 use App\Models\Invitation;
 use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -107,6 +108,13 @@ class AddSupporter extends Component
     public function sendInvitation(){
         $this->validate();
         $this->resetValidation();
+        //validate user campaign
+        if($this->user){
+            if($this->campaign->foreign_users()->where('id', $this->user->id)->exists()){
+                session()->flash('error', 'El usuario ya pertenece a esta campaña.');
+                return;
+            };
+        }
         try{
             DB::transaction(function () {
                 $user = $this->updateUserData();
@@ -136,10 +144,6 @@ class AddSupporter extends Component
     }
 
     private function sendEmail($user){
-        if($this->campaign->foreign_users->contains('id', $user->id)){
-            session()->flash('error', 'El usuario ya pertenece a esta campaña.');
-            abort(413);
-        };
         Invitation::where('user_id', $user->id)->where('active', true)->update(['active' => false]);
         $token = Str::uuid()->toString();
         //create invitation
@@ -147,6 +151,7 @@ class AddSupporter extends Component
         $invitation->user_id    = $user->id;
         $invitation->campaign_id= $this->campaign->id;
         $invitation->expires_at = now()->addHours(48);
+        $invitation->reffer_id  = Auth::user()->id;
         $invitation->token      = $token;
         $invitation->active     = true;
         $invitation->save();

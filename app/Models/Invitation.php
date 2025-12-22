@@ -12,6 +12,7 @@ class Invitation extends Model
     protected $fillable = [
         'user_id',
         'campaign_id',
+        'reffer_id',
         'expires_at',
         'accepted_at',
         'active'

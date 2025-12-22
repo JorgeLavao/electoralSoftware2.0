@@ -6,6 +6,7 @@ use App\Models\Gender;
 use App\Models\Occupation;
 use App\Models\UserProfile;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Layout;
@@ -15,6 +16,7 @@ class CompleteInfo extends Component
 {
     public $genders     = [];
     public $occupations = [];
+    public $age_ranges  = [];
     public $address     = '';
     public $lat         = null;
     public $lng         = null;
@@ -26,10 +28,15 @@ class CompleteInfo extends Component
     public $municipality;
     public $district;
     public $neighborhood;
+    public $age_id;
 
     public function mount(){
+        if(Auth::user()->foreing_aditional_info){
+            return redirect()->route('dashboard');
+        }
         $this->genders      = Gender::where('status', true)->get();
         $this->occupations  = Occupation::where('status', true)->get();
+        $this->age_ranges   = DB::table('age_ranges')->where('status', true)->get();
     }
 
     #[On('location-updated')]
@@ -37,7 +44,7 @@ class CompleteInfo extends Component
         $this->department   = $department;
         $this->municipality = $municipality;
     }
-    
+
     public function selectedDoc(){
         if (empty($this->doc_type) || empty($this->documents_type)) {
             return null;
@@ -62,6 +69,7 @@ class CompleteInfo extends Component
                     'municipality'  => 'required',
                     'district'      => 'required | max:100 | string',
                     'neighborhood'  => 'required | max:100 | string',
+                    'age_id'        => 'required',
                     'address'       => 'required'],
                         ['gender.required'      => 'El género es obligatorio.',
                         'occupation.required'   => 'La ocupación es requerida.',
@@ -75,6 +83,7 @@ class CompleteInfo extends Component
                         'neighborhood.required' => 'El Barrio o Vereda es obligatorio.',
                         'neighborhood.max'      => 'Excede la longitud maxima permitida',
                         'neighborhood.string'   => 'El formato no es el correcto',
+                        'age_id.required'       => 'Debe seleccionar el rango de su edad',
                         'address.required'      => 'Debe realizar la Geo ubicación']);
 
         //sacar datos de locacion
@@ -88,6 +97,7 @@ class CompleteInfo extends Component
             'occupation_id'             => $this->occupation,
             'vehicle'                   => $this->vehicle,
             'zone'                      => $this->zone,
+            'age_range_id'              => $this->age_id,
             'department'                => json_encode($departmentData),
             'municipality'              => json_encode($municipalityData),
             'district_commune'          => $this->district,

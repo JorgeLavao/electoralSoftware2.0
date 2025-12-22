@@ -20,6 +20,7 @@ return new class extends Migration
             $table->string('paternal_surname');
             $table->string('maternal_surname')->nullable();
             $table->string('celphone');
+            $table->string('current_campaign');
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password')->nullable();

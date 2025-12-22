@@ -21,6 +21,9 @@
             <div class="mt-4">
                 <button type="submit" class="btn-primary all-w">Enviar enlace de recuperación</button>
             </div>
+            <div class="mt-2 flex justify-center">
+                <a href="{{ route('login') }}" class="underline"> Iniciar Sesión </a>
+            </div>
         </form>
     </div>
 </div>

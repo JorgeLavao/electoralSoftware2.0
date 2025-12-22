@@ -42,20 +42,8 @@
                                 </div>
                             </div>
                         </div>
-
-
                         {{-- menu campaigns lg screens --}}
-                        <div class="hide-mobile">
-                            <select class="min-w-3xs">
-                                <option value="">Option 1</option>
-                                <option value="">Option 2</option>
-                                <option value="">Option 3</option>
-                                <option value="">Option 4</option>
-                            </select>
-                        </div>
-
-
-
+                        @livewire('components.campaign-select', ['mode' => 'desktop'])
                     </div>
                 </header>
 
@@ -87,13 +75,14 @@
                             <div>
                                 <div class="dashboard__main__aside--data__info">
                                     Campaña
-                                    <h4>Jorge Rodriguez</h4>
-                                    <h5 class="text-gray-300">Alcalde de Palermo 2026 - 2030</h5>
+                                    <h4>{{ session('current_campaign')->candidate_name }}</h4>
+                                    <h5 class="text-gray-300">{{ session('current_campaign')->position }}</h5>
                                 </div>
                                 {{-- menu sidebar --}}
                                 <nav>
                                     <ul class="lateral-menu">
-                                        <li><a href="{{ route('campaign.index') }}"class="{{ request()->routeIs('campaign.index') ? 'item__active' : '' }}" wire:navigate>Gestionar Campañas</a></li>
+                                        <li><a href="{{ route('campaign.index') }}" class="{{ request()->routeIs('campaign.index') ? 'item__active' : '' }}">Gestionar Campañas</a></li>
+                                        <li><a href="{{ route('list.index', session('current_campaign')->code) }}" class="{{ request()->routeIs('list.*') ? 'item__active' : '' }}">Listados</a></li>
                                         {{-- <li><a href="" class="item__active">Noticias</a></li> --}}
                                         {{-- <li><a href="">Comités</a></li> --}}
                                         {{-- <li><a href="">Actividades</a></li> --}}
@@ -107,19 +96,14 @@
                           <li><a href="#">Diagnósticos Generados</a></li>
                         </ul>
                       </li> -->
-                                        <li><a href="{{ route('campaign.add-supporter', 'PEND-007') }}" class="{{ request()->routeIs('campaign.add-supporter') ? 'item__active' : '' }}" class="item__accent">Referir Simpatizante <span class="iconify" data-icon="mingcute:right-fill"></span></a></li>
+                                        <li><a href="{{ route('campaign.add-supporter', session('current_campaign')->code) }}" class="{{ request()->routeIs('campaign.add-supporter') ? 'item__active' : '' }}" class="item__accent">Referir Simpatizante <span class="iconify" data-icon="mingcute:right-fill"></span></a></li>
                                     </ul>
                                 </nav>
                                 <div class="dashboard__main__aside--vote">
                                     <a href="#" class="item__accent"><span class="iconify" data-icon="mdi:vote"></span> Punto de Votación</a>
                                 </div>
                                 {{-- menu campaigns sm screens --}}
-                                <select class="hide-desktop">
-                                    <option value="">Option 1</option>
-                                    <option value="">Option 2</option>
-                                    <option value="">Option 3</option>
-                                    <option value="">Option 4</option>
-                                </select>
+                                @livewire('components.campaign-select', ['mode' => 'mobile'])
                             </div>
                         </div>
                     </aside>
@@ -127,6 +111,17 @@
                 </main>
             </div>
         </div>
+        <script>
+            document.addEventListener('livewire:init', () => {
+                Livewire.on('alert', (...params) => {
+                    handleAlert(params)
+                })
+
+                Livewire.on('alert-confirm', (...params) => {
+                    handleConfirmAlert(params)
+                })
+            })
+        </script>
         @stack('scripts')
     </body>
 </html>

@@ -4,6 +4,9 @@ use App\Http\Controllers\Users\SearchUserController;
 use App\Livewire\Campaign\AcceptCampaign;
 use App\Livewire\Campaign\AddSupporter;
 use App\Livewire\Campaign\IndexCampaign;
+use App\Livewire\List\CreateList;
+use App\Livewire\List\EditList;
+use App\Livewire\List\IndexList;
 use App\Livewire\Settings\Appearance;
 use App\Livewire\Settings\CompleteInfo;
 use App\Livewire\Settings\Password;
@@ -29,6 +32,10 @@ Route::middleware(['auth', 'complete-info'])->group(function () {
 
     Route::get('campanias', IndexCampaign::class)->name('campaign.index');
     Route::get('campanias/{campaign:code}/referir-simpatizante', AddSupporter::class)->name('campaign.add-supporter');
+
+    Route::get('campanias/{campaign:code}/listados/',               IndexList::class)->name('list.index');
+    Route::get('campanias/{campaign:code}/listados/crear',          CreateList::class)->name('list.create');
+    Route::get('campanias/{campaign:code}/listados/{list}/editar',  EditList::class)->name('list.edit');
 
     Route::get('settings/two-factor', TwoFactor::class)
         ->middleware(

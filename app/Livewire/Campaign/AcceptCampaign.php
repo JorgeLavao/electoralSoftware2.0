@@ -18,7 +18,7 @@ class AcceptCampaign extends Component
     public $campaign;
     public $user;
     public $invitation;
-    public $acepted = true;
+    public $acepted = false;
 
     public function mount(Invitation $invitation){
         $this->invitation = $invitation;
@@ -44,11 +44,12 @@ class AcceptCampaign extends Component
         }
         //search campaign
         $this->campaign = Campaign::findOrFail($invitation->campaign_id);
-        $this->campaign->user_add = $invitation->user_id;
     }
 
     public function acceptInvitation(){
-        $this->campaign->foreign_users()->attach($this->campaign->user_add);
+        $this->campaign->foreign_users()->attach($this->invitation->user_id,
+            ['reffer_by'    => $this->invitation->reffer_id,
+            'approach'     => 4]);
         $this->invitation->update(['accepted_at' => now()]);
         $this->acepted = true;
     }
