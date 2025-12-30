@@ -12,6 +12,8 @@ use App\Livewire\Settings\CompleteInfo;
 use App\Livewire\Settings\Password;
 use App\Livewire\Settings\Profile;
 use App\Livewire\Settings\TwoFactor;
+use App\Livewire\Supporters\IndexSupporters;
+use App\Livewire\Supporters\RequestIndex;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
 
@@ -30,9 +32,15 @@ Route::middleware(['auth', 'complete-info'])->group(function () {
     Route::get('settings/password', Password::class)->name('settings.password');
     Route::get('settings/appearance', Appearance::class)->name('settings.appearance');
 
+    // campañas
     Route::get('campanias', IndexCampaign::class)->name('campaign.index');
     Route::get('campanias/{campaign:code}/referir-simpatizante', AddSupporter::class)->name('campaign.add-supporter');
 
+    //simpatizantes
+    Route::get('campanias/{campaign:code}/simpatizantes',               IndexSupporters::class)->name('supporter.index');
+    Route::get('campanias/{campaign:code}/simpatizantes/solicitudes',   RequestIndex::class)->name('supporter.request.index');
+
+    // listados
     Route::get('campanias/{campaign:code}/listados/',               IndexList::class)->name('list.index');
     Route::get('campanias/{campaign:code}/listados/crear',          CreateList::class)->name('list.create');
     Route::get('campanias/{campaign:code}/listados/{list}/editar',  EditList::class)->name('list.edit');

@@ -13,7 +13,7 @@
             <div class="flex justify-end md:mb-4">
                 <a href="{{ route('list.create', session('current_campaign')->code) }}" class="button btn-primary" wire:navigate> <x-icons.add-fill/> Agregar Listado </a>
             </div>
-            <div class="bg-gray-50 container-v p-4 !rounded-lg">
+            <div class="area-2 container-v">
                 <h4>Buscar</h4>
                 <div class="grop-columns-3 container-v">
                     <div class="group-form-v">
@@ -94,7 +94,7 @@
                     </li>
                 @endforeach
             </ul>
-            <div class="">
+            <div class="mt-4">
                {{ $lists->links() }}
             </div>
         </div>

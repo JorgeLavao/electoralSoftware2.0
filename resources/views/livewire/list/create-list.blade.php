@@ -191,9 +191,7 @@
                 </div>
             @enderror
             <div class="flex flex-col gap-3 w-full md:flex-row md:justify-between md:items-center">
-                <button type="button" class="btn-secondary w-full md:w-auto flex items-center justify-center gap-2" wire:click="closeModal">
-                    <x-icons.close/> Cancelar
-                </button>
+                <a href="{{ route('list.index', session('current_campaign')->code) }}" class="button btn-secondary"><x-icons.close/> Cancelar</a>
                 <div class="flex flex-col gap-3 w-full md:flex-row md:w-auto">
                     <button type="button" class="btn-secondary w-full md:w-auto flex items-center justify-center gap-2" wire:click="search">
                         <x-icons.search/> Buscar

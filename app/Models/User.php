@@ -8,7 +8,6 @@ use App\Notifications\CustomResetPassword;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Support\Str;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 
@@ -87,7 +86,7 @@ class User extends Authenticatable
     }
 
     public function foreign_document_type(){
-       return $this->belongsTo(DocumentType::class);
+       return $this->belongsTo(DocumentType::class, 'document_type_id', 'id');
     }
 
     public function foreing_aditional_info(){

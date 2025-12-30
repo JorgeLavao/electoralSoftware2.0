@@ -26,11 +26,11 @@ class UserProfile extends Model
     ];
 
     public function foreign_gender(){
-        return $this->hasOne(Gender::class);
+        return $this->hasOne(Gender::class, 'id', 'gender_id');
     }
 
     public function foreign_occupations(){
-        return $this->hasMany(Occupation::class);
+        return $this->hasOne(Occupation::class, 'id', 'occupation_id');
     }
 
     public function foreign_user(){
@@ -38,6 +38,6 @@ class UserProfile extends Model
     }
 
     public function foreign_range_age(){
-        return $this->belongsTo(AgeRange::class);
+        return $this->belongsTo(AgeRange::class, 'age_range_id', 'id');
     }
 }

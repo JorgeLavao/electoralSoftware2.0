@@ -82,6 +82,7 @@
                                 <nav>
                                     <ul class="lateral-menu">
                                         <li><a href="{{ route('campaign.index') }}" class="{{ request()->routeIs('campaign.index') ? 'item__active' : '' }}">Gestionar Campañas</a></li>
+                                        <li><a href="{{ route('supporter.index', session('current_campaign')->code) }}" class="{{ request()->routeIs('supporter.*') ? 'item__active' : '' }}">Simpatizantes</a></li>
                                         <li><a href="{{ route('list.index', session('current_campaign')->code) }}" class="{{ request()->routeIs('list.*') ? 'item__active' : '' }}">Listados</a></li>
                                         {{-- <li><a href="" class="item__active">Noticias</a></li> --}}
                                         {{-- <li><a href="">Comités</a></li> --}}

@@ -28,7 +28,7 @@
                     <div class="section-header__title">
                         <hgroup>
                             <h5 class="text-grey-400">Listado</h5>
-                            <h3 class="text-grey-400">Nombre de el listado</h3>
+                            <h3 class="text-grey-400">{{ $list->name ?? '' }}</h3>
                         </hgroup>
                     </div>
                     <hr>
