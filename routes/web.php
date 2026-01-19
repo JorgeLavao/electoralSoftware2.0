@@ -1,5 +1,6 @@
 <?php
 
+use App\Exports\PersonasExport;
 use App\Http\Controllers\Users\SearchUserController;
 use App\Livewire\Campaign\AcceptCampaign;
 use App\Livewire\Campaign\AddSupporter;
@@ -12,10 +13,12 @@ use App\Livewire\Settings\CompleteInfo;
 use App\Livewire\Settings\Password;
 use App\Livewire\Settings\Profile;
 use App\Livewire\Settings\TwoFactor;
+use App\Livewire\Supporters\ImportSupporter;
 use App\Livewire\Supporters\IndexSupporters;
-use App\Livewire\Supporters\RequestIndex;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
+use Maatwebsite\Excel\Facades\Excel;
+
 
 Route::get('/', function () {return  redirect()->route('dashboard');})->name('home');
 
@@ -38,7 +41,30 @@ Route::middleware(['auth', 'complete-info'])->group(function () {
 
     //simpatizantes
     Route::get('campanias/{campaign:code}/simpatizantes',               IndexSupporters::class)->name('supporter.index');
-    Route::get('campanias/{campaign:code}/simpatizantes/solicitudes',   RequestIndex::class)->name('supporter.request.index');
+    Route::get('campanias/{campaign:code}/importar-simpatizantes',      ImportSupporter::class)->name('supporter.import');
+    Route::get('/download/plantilla-simpatizantes', function () {
+        return response()->download(
+            public_path('templates/Plantilla_Simpatizantes.xlsx')
+        );})->name('download.template.supporter');
+        
+function get_size_in_mb($size) {
+    $unit = strtoupper(substr($size, -1));
+    $value = (float) $size;
+
+    switch ($unit) {
+        case 'G': return $value * 1024;
+        case 'M': return $value;
+        case 'K': return $value / 1024;
+        default: return $value / (1024 * 1024);
+    }
+}
+
+
+
+
+//     Route::get('/php-info', function() {
+//     phpinfo();
+// });
 
     // listados
     Route::get('campanias/{campaign:code}/listados/',               IndexList::class)->name('list.index');

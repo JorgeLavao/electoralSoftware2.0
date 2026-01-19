@@ -103,7 +103,7 @@ class AddCampaignModal extends Component
                 'end_date'          => $this->end_date,
                 'status'            => '1',
             ]);
-            $campaign->foreign_users()->attach($this->user_ids, ['approach' => 1]);
+            $campaign->foreign_users()->attach($this->user_ids, ['approach' => 1, 'validate' => 1]);
             return $campaign;
         });
     }

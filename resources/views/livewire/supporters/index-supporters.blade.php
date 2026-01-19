@@ -5,9 +5,11 @@
     <div class="relative">
         <div wire:loading  class="absolute inset-0 z-20 cursor-progress"></div>
         <div class="flex justify-end md:mb-4 gap-4 flex-col md:flex-row">
-            <button type="button" class="btn-secundary text-primary border-primary"><x-icons.file-download-line/>Plantilla</button>
-            <button type="button" class="btn-secundary text-primary border-primary"><x-icons.upload-line/>Importar</button>
-            <a href="{{ route('list.create', session('current_campaign')->code) }}" class="button btn-primary" wire:navigate> <x-icons.add-fill/> Agregar</a>
+            <a href="{{ route('download.template.supporter') }}" class="button btn-secundary text-primary border-primary"><x-icons.file-download-line/>Plantilla</a>
+            {{-- <button type="button" class="btn-secundary text-primary border-primary"><x-icons.file-download-line/>Plantilla</button> --}}
+            <a href="{{ route('supporter.import', session('current_campaign')->code) }}" class="button btn-primary"> <x-icons.upload-line/>Importar </a>
+            {{-- <button type="button" class="btn-secundary text-primary border-primary"></button> --}}
+            <a href="{{ route('supporter.import', session('current_campaign')->code) }}" class="button btn-primary" wire:navigate> <x-icons.add-fill/> Agregar</a>
         </div>
         <div class="container-v area-2">
             <h4>Novedades</h4>

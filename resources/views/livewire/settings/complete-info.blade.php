@@ -121,22 +121,22 @@
                 <div class="grop-columns-2">
                     <div class="container-v">
                         <div class="group-form-v">
-                            <label for="district">Corregimiento o Comuna<span class="text-red-500">*</span></label>
-                            <input type="text" placeholder="Digite el nombre del Corregimiento o Comuna" id="district" wire:model='district' required>
+                            <label for="neighborhood">Nombre Barrio o Vereda<span class="text-red-500">*</span></label>
+                            <input type="text" placeholder="Digite el Nombre del Barrio o de la Vereda" id="neighborhood" wire:model='neighborhood' required>
                         </div>
                         <div>
-                            @error('district')
+                            @error('neighborhood')
                                 <x-toast.error-toast :message="$message"/>
                             @enderror
                         </div>
                     </div>
                     <div class="container-v">
                         <div class="group-form-v">
-                            <label for="neighborhood">Nombre Barrio o Vereda<span class="text-red-500">*</span></label>
-                            <input type="text" placeholder="Digite el Nombre del Barrio o de la Vereda" id="neighborhood" wire:model='neighborhood' required>
+                            <label for="district">Corregimiento o Comuna</label>
+                            <input type="text" placeholder="Digite el nombre del Corregimiento o Comuna" id="district" wire:model='district'>
                         </div>
                         <div>
-                            @error('neighborhood')
+                            @error('district')
                                 <x-toast.error-toast :message="$message"/>
                             @enderror
                         </div>
