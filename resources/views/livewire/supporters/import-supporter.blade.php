@@ -164,6 +164,13 @@
                             Errores: <b>{{ number_format($counts['invalid'] ?? 0) }}</b>
                         </span>
                     </div>
+
+                    <div class="flex flex-col gap-3 w-full md:flex-row md:w-auto">
+
+                    </div>
+
+
+
                     <div class="flex flex-col gap-3 w-full md:flex-row md:justify-between md:items-center mt-4">
                         <button type="button" class="btn-secondary" wire:click="back">
                             <x-icons.close/> Cancelar
@@ -174,9 +181,15 @@
                                     <x-icons.file-download-line/> Descargar errores (.csv)
                                 </button>
                             @endif
-                            @if(number_format($counts['valid']) > 0)
-                                <button class="btn-secundary text-valid border-valid" type="button">
-                                    Importar {{ number_format($counts['valid']) }} Simpatizantes
+                            @if(($counts['valid'] ?? 0) > 0)
+                                <button class="btn-secundary text-valid border-valid disabled:text-white disabled:border-primary" type="button"
+                                    wire:click="importValidSupporters" wire:loading.attr="disabled" wire:target="importValidSupporters">
+                                    <span wire:loading.remove wire:target="importValidSupporters">
+                                        Importar {{ number_format($counts['valid']) }} Simpatizantes
+                                    </span>
+                                    <span wire:loading wire:target="importValidSupporters">
+                                        Importando...
+                                    </span>
                                 </button>
                             @endif
                         </div>
@@ -225,5 +238,65 @@
                 </div>
             </div>
         @endif
+
+
+        <div class="flex flex-col gap-3 w-full md:flex-row md:w-auto">
+            <select data-search-referidos multiple class="form-select clear" wire:model='refer_ids'></select>
+        </div>
+
+
+
     </div>
+
+
+    {{-- tom-select script --}}
+    @script
+        <script>
+            (function () {
+                const select = $wire.$el.querySelector('[data-search-referidos]');
+                if (!select) return;
+
+                // Destruir instancia anterior si existe
+                if (select.tomselect) {
+                    select.tomselect.destroy();
+                }
+                // Crear TomSelect
+                select.tomselect = new TomSelect(select, {
+                    maxItems: null,
+                    plugins: ['remove_button'],
+                    placeholder: 'Selecciona los referentes…',
+                    valueField: 'id',
+                    labelField: 'text',
+                    searchField: 'text',
+                    sortField: { field: 'text', direction: 'asc' },
+                    options: @js($referents),
+                    create: false,
+                });
+            })();
+
+            $wire.on('init-tom-select', (data) => {
+                requestAnimationFrame(() => {
+                    const select = $wire.$el.querySelector('[data-add-referidos]');
+                    if (!select) return;
+                    if (select.tomselect) select.tomselect.destroy();
+
+                    select.tomselect = new TomSelect(select, {
+                        maxItems: null,
+                        plugins: ['remove_button'],
+                        placeholder: 'Selecciona los referentes…',
+                        valueField: 'id',
+                        labelField: 'text',
+                        searchField: 'text',
+                        sortField: { field: 'text', direction: 'asc' },
+                        options: data.notResults,
+                        create: false,
+                    });
+                })
+            });
+        </script>
+    @endscript
+
+
+
+
 </section>

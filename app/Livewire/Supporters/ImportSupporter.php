@@ -2,8 +2,10 @@
 
 namespace App\Livewire\Supporters;
 
+use App\Jobs\ImportSupportersJob;
 use App\Jobs\ProcessSupportersPreviewJob;
 use App\Models\ImportBatch;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Layout;
@@ -58,6 +60,37 @@ class ImportSupporter extends Component
         ProcessSupportersPreviewJob::dispatch($batch->id)->onConnection('redis');
         $this->refreshBatch();
     }
+
+
+    public function importValidSupporters(): void
+    {
+        if (!$this->batchId) {
+            $this->alertImport('No hay lote de importación activo.');
+            return;
+        }
+        $batch = ImportBatch::find($this->batchId);
+        if (!$batch) {
+            $this->alertImport('No se encontró el lote de importación.');
+            return;
+        }
+        if (($batch->counts['valid'] ?? 0) === 0) {
+            $this->alertImport('No hay registros válidos para importar.');
+            return;
+        }
+
+        $campaign_id    = session('current_campaign')->id;
+        $reffer_id      = Auth::user()->id;
+
+        ImportSupportersJob::dispatch($batch->id, $campaign_id, $reffer_id)->onConnection('redis');
+        // Opcional: puedes cambiar de step o mostrar un mensaje
+        $this->dispatch('alert', [
+            'icon' => 'success',
+            'title' => 'Importación en progreso',
+            'text' => 'Estamos importando los simpatizantes válidos en segundo plano.',
+            'timer' => 3000,
+        ]);
+    }
+
 
     public function refreshBatch(): void
     {
