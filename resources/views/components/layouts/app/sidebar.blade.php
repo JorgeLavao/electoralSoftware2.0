@@ -103,7 +103,7 @@
                                     </ul>
                                 </nav>
                                 <div class="dashboard__main__aside--vote">
-                                    <a href="#" class="item__accent"><span class="iconify" data-icon="mdi:vote"></span> Punto de Votación</a>
+                                    <a href="{{route('point.index', session('current_campaign')->code)}}" class="item__accent"><span class="iconify" data-icon="mdi:vote"></span> Punto de Votación</a>
                                 </div>
                                 {{-- menu campaigns sm screens --}}
                                 @livewire('components.campaign-select', ['mode' => 'mobile'])

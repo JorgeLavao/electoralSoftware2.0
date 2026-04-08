@@ -8,6 +8,7 @@ use App\Livewire\Campaign\IndexCampaign;
 use App\Livewire\List\CreateList;
 use App\Livewire\List\EditList;
 use App\Livewire\List\IndexList;
+use App\Livewire\Point\IndexPoint;
 use App\Livewire\Settings\Appearance;
 use App\Livewire\Settings\CompleteInfo;
 use App\Livewire\Settings\Password;
@@ -60,8 +61,8 @@ function get_size_in_mb($size) {
 }
 
 
-
-
+//Punto de Votación
+Route::get('campanias/{campaign:code}/punto-votacion/', IndexPoint::class)->name('point.index');
 //     Route::get('/php-info', function() {
 //     phpinfo();
 // });
@@ -84,5 +85,7 @@ function get_size_in_mb($size) {
 
 Route::get('/completar-registro',           CompleteInfo::class)->name('profile.complete-register')->middleware(['auth']);
 Route::get('/invitaciones/aceptar/{invitation:token}', AcceptCampaign::class)->name('campaign.accept-invitation');
+
+
 
 require __DIR__.'/auth.php';

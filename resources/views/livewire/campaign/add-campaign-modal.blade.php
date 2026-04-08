@@ -1,9 +1,12 @@
 <div>
-    <!-- Modal -->
+    {{-- Se muestra solo si la propiedad $showModal es verdadera --}}
     @if($showModal)
+        {{-- Contenedor oscuro de fondo. Al hacer clic (fuera del modal), se ejecuta closeModal --}}
         <div class="modal-container show" wire:click="closeModal">
-        <!-- Contenido del Modal -->
-            <div class="modal-inner modal-md"  x-on:click.stop>
+            
+            {{-- Cuerpo del modal. x-on:click.stop evita que los clics internos cierren el modal --}}
+            <div class="modal-inner modal-md" x-on:click.stop>
+                
                 <button
                     type="button"
                     class="button modal-close"
@@ -22,14 +25,16 @@
                         <hr>
                     </header>
 
-                    {{-- content --}}
+                    {{-- Formulario vinculado al método saveCampaign del componente Livewire --}}
                     <form wire:submit="saveCampaign" method="POST" class="space-y-5">
+                        
                         <div class="grop-columns-2">
                             <div class="container-v">
                                 <div class="group-form-v">
                                     <label for="cpg_name">Nombre de la Campaña<span class="text-red-500">*</span></label>
                                     <input type="text" id="cpg_name" wire:model='cpg_name' placeholder="Digite el nombre de la Campaña" required>
                                 </div>
+                                {{-- Manejo de errores de validación para cpg_name --}}
                                 <div>
                                     @error('cpg_name')
                                         <x-toast.error-toast :message="$message"/>
@@ -48,6 +53,7 @@
                                 </div>
                             </div>
                         </div>
+
                         <div class="grop-columns-2">
                             <div class="container-v">
                                 <div class="group-form-v">
@@ -72,26 +78,28 @@
                                 </div>
                             </div>
                         </div>
+
                         <div class="grop-columns-2">
                             <div class="container-v">
                                 <div class="group-form-v">
                                     <label for="start_date">Fecha de inicio<span class="text-red-500">*</span></label>
+                                    {{-- x-init inicializa el calendario y vincula el valor seleccionado con Livewire --}}
                                     <input type="text" id="start_date" wire:model='start_date' placeholder="Seleccione la fecha de inicio" required x-data
                                         x-ref="startDate" x-init="
                                             $nextTick(() => {
                                                 flatpickr($refs.startDate, {
-                                                dateFormat: 'Y-m-d',
-                                                minDate: 'today',
-                                                locale: 'es',
-                                                onChange: function(selectedDates, dateStr, instance) {
-                                                    $wire.start_date = dateStr;
-                                                    const endDate = document.getElementById('end_date');
-                                                    if (endDate && endDate._flatpickr) {
-                                                        endDate._flatpickr.set('minDate', dateStr);
+                                                    dateFormat: 'Y-m-d',
+                                                    minDate: 'today',
+                                                    locale: 'es',
+                                                    onChange: function(selectedDates, dateStr, instance) {
+                                                        $wire.start_date = dateStr; // Sincroniza con el backend
+                                                        const endDate = document.getElementById('end_date');
+                                                        if (endDate && endDate._flatpickr) {
+                                                            endDate._flatpickr.set('minDate', dateStr); // La fecha fin no puede ser menor a la de inicio
+                                                        }
                                                     }
-                                                }
                                                 });
-                                        })">
+                                            })">
                                 </div>
                                 <div>
                                     @error('start_date')
@@ -102,7 +110,7 @@
                             <div class="container-v">
                                 <div class="group-form-v">
                                     <label for="end_date">Fecha de finalización<span class="text-red-500">*</span></label>
-                                    <input type="text" id="end_date"wire:model='end_date' placeholder="Seleccione la fecha de finalización" required x-data
+                                    <input type="text" id="end_date" wire:model='end_date' placeholder="Seleccione la fecha de finalización" required x-data
                                         x-ref="endDate" x-init="
                                             $nextTick(() => {
                                                 flatpickr($refs.endDate, {
@@ -122,8 +130,9 @@
                                 </div>
                             </div>
                         </div>
-                        {{-- search user --}}
+
                         <div class="container-v">
+                            {{-- Componente anidado de Livewire para buscar usuarios --}}
                             <livewire:components.search-users/>
                             <div>
                                 @error('user_ids')
@@ -131,10 +140,14 @@
                                 @enderror
                             </div>
                         </div>
+
+                        {{-- Muestra errores de sesión generales (ej: errores de base de datos) --}}
                         @if (session()->has('error'))
                             <x-toast.error-toast :message="session('error')"/>
                         @endif
+
                         <hr/>
+
                         <div class="justify-between flex w-full">
                             <button type="button" class="btn-secondary" wire:click='closeModal'>
                                 <x-icons.close/> Cancelar

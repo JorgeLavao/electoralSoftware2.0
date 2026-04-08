@@ -2,16 +2,19 @@
     <div class="breadcrumbs">
         <a href="">{{ $campaign->name }}</a> / Referir simpatizante
     </div>
+
     <div class="container-v mb-4">
         @if (session()->has('success'))
-              <x-toast.success-toast :message="session('success')"/>
+            <x-toast.success-toast :message="session('success')"/>
         @endif
     </div>
+
     <form wire:submit='searchUser' method="POST">
         <div class="grop-columns-2">
             <div class="container-v">
                 <div class="group-form-v">
                     <label for="type_doc">Tipo de Documento<span class="text-red-500">*</span></label>
+                    {{-- wire:loading.attr="disabled" bloquea el select mientras se procesa la búsqueda --}}
                     <select id="type_doc" wire:model='doc_type' required wire:loading.attr="disabled">
                         <option value="" hidden>Seleccione</option>
                         @foreach ($documents_type as $document_type)
@@ -25,6 +28,7 @@
                     @enderror
                 </div>
             </div>
+
             <div class="container-v">
                 <div class="group-form-v">
                     <label for="document_number">Documento<span class="text-red-500">*</span></label>
@@ -32,18 +36,20 @@
                         <input type="text" id="document_number" class="!py-3" wire:loading.attr="disabled"
                             wire:model="document_number" placeholder="Digite el documento" required="">
                         <div class="items-end">
-                            <button type="submit" class="btn-primary !flex-nowrap">buscar <x-icons.search/> </button>
+                            <button type="submit" class="btn-primary !flex-nowrap">Buscar <x-icons.search/> </button>
                         </div>
                     </div>
                 </div>
                 <div>
-                   @error('document_number')
+                    @error('document_number')
                         <x-toast.error-toast :message="$message"/>
                     @enderror
                 </div>
             </div>
         </div>
     </form>
+
+    {{-- Se muestra solo si $showForm es true (después de ejecutar searchUser) --}}
     @if ($showForm)
         <div class="mt-4 p-4 rounded-lg border border-gray-300 bg-gray-50 shadow-sm" wire:loading.remove wire:target="searchUser">
             <div class="flex items-start gap-3">
@@ -62,6 +68,7 @@
                         }}
                     </p>
 
+                    {{-- Muestra el nombre si el objeto $user existe --}}
                     @if($user)
                         <span class="text-sm text-gray-600 mt-1">
                             Nombre: <strong>{{ $user->first_name }} {{ $user->paternal_surname }}</strong>
@@ -70,8 +77,10 @@
                 </div>
             </div>
         </div>
+        
         <hr>
-        {{-- user form  --}}
+
+        {{-- Formulario de Datos del Usuario: se llena automáticamente si el usuario existe o se vacía si es nuevo --}}
         <form class="space-y-5 mt-3" wire:loading.remove wire:target="searchUser" wire:submit='sendInvitation' novalidate>
             <div class="grop-columns-2">
                 <div class="container-v">
@@ -99,6 +108,7 @@
                     </div>
                 </div>
             </div>
+
             <div class="grop-columns-2">
                 <div class="container-v">
                     <div class="group-form-v">
@@ -125,6 +135,7 @@
                     </div>
                 </div>
             </div>
+
             <div class="grop-columns-2">
                 <div class="container-v">
                     <div class="group-form-v">
@@ -151,13 +162,16 @@
                     </div>
                 </div>
             </div>
+
             <hr/>
+
             <div>
                 @if (session()->has('error'))
                     <x-toast.error-toast :message="session('error')"/>
                     <hr/>
                 @endif
             </div>
+
             <div class="justify-between flex w-full">
                 <a href="{{ url()->previous() }}" class="button btn-secondary">
                     Cancelar
@@ -172,4 +186,4 @@
             </div>
         </form>
     @endif
-</div>
+</section>

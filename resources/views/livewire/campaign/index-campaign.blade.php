@@ -1,41 +1,75 @@
 <section class="dashboard__main__section">
+    
     <div class="breadcrumbs">
         Campañas
     </div>
+
     <article class="dashboard__main__section__article">
         <div class="flex justify-end">
-            <button type="button" class="btn-primary" wire:click='addCampaign'><x-icons.add-fill/> Agregar Campaña</button>
+            <button type="button" class="btn-primary" wire:click="addCampaign">
+                <x-icons.add-fill/> Agregar Campaña
+            </button>
         </div>
+
+        {{-- Mensaje de éxito --}}
         @if (session()->has('success'))
             <x-toast.success-toast :message="session('success')"/>
         @endif
+
         <ul class="list-horizontal wrap-primary">
-            @foreach ($campaigns as $campaign)
+            
+            {{-- Si no hay campañas --}}
+            @forelse ($campaigns as $campaign)
                 <li>
-                    <a href="javascript:void(0)">
+                    <div>
                         <h3>{{ $campaign->name }}</h3>
-                        <h4 class="mt-2">{{$campaign->position}}</h4>
+                        <h4 class="mt-2">{{ $campaign->position }}</h4>
                         <hr>
+                        
                         <p>Coordinadores</p>
-                        @foreach ($campaign->foreign_users as $user)
+
+                        {{-- Evita error si viene null --}}
+                        @forelse ($campaign->foreign_users ?? [] as $user)
                             <h5>{{ $user->fullName }}</h5>
-                        @endforeach
-                    </a>
+                        @empty
+                            <h5 class="text-gray-400">Sin coordinadores</h5>
+                        @endforelse
+                    </div>
+
                     <div class="container-h">
-                        <a href="" class="button btn-secundary">
-                            ingresar <x-icons.right-fill/>
+                        {{-- IMPORTANTE: cambia esta ruta según tu lógica --}}
+                        <a href="{{ route('supporter.index', $campaign->code) }}">
+                            Ingresar <x-icons.right-fill/>
                         </a>
-                        <button type="button" class="btn-secundary" wire:click='editCampaign({{ $campaign->id }})'>
+
+                        <button 
+                            type="button" 
+                            class="btn-secundary" 
+                            wire:click="editCampaign({{ $campaign->id }})"
+                        >
                             <x-icons.edit-2-fill/>
                         </button>
                     </div>
                 </li>
-            @endforeach
+
+            @empty
+                <li>
+                    <p class="text-center text-gray-400">
+                        No hay campañas registradas
+                    </p>
+                </li>
+            @endforelse
+
         </ul>
-        <div class="">
-           {{ $campaigns->links() }}
+
+        <div>
+            {{ $campaigns->links() }}
         </div>
+
     </article>
-    <livewire:campaign.add-campaign-modal/>
-    <livewire:campaign.edit-campaign-modal/>
+
+    {{-- Modales --}}
+    <livewire:campaign.add-campaign-modal />
+    <livewire:campaign.edit-campaign-modal />
+
 </section>
