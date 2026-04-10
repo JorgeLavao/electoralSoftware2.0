@@ -1,4 +1,9 @@
 FROM node:20-alpine
+
 WORKDIR /var/www/html
-# El install se hace en el entry (command) para que siempre quede en sync en dev
-EXPOSE 5173
+
+COPY docker/node/entrypoint-dev.sh /usr/local/bin/node-entrypoint-dev
+RUN chmod +x /usr/local/bin/node-entrypoint-dev
+
+ENTRYPOINT ["node-entrypoint-dev"]
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]

@@ -16,7 +16,7 @@
             <x-toast.success-toast :message="session('success')"/>
         @endif
 
-        <ul class="list-horizontal wrap-primary">
+        <ul class="">
             
             {{-- Si no hay campañas --}}
             @forelse ($campaigns as $campaign)

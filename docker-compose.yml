@@ -1,22 +1,23 @@
-version: "3.9"
-
 services:
   app:
     build:
-      context: ./docker/php
+      context: .
+      dockerfile: docker/php/Dockerfile
     container_name: laravel-app
     working_dir: /var/www/html
     volumes:
       - ./:/var/www/html
+      - vendor_data:/var/www/html/vendor
     env_file:
       - ./.env
-    ports:
-      - "5173:5173"
+    environment:
+      BOOTSTRAP_COMPOSER: "1"
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
-  # Nginx (servidor web)
   nginx:
     image: nginx:alpine
     container_name: laravel-nginx
@@ -28,7 +29,23 @@ services:
     depends_on:
       - app
 
-  # MySQL
+  vite:
+    build:
+      context: .
+      dockerfile: docker/node/Dockerfile
+    container_name: laravel-vite
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html
+      - node_modules_data:/var/www/html/node_modules
+    env_file:
+      - ./.env
+    ports:
+      - "5173:5173"
+    depends_on:
+      app:
+        condition: service_started
+
   db:
     image: mysql:8.0
     container_name: laravel-db
@@ -42,8 +59,13 @@ services:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
 
-  # Redis
   redis:
     image: redis:7-alpine
     container_name: laravel-redis
@@ -53,20 +75,31 @@ services:
     volumes:
       - redis_data:/data
     command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
 
-  # Worker de colas (Queue)
   queue:
     build:
-      context: ./docker/php
+      context: .
+      dockerfile: docker/php/Dockerfile
     container_name: laravel-queue
     working_dir: /var/www/html
     volumes:
       - ./:/var/www/html
+      - vendor_data:/var/www/html/vendor
     env_file:
       - ./.env
+    environment:
+      BOOTSTRAP_COMPOSER: "0"
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     command: php artisan queue:work --sleep=1 --tries=3 --timeout=90
 
   phpmyadmin:
@@ -75,12 +108,14 @@ services:
     ports:
       - "8080:80"
     environment:
-      - PMA_HOST=db
-      - PMA_USER=laravel
-      - PMA_PASSWORD=laravel
+      PMA_HOST: db
+      PMA_USER: laravel
+      PMA_PASSWORD: laravel
     depends_on:
       - db
 
 volumes:
   mysql_data:
   redis_data:
+  vendor_data:
+  node_modules_data:

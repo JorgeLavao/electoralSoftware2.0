@@ -8,6 +8,8 @@ use Carbon\Carbon;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
 use Livewire\Component;
+use Illuminate\Support\Facades\DB;
+
 
 #[Layout('components.layouts.app')]
 class IndexList extends Component
@@ -16,26 +18,32 @@ class IndexList extends Component
     public $end_date;
     public $searchName;
     public $campaign;
+    public $openListId = null;
+    public $listUsers = [];
 
-    public function mount(Campaign $campaign){
+    public function mount(Campaign $campaign)
+    {
         $this->campaign = $campaign;
     }
 
-    public function inactiveList($list_id){
+    public function inactiveList($list_id)
+    {
         $campaignCode = $this->campaign->code;
         CampaignList::where('id', $list_id)->update(['status' => 0]);
         session()->flash('success', 'Listado Actualizado correctamente');
         $this->redirectIntended(default: route('list.index', $campaignCode, absolute: false), navigate: true);
     }
 
-    public function activeList($list_id){
+    public function activeList($list_id)
+    {
         $campaignCode = $this->campaign->code;
         CampaignList::where('id', $list_id)->update(['status' => 1]);
         session()->flash('success', 'Listado Actualizado correctamente');
         $this->redirectIntended(default: route('list.index', $campaignCode, absolute: false), navigate: true);
     }
 
-    public function confirmDelete(int $id){
+    public function confirmDelete(int $id)
+    {
         $this->dispatch('alert-confirm', [
             'title' => '¿Estás seguro?',
             'text' => 'Se eliminará el listado permanentemente',
@@ -58,20 +66,38 @@ class IndexList extends Component
         ]);
     }
 
-    public function render(){
+    public function toggleList($listId)
+    {
+        if ($this->openListId === $listId) {
+            $this->openListId = null;
+            $this->listUsers = [];
+            return;
+        }
+
+        $this->openListId = $listId;
+
+        $this->listUsers = DB::table('list_user')
+            ->join('users', 'users.id', '=', 'list_user.user_id')
+            ->where('list_user.list_id', $listId)
+            ->select('users.*')
+            ->get();
+    }
+
+    public function render()
+    {
         $lists = $this->campaign->foreign_lists()
-                    ->when($this->searchName, function ($q) {
-                        $q->where('name', 'like', '%' . $this->searchName . '%');
-                    })->when($this->start_date && $this->end_date, function ($q) {
-                        $q->whereBetween('created_at', [
-                            Carbon::parse($this->start_date)->startOfDay(),
-                            Carbon::parse($this->end_date)->endOfDay(),
-                        ]);
-                    })->when($this->start_date && ! $this->end_date, function ($q) {
-                        $q->where('created_at', '>=', Carbon::parse($this->start_date)->startOfDay());
-                    })->when(! $this->start_date && $this->end_date, function ($q) {
-                        $q->where('created_at', '<=', Carbon::parse($this->end_date)->endOfDay());
-                    })->latest()->paginate(6);
+            ->when($this->searchName, function ($q) {
+                $q->where('name', 'like', '%' . $this->searchName . '%');
+            })->when($this->start_date && $this->end_date, function ($q) {
+                $q->whereBetween('created_at', [
+                    Carbon::parse($this->start_date)->startOfDay(),
+                    Carbon::parse($this->end_date)->endOfDay(),
+                ]);
+            })->when($this->start_date && ! $this->end_date, function ($q) {
+                $q->where('created_at', '>=', Carbon::parse($this->start_date)->startOfDay());
+            })->when(! $this->start_date && $this->end_date, function ($q) {
+                $q->where('created_at', '<=', Carbon::parse($this->end_date)->endOfDay());
+            })->latest()->paginate(6);
         return view('livewire.list.index-list', ['lists' => $lists]);
     }
 }
