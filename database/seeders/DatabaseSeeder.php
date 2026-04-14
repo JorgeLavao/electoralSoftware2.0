@@ -16,6 +16,6 @@ class DatabaseSeeder extends Seeder
         $this->call([GeederSeeder::class]);
         $this->call(AgeRangeSeeder::class);
         $this->call(OcupationSeeders::class);
-        $this->call(RolesAndPermissionSeeder::class);
+        $this->call(RolesAndPermissionsSeeder::class);
     }
 }

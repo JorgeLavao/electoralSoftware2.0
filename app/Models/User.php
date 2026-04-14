@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Notifications\CustomResetPassword;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
@@ -31,6 +32,7 @@ class User extends Authenticatable
         'paternal_surname',
         'maternal_surname',
         'current_campaign',
+        'is_super_admin',
         'celphone',
         'email',
         'password',
@@ -57,7 +59,8 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            'is_super_admin'    => 'boolean',
+            'password'          => 'hashed',
         ];
     }
 
@@ -101,5 +104,18 @@ class User extends Authenticatable
 
     public function foreign_lists(){
         return $this->belongsToMany(CampaignList::class, 'list_user', 'user_id', 'list_id');
+    }
+
+    public function platform_permissions(): BelongsToMany
+    {
+        return $this->belongsToMany(PlatformPermission::class, 'platform_permission_user')->withTimestamps();
+    }
+
+    public function hasPlatformPermission(string $permission): bool
+    {
+        if ($this->is_super_admin) {
+            return true;
+        }
+        return $this->platform_permissions()->where('name', $permission)->exists();
     }
 }
