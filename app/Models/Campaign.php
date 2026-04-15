@@ -21,7 +21,13 @@ class Campaign extends Model
 
     public function foreign_users(){
         return $this->belongsToMany(User::class, 'campaign_user', 'campaign_id', 'user_id')
-            ->withPivot('validate')
+            ->withPivot('reffer_by', 'approach', 'validate')
+            ->withTimestamps();
+    }
+
+    public function staff_users(){
+        return $this->belongsToMany(User::class, 'campaign_staff', 'campaign_id', 'user_id')
+            ->withPivot('role', 'status')
             ->withTimestamps();
     }
 

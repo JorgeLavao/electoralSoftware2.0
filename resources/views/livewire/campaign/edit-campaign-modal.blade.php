@@ -126,7 +126,7 @@
 
                         <div class="container-v">
                             {{-- Pasa los IDs de usuario actuales al componente de búsqueda --}}
-                            <livewire:components.search-users :userIds="$user_ids"/>
+                            <livewire:components.search-users :userIds="$user_ids" :allowRemoval="auth()->user()->can('removeCampaignMembers', $campaign)"/>
                             <div>
                                 @error('user_ids')
                                     <x-toast.error-toast :message="$message"/>

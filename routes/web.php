@@ -1,6 +1,8 @@
 <?php
 
-use App\Exports\PersonasExport;
+use App\Exports\ListUsersExport;
+use App\Models\Campaign;
+use App\Models\CampaignList;
 use App\Http\Controllers\Users\SearchUserController;
 use App\Livewire\Campaign\AcceptCampaign;
 use App\Livewire\Campaign\AddSupporter;
@@ -17,6 +19,7 @@ use App\Livewire\Settings\TwoFactor;
 use App\Livewire\Supporters\ImportSupporter;
 use App\Livewire\Supporters\IndexSupporters;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Gate;
 use Laravel\Fortify\Features;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -71,6 +74,14 @@ Route::get('campanias/{campaign:code}/punto-votacion/', IndexPoint::class)->name
     Route::get('campanias/{campaign:code}/listados/',               IndexList::class)->name('list.index');
     Route::get('campanias/{campaign:code}/listados/crear',          CreateList::class)->name('list.create');
     Route::get('campanias/{campaign:code}/listados/{list}/editar',  EditList::class)->name('list.edit');
+    Route::get('campanias/{campaign:code}/listados/{list}/exportar', function (Campaign $campaign, CampaignList $list) {
+        abort_unless($list->campaign_id === $campaign->id, 404);
+        Gate::authorize('exportLists', $campaign);
+
+        $fileName = 'listado-' . $list->id . '-' . now()->format('Ymd_His') . '.xlsx';
+
+        return Excel::download(new ListUsersExport($list), $fileName);
+    })->name('list.export');
 
     Route::get('settings/two-factor', TwoFactor::class)
         ->middleware(

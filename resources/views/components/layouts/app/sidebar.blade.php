@@ -80,15 +80,23 @@
                                     <li><a href="">Noticias</a></li>
                                     <li><a href="{{ route('campaign.index') }}" class="{{ request()->routeIs('campaign.index') ? 'item__active' : '' }}">Gestionar Campañas</a></li>
                                     @if (session('current_campaign'))
+                                    @can('viewSupporters', session('current_campaign'))
                                     <li><a href="{{ route('supporter.index', session('current_campaign')->code) }}" class="{{ request()->routeIs('supporter.*') ? 'item__active' : '' }}">Simpatizantes</a></li>
+                                    @endcan
+                                    @can('viewLists', session('current_campaign'))
                                     <li><a href="{{ route('list.index', session('current_campaign')->code) }}" class="{{ request()->routeIs('list.*') ? 'item__active' : '' }}">Listados</a></li>
+                                    @endcan
+                                    @can('referSupporters', session('current_campaign'))
                                     <li><a href="{{ route('campaign.add-supporter', session('current_campaign')->code) }}" class="{{ request()->routeIs('campaign.add-supporter') ? 'item__active' : '' }}">Referir Simpatizante <span class="iconify" data-icon="mingcute:right-fill"></span></a></li>
+                                    @endcan
                                     @endif
                                 </ul>
                             </nav>
                             @if (session('current_campaign'))
                             <div class="dashboard__main__aside--vote">
+                                @can('viewVotationPoint', session('current_campaign'))
                                 <a href="{{ route('point.index', session('current_campaign')->code) }}" class="item__accent"><span class="iconify" data-icon="mdi:vote"></span> Punto de Votación</a>
+                                @endcan
                             </div>
                             @endif
                             @livewire('components.campaign-select', ['mode' => 'mobile'])

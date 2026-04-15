@@ -2,6 +2,8 @@
 
 namespace App\Livewire\Point;
 
+use App\Models\Campaign;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use App\Models\User;
@@ -11,6 +13,8 @@ use Livewire\Attributes\On;
 #[Layout('components.layouts.app')]
 class IndexPoint extends Component
 {
+    use AuthorizesRequests;
+
     public $search = '';
     
     public $campaign;
@@ -26,6 +30,12 @@ class IndexPoint extends Component
     public $address;
     public $table;
 
+    public function mount(Campaign $campaign): void
+    {
+        $this->authorize('viewVotationPoint', $campaign);
+        $this->campaign = $campaign;
+    }
+
     #[On('location-updated')]
     public function setValues($department, $municipality)
     {
@@ -40,6 +50,8 @@ class IndexPoint extends Component
 
     public function searchUser()
     {
+        $this->authorize('viewVotationPoint', $this->campaign);
+
         $this->reset([
             'user',
             'notFound',
@@ -78,6 +90,8 @@ class IndexPoint extends Component
 
     public function save()
     {
+        $this->authorize('manageVotationPoint', $this->campaign);
+
         if (!$this->user) {
             session()->flash('error', 'Debe buscar un usuario primero');
             return;
@@ -123,6 +137,8 @@ class IndexPoint extends Component
 
     public function render()
     {
+        $this->authorize('viewVotationPoint', $this->campaign);
+
         return view('livewire.point.index-point');
     }
 }

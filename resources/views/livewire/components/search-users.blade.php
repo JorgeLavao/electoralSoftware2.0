@@ -9,6 +9,7 @@
             <select data-search-users multiple class="form-select clear"></select>
         </div>
     </div>
+
     @script
         <script>
             (function () {
@@ -18,9 +19,10 @@
                 if (select.tomselect) {
                     select.tomselect.destroy();
                 }
+
                 select.tomselect = new TomSelect(select, {
                     maxItems: null,
-                    plugins: ['remove_button'],
+                    plugins: @js($allowRemoval ? ['remove_button'] : []),
                     placeholder: 'Busca y selecciona usuarios…',
                     valueField: 'id',
                     labelField: 'text',
@@ -30,6 +32,7 @@
                     create: false,
                     load: function (query, callback) {
                         if (!query.length) return callback();
+
                         axios.get('/api/buscar-usuarios', {
                             params: { q: query }
                         })
@@ -38,17 +41,18 @@
                         })
                         .catch(() => callback());
                     },
-                    // Evento hacia Livewire (escúchalo en el componente padre)
                     onItemAdd: function (value) {
                         $wire.$dispatch('user-added', { userId: value });
                     },
+                    @if ($allowRemoval)
                     onItemRemove: function (value) {
                         $wire.$dispatch('user-removed', { userId: value });
                     },
+                    @endif
                 });
+
                 select.tomselect.setValue(@js($userIds));
             })();
         </script>
     @endscript
 </div>
-
