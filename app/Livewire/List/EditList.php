@@ -22,18 +22,21 @@ class EditList extends Component
     public $searchInput;
     public $searchTerm;
 
-    public function mount(Campaign $campaign, CampaignList $list){
+    public function mount(Campaign $campaign, CampaignList $list)
+    {
         $this->list = $list;
         $this->name = $list->name;
         $this->campaign = $campaign;
     }
 
-    public function search(){
+    public function search()
+    {
         $this->searchTerm = $this->searchInput;
         $this->resetPage();
     }
 
-    public function delUser($user_id){
+    public function delUser($user_id)
+    {
         if ($this->list->foreign_users()->count() <= 1) {
             session()->flash('error', 'El listado no puede quedar vacío');
             return;
@@ -42,25 +45,25 @@ class EditList extends Component
         $listCode       = $this->list->id;
         $this->list->foreign_users()->detach($user_id);
         session()->flash('success', 'Listado Actualizado correctamente');
-        $this->redirectIntended(default: route('list.edit',[$campaignCode, $listCode], absolute: false), navigate: true);
+        $this->redirectIntended(default: route('list.edit', [$campaignCode, $listCode], absolute: false), navigate: true);
     }
 
-    public function updateList(){
+    public function updateList()
+    {
         $this->validate();
         $campaignCode   = $this->campaign->code;
         $listCode       = $this->list->id;
         $this->list->update(['name' => $this->name]);
         session()->flash('success', 'Listado Actualizado correctamente');
-        $this->redirectIntended(default: route('list.edit',[$campaignCode, $listCode], absolute: false), navigate: true);
+        $this->redirectIntended(default: route('list.edit', [$campaignCode, $listCode], absolute: false), navigate: true);
     }
 
     public function render()
     {
-        $users = $this->campaign->foreign_users()
-                    ->whereIn('users.id',$this->list->foreign_users()->pluck('users.id'))
-                    ->when($this->searchTerm, function ($query) {
-                        $query->search($this->searchTerm);
-                    })->paginate();
+        $users = $this->list->foreign_users()
+            ->when($this->searchTerm, function ($query) {
+                $query->search($this->searchTerm);
+            })->paginate();
         return view('livewire.list.edit-list', ['users' => $users]);
     }
 }

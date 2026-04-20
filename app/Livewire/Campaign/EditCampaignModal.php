@@ -51,9 +51,10 @@ class EditCampaignModal extends Component
     #[Validate('required',          message: 'Debe seleccionar el administrador de la campaña.')]
     #[Validate('array',             message: 'Revisa la información e intentar nuevamente')]
     #[Validate('min:1',             message: 'Debe seleecionar al menos 1 administrador de la campaña')]
-    public Array $user_ids = [];
+    public array $user_ids = [];
 
-    public function rules(){
+    public function rules()
+    {
         return [
             'cpg_code' => [
                 Rule::unique('campaigns', 'code')->ignore($this->campaign->id ?? null),
@@ -61,14 +62,16 @@ class EditCampaignModal extends Component
         ];
     }
 
-    public function messages(){
+    public function messages()
+    {
         return [
             'cpg_code.unique'   => 'El código de la campaña ya está en uso.',
         ];
     }
 
     #[On('openEditModal')]
-    public function showModal(Campaign $campaign){
+    public function showModal(Campaign $campaign)
+    {
         $this->campaign     = $campaign;
         //seter input data
         $this->cpg_name     = $campaign->name;
@@ -90,35 +93,39 @@ class EditCampaignModal extends Component
     }
 
     #[On('user-added')]
-    public function onUserAdded($userId){
+    public function onUserAdded($userId)
+    {
         if ($userId && !in_array($userId, $this->user_ids)) {
             $this->user_ids[] = $userId;
         }
     }
 
     #[On('user-removed')]
-    public function onUserRemoved($userId){
+    public function onUserRemoved($userId)
+    {
         $this->user_ids = array_filter(
             $this->user_ids,
-            fn ($id) => $id != $userId
+            fn($id) => $id != $userId
         );
     }
 
-    public function saveCampaign(){
+    public function saveCampaign()
+    {
         $this->validate();
         try {
             $this->updateCampaign();
             $this->closeModal();
             session()->flash('success', 'La campaña se Actualizó exitosamente!');
             $this->redirectIntended(default: route('campaign.index', absolute: false), navigate: true);
-        }catch(\Throwable $e){
+        } catch (\Throwable $e) {
             session()->flash('error', 'Error al guardar la campaña. Revisa los datos e intenta nuevamente.');
             Log::error('Campaign creation failed', ['exception' => $e]);
         }
     }
 
-    protected function updateCampaign(){
-        return DB::transaction(function(){
+    protected function updateCampaign()
+    {
+        return DB::transaction(function () {
             $this->campaign->update([
                 'name'              => $this->cpg_name,
                 'candidate_name'    => $this->cand_name,
@@ -127,7 +134,7 @@ class EditCampaignModal extends Component
                 'start_date'        => $this->start_date,
                 'end_date'          => $this->end_date,
             ]);
-            $this->campaign->foreign_users()->syncWithoutDetaching($this->user_ids);
+            $this->campaign->foreign_users()->sync($this->user_ids);
             return $this->campaign;
         });
     }

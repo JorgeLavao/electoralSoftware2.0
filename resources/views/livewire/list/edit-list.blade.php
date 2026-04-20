@@ -51,7 +51,7 @@
                         placeholder="Digite el Nombre o Número de documento a Buscar">
                     <div class="items-end">
                         <button type="button" class="btn-primary !flex-nowrap" wire:click='search'>
-                            buscar <x-icons.search/>
+                            Buscar <x-icons.search/>
                         </button>
                     </div>
                 </div>

@@ -10,7 +10,11 @@
         <div class="dashboard__container">
             <header class="dashboard__header">
                 <div class="dashboard__header--logo">
-                    <h1>Smart<span class="text-primary">E</span>lect</h1>
+                    <a href="{{ route('dashboard') }}">
+                        <h1>
+                            Smart<span class="text-primary">E</span>lect
+                        </h1>
+                    </a>
                 </div>
                 <div class="dashboard__header--profile">
                     <h4 class="dashboard__header--profile--name">Hola! {{ Auth::user()->first_name }}</h4>
@@ -77,7 +81,7 @@
                             </div>
                             <nav>
                                 <ul class="lateral-menu">
-                                    <li><a href="">Noticias</a></li>
+                                    <li><a href="{{ route('dashboard') }}" class="{{ request()->routeIs('dashboard') ? 'item__active' : '' }}">Noticias</a></li>
                                     <li><a href="{{ route('campaign.index') }}" class="{{ request()->routeIs('campaign.index') ? 'item__active' : '' }}">Gestionar Campañas</a></li>
                                     @if (session('current_campaign'))
                                     <li><a href="{{ route('supporter.index', session('current_campaign')->code) }}" class="{{ request()->routeIs('supporter.*') ? 'item__active' : '' }}">Simpatizantes</a></li>

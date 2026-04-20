@@ -27,14 +27,14 @@
                         <form action="https://app.miclientela.com/notificaciones/change_status_all" method="POST" class="inline-flex">
                             <input type="hidden" name="_token" value="MqFaDCAQYD3AtpkiRVsHsTd9v8kHfZnq2JzWvfOQ">
                             <input type="hidden" name="_method" value="put">
-                            <button type="submit" class="small" aria-label="Close">
+                            <button type="submit" class="btn-primary" aria-label="Close">
                                 Marcar como leídos
                             </button>
                         </form>
                     </div>
                     <div class="w-full bg-white">
                         <div class="w-full max-w-md p-4">
-                            <p><strong>Sin notificaciones</strong><br>
+                            <p><strong>Sin notificaciones</strong>
                                 No hay notificaciones en este momento
                             </p>
                         </div>

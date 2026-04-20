@@ -18,10 +18,13 @@ use App\Livewire\Supporters\ImportSupporter;
 use App\Livewire\Supporters\IndexSupporters;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
+use App\Livewire\Dashboard;
 use Maatwebsite\Excel\Facades\Excel;
 
 
-Route::get('/', function () {return  redirect()->route('dashboard');})->name('home');
+Route::get('/', function () {
+    return  redirect()->route('dashboard');
+})->name('home');
 
 Route::view('dashboard', 'dashboard')
     ->middleware(['auth', 'verified', 'complete-info'])
@@ -36,6 +39,12 @@ Route::middleware(['auth', 'complete-info'])->group(function () {
     Route::get('settings/password', Password::class)->name('settings.password');
     Route::get('settings/appearance', Appearance::class)->name('settings.appearance');
 
+    // noticias
+    Route::get('/dashboard', function () {
+        return view('dashboard');
+    })->name('dashboard');
+
+
     // campañas
     Route::get('campanias', IndexCampaign::class)->name('campaign.index');
     Route::get('campanias/{campaign:code}/referir-simpatizante', AddSupporter::class)->name('campaign.add-supporter');
@@ -46,26 +55,32 @@ Route::middleware(['auth', 'complete-info'])->group(function () {
     Route::get('/download/plantilla-simpatizantes', function () {
         return response()->download(
             public_path('templates/Plantilla_Simpatizantes.xlsx')
-        );})->name('download.template.supporter');
-        
-function get_size_in_mb($size) {
-    $unit = strtoupper(substr($size, -1));
-    $value = (float) $size;
+        );
+    })->name('download.template.supporter');
 
-    switch ($unit) {
-        case 'G': return $value * 1024;
-        case 'M': return $value;
-        case 'K': return $value / 1024;
-        default: return $value / (1024 * 1024);
+    function get_size_in_mb($size)
+    {
+        $unit = strtoupper(substr($size, -1));
+        $value = (float) $size;
+
+        switch ($unit) {
+            case 'G':
+                return $value * 1024;
+            case 'M':
+                return $value;
+            case 'K':
+                return $value / 1024;
+            default:
+                return $value / (1024 * 1024);
+        }
     }
-}
 
 
-//Punto de Votación
-Route::get('campanias/{campaign:code}/punto-votacion/', IndexPoint::class)->name('point.index');
-//     Route::get('/php-info', function() {
-//     phpinfo();
-// });
+    //Punto de Votación
+    Route::get('campanias/{campaign:code}/punto-votacion/', IndexPoint::class)->name('point.index');
+    //     Route::get('/php-info', function() {
+    //     phpinfo();
+    // });
 
     // listados
     Route::get('campanias/{campaign:code}/listados/',               IndexList::class)->name('list.index');
@@ -88,4 +103,4 @@ Route::get('/invitaciones/aceptar/{invitation:token}', AcceptCampaign::class)->n
 
 
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';

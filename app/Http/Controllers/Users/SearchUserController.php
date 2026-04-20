@@ -23,9 +23,9 @@ class SearchUserController extends Controller
                 $normalized = preg_replace('/\s+/', ' ', $search);
 
                 $q->where('first_name', 'like', "%{$search}%")
-                  ->orWhere('middle_name', 'like', "%{$search}%")
-                  ->orWhere('paternal_surname', 'like', "%{$search}%")
-                  ->orWhere('maternal_surname', 'like', "%{$search}%");
+                    ->orWhere('middle_name', 'like', "%{$search}%")
+                    ->orWhere('paternal_surname', 'like', "%{$search}%")
+                    ->orWhere('maternal_surname', 'like', "%{$search}%");
                 // Buscar por nombre completo concatenado
                 $q->orWhereRaw(
                     "CONCAT_WS(' ', first_name, middle_name, paternal_surname, maternal_surname) LIKE ?",
