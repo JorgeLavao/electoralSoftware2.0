@@ -16,7 +16,10 @@ class CampaignSelect extends Component
         $campaign   = session('current_campaign');
         $this->campaign_selected = $campaign->code ?? null;
         $this->mode         = $mode;
-        $this->campaigns    = Auth::user()->foreign_campaings()->where('status', '1')->get();
+        $this->campaigns    = Auth::user()->foreign_campaings()
+            ->where('campaigns.status', '1')
+            ->wherePivot('status', true)
+            ->get();
     }
 
     public function selectCampaign($campaignCode){

@@ -5,16 +5,22 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 
 use App\Notifications\CustomResetPassword;
+use App\Models\Campaign;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
+use Spatie\Permission\Traits\HasRoles;
+
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, TwoFactorAuthenticatable;
+    use HasFactory, Notifiable, TwoFactorAuthenticatable, HasRoles;
 
     /**
      * The attributes that are mass assignable.
@@ -29,6 +35,7 @@ class User extends Authenticatable
         'paternal_surname',
         'maternal_surname',
         'current_campaign',
+        'is_super_admin',
         'celphone',
         'email',
         'password',
@@ -55,7 +62,8 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            'is_super_admin'    => 'boolean',
+            'password'          => 'hashed',
         ];
     }
 
@@ -94,10 +102,125 @@ class User extends Authenticatable
     }
 
     public function foreign_campaings(){
-        return $this->belongsToMany(Campaign::class)->withPivot('validate');
+        return $this->belongsToMany(Campaign::class, 'campaign_staff', 'user_id', 'campaign_id')
+            ->withPivot('role', 'status')
+            ->withTimestamps();
+    }
+
+    public function supporter_campaigns(){
+        return $this->belongsToMany(Campaign::class)->withPivot('reffer_by', 'approach', 'validate');
     }
 
     public function foreign_lists(){
         return $this->belongsToMany(CampaignList::class, 'list_user', 'user_id', 'list_id');
+    }
+
+    public function foreign_groups()
+    {
+        return $this->belongsToMany(Group::class, 'group_user', 'user_id', 'group_id')
+            ->withPivot('role', 'notes')
+            ->withTimestamps();
+    }
+
+    public function platform_permissions(): BelongsToMany
+    {
+        return $this->belongsToMany(PlatformPermission::class, 'platform_permission_user')->withTimestamps();
+    }
+
+    public function hasPlatformPermission(string $permission): bool
+    {
+        if ($this->is_super_admin) {
+            return true;
+        }
+        return $this->platform_permissions()->where('name', $permission)->exists();
+    }
+
+    public function belongsToCampaign(Campaign|int $campaign): bool
+    {
+        $campaignId = $campaign instanceof Campaign ? $campaign->id : $campaign;
+
+        return $this->foreign_campaings()
+            ->where('campaigns.id', $campaignId)
+            ->wherePivot('status', true)
+            ->exists();
+    }
+
+    public function hasCampaignPermission(string $permission, Campaign|int $campaign): bool
+    {
+        if ($this->is_super_admin) {
+            return true;
+        }
+
+        $campaignId = $campaign instanceof Campaign ? $campaign->id : $campaign;
+
+        if (! $this->belongsToCampaign($campaignId)) {
+            return false;
+        }
+
+        $previousTeamId = getPermissionsTeamId();
+
+        app(PermissionRegistrar::class)->setPermissionsTeamId($campaignId);
+        $this->unsetRelation('roles')->unsetRelation('permissions');
+
+        try {
+            return $this->can($permission);
+        } finally {
+            app(PermissionRegistrar::class)->setPermissionsTeamId($previousTeamId);
+            $this->unsetRelation('roles')->unsetRelation('permissions');
+        }
+    }
+
+    public function assignCampaignRole(string $role, Campaign|int $campaign): void
+    {
+        $campaignId = $campaign instanceof Campaign ? $campaign->id : $campaign;
+        $previousTeamId = getPermissionsTeamId();
+
+        app(PermissionRegistrar::class)->setPermissionsTeamId($campaignId);
+        $this->unsetRelation('roles')->unsetRelation('permissions');
+
+        try {
+            $roleModel = Role::query()
+                ->where('name', $role)
+                ->where('guard_name', 'web')
+                ->where(function ($query) use ($campaignId) {
+                    $query->whereNull('campaign_id')
+                        ->orWhere('campaign_id', $campaignId);
+                })
+                ->first();
+
+            if ($roleModel) {
+                $this->assignRole($roleModel);
+            }
+        } finally {
+            app(PermissionRegistrar::class)->setPermissionsTeamId($previousTeamId);
+            $this->unsetRelation('roles')->unsetRelation('permissions');
+        }
+    }
+
+    public function removeCampaignRole(string $role, Campaign|int $campaign): void
+    {
+        $campaignId = $campaign instanceof Campaign ? $campaign->id : $campaign;
+        $previousTeamId = getPermissionsTeamId();
+
+        app(PermissionRegistrar::class)->setPermissionsTeamId($campaignId);
+        $this->unsetRelation('roles')->unsetRelation('permissions');
+
+        try {
+            $roleModel = Role::query()
+                ->where('name', $role)
+                ->where('guard_name', 'web')
+                ->where(function ($query) use ($campaignId) {
+                    $query->whereNull('campaign_id')
+                        ->orWhere('campaign_id', $campaignId);
+                })
+                ->first();
+
+            if ($roleModel) {
+                $this->removeRole($roleModel);
+            }
+        } finally {
+            app(PermissionRegistrar::class)->setPermissionsTeamId($previousTeamId);
+            $this->unsetRelation('roles')->unsetRelation('permissions');
+        }
     }
 }

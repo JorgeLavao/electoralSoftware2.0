@@ -3,6 +3,7 @@
 namespace App\Livewire\Campaign;
 
 use App\Models\Campaign;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\On;
@@ -11,6 +12,10 @@ use Livewire\Component;
 
 class AddCampaignModal extends Component
 {
+    use AuthorizesRequests;
+
+    private const COORDINATOR_ROLE = 'Coordinador de Campaña';
+
     public $showModal = false;
 
     #[Validate('required',  message: 'Debe ingresar el nombre de la campaña.')]
@@ -54,6 +59,7 @@ class AddCampaignModal extends Component
     #[On('openCampaignModal')]
     public function openModal(): void
     {
+        $this->authorize('create', Campaign::class);
         $this->showModal = true;
     }
 
@@ -73,13 +79,14 @@ class AddCampaignModal extends Component
 
     #[On('user-removed')]
     public function onUserRemoved($userId){
-        $this->user_ids = array_filter(
+        $this->user_ids = array_values(array_filter(
             $this->user_ids,
             fn ($id) => $id != $userId
-        );
+        ));
     }
 
     public function saveCampaign(){
+        $this->authorize('create', Campaign::class);
         $this->validate();
         try {
             $this->createCampaign();
@@ -103,7 +110,16 @@ class AddCampaignModal extends Component
                 'end_date'          => $this->end_date,
                 'status'            => '1',
             ]);
-            $campaign->foreign_users()->attach($this->user_ids, ['approach' => 1, 'validate' => 1]);
+            $campaign->staff_users()->attach(
+                collect($this->user_ids)->mapWithKeys(fn ($userId) => [
+                    $userId => ['role' => 'coordinator', 'status' => true],
+                ])->all()
+            );
+
+            foreach ($campaign->staff_users as $user) {
+                $user->assignCampaignRole(self::COORDINATOR_ROLE, $campaign);
+            }
+
             return $campaign;
         });
     }
@@ -111,7 +127,7 @@ class AddCampaignModal extends Component
     // Cerrar modal con tecla Escape
     public function onEscape(): void
     {
-        $this->cerrarModal();
+        $this->closeModal();
     }
 
     public function render()

@@ -10,6 +10,7 @@ class SearchUsers extends Component
 
     public array $userIds = [];
     public array $userOptions  = [];
+    public bool $allowRemoval = true;
 
     public function mount()
     {

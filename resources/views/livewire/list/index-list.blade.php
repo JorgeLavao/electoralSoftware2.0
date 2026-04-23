@@ -1,103 +1,161 @@
 <section class="dashboard__main__section">
-   <div class="breadcrumbs">
+    <div class="breadcrumbs">
         Listados
     </div>
     <article class="dashboard__main__section__article mb-24">
         @if (session()->has('success'))
-            <div>
-                <x-toast.success-toast :message="session('success')"/>
-            </div>
+        <div>
+            <x-toast.success-toast :message="session('success')" />
+        </div>
         @endif
         <div class="relative">
-            <div wire:loading  class="absolute inset-0 z-20 cursor-progress"></div>
+            <div wire:loading class="absolute inset-0 z-20 cursor-progress"></div>
+
+            @can('createLists', $campaign)
             <div class="flex justify-end md:mb-4">
-                <a href="{{ route('list.create', session('current_campaign')->code) }}" class="button btn-primary" wire:navigate> <x-icons.add-fill/> Agregar Listado </a>
+                <a href="{{ route('list.create', session('current_campaign')->code) }}" class="button btn-primary" wire:navigate>
+                    <x-icons.add-fill /> Agregar Listado
+                </a>
             </div>
-            <div class="bg-gray-50 container-v p-4 !rounded-lg">
+            @endcan
+
+            <br>
+
+            <div class="area-2 container-v">
                 <h4>Buscar</h4>
                 <div class="grop-columns-3 container-v">
                     <div class="group-form-v">
                         <label for="name">Por Nombre</label>
-                        <input type="text" id="name" wire:model='searchName' placeholder="Digite el Nombre a Buscar" required>
+                        <input type="text" id="name" wire:model="searchName" placeholder="Digite el Nombre a Buscar">
                     </div>
+
                     <div class="group-form-v">
-                        <label for="">Desde</label>
-                        <input type="text" id="start_date" wire:model='start_date' placeholder="Seleccione la fecha de inicio" required x-data
-                            x-ref="startDate" x-init="
-                                $nextTick(() => {
-                                    flatpickr($refs.startDate, {
-                                    dateFormat: 'Y-m-d',
-                                    locale: 'es',
-                                    maxDate: 'today',
-                                    onChange: function(selectedDates, dateStr, instance) {
-                                        $wire.start_date = dateStr;
-                                        const endDate = document.getElementById('end_date');
-                                        if (endDate && endDate._flatpickr) {
-                                            endDate._flatpickr.set('minDate', dateStr);
-                                        }
-                                    }
-                                    });
-                            })">
+                        <label for="start_date">Desde</label>
+                        <input type="text" id="start_date" wire:model="start_date" placeholder="Seleccione la fecha de inicio">
                     </div>
+
                     <div class="group-form-v">
-                        <label for="">Hasta</label>
-                        <input type="text" id="end_date"wire:model='end_date' placeholder="Seleccione la fecha de finalización" required x-data
-                            x-ref="endDate" x-init="
-                                $nextTick(() => {
-                                    flatpickr($refs.endDate, {
-                                        dateFormat: 'Y-m-d',
-                                        minDate: $wire.start_date || '',
-                                        maxDate: 'today',
-                                        locale: 'es',
-                                        onChange: function(selectedDates, dateStr, instance) {
-                                            $wire.end_date = dateStr;
-                                        }
-                                    });
-                                })">
+                        <label for="end_date">Hasta</label>
+                        <input type="text" id="end_date" wire:model="end_date" placeholder="Seleccione la fecha de finalización">
                     </div>
                 </div>
+
                 <div class="flex justify-end">
-                    <button type="button" class="text-primary border-primary" wire:click="$refresh"> <x-icons.search/>Buscar</button>
-                </div>    
+                    <button type="button" class="text-primary border-primary" wire:click="$refresh">
+                        <x-icons.search /> Buscar
+                    </button>
+                </div>
             </div>
 
             <br>
-            {{-- lists --}}
+
             <ul class="list-vertical wrap-primary">
-                @foreach ($lists as $list)
-                    <li class="!overflow-visible">
-                        <div class="grid-9-3">
-                            <div class="container-v">
-                                <a href="{{ route('list.edit', [$campaign->code, $list->id]) }}">
-                                    <h3>{{ $list->created_at }} - {{ $list->name }}</h3>
-                                </a>
-                            </div>
-                            <div class="items-center flex !justify-end gap-2">
-                                <div class="tag">{{ $list->foreign_users()->count() }} integrantes</div>
-                                <div x-data="{ open: false }" class="relative">
-                                    <button @click="open = !open" type="button" class="clear text-primary">
-                                        <x-icons.more-vert/>
-                                    </button>
-                                    <div x-show="open" @click.outside="open = false"
-                                        class="absolute right-0 mt-2 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-                                        <ul class="py-2">
-                                            <li> <button type="button" class="clear text-primary"> <x-icons.file-download-line/> Excel </button> </li>
-                                            @if (!$list->status)
-                                                <li> <button type="button" class="clear text-primary" wire:click='activeList({{ $list->id }})'> <x-icons.eye/> Activar </button> </li>
-                                            @else
-                                                <li> <button type="button" class="clear text-primary" wire:click='inactiveList({{ $list->id }})'> <x-icons.eye-closed/> Inactivar </button> </li>
-                                            @endif
-                                            <li> <button type="button" class="clear text-primary" wire:click='confirmDelete({{ $list->id }})'> <x-icons.trash-outline/> Eliminar </button> </li>
-                                        </ul>
-                                    </div>
+                @forelse ($lists as $list)
+                <li class="mb-3 overflow-hidden rounded-xl border" wire:key="list-{{ $list->id }}">
+                    <div class="flex cursor-pointer items-center justify-between bg-white p-3 transition hover:bg-gray-50" wire:click="toggleList({{ $list->id }})">
+                        <div class="flex items-center gap-3">
+                            <span class="font-semibold text-gray-800">
+                                {{ $list->created_at->format('d/m/Y') }} - {{ $list->name }}
+                            </span>
+                        </div>
+
+                        <div class="flex items-center gap-3">
+                            <span class="rounded-full bg-gray-100 px-2 py-1 text-sm">
+                                {{ $list->foreign_users_count ?? $list->foreign_users()->count() }} integrantes
+                            </span>
+
+                            <span class="transition-transform duration-200 {{ $openListId === $list->id ? 'rotate-180' : '' }}">
+                                ▼
+                            </span>
+
+                            <div x-data="{ open: false }" class="relative">
+                                <button @click.stop="open = !open" type="button" class="rounded p-1 hover:bg-gray-200">
+                                    <x-icons.more-vert />
+                                </button>
+
+                                <div x-show="open" @click.outside="open = false" class="absolute right-0 z-10 mt-2 w-40 rounded-lg border bg-white shadow-lg">
+                                    <ul class="py-2 text-sm">
+                                        @can('exportLists', $campaign)
+                                        <li>
+                                            <button type="button" class="w-full px-3 py-2 text-left hover:bg-gray-100" wire:click.stop="exportList({{ $list->id }})">
+                                                Excel
+                                            </button>
+                                        </li>
+                                        @endcan
+
+                                        @can('updateLists', $campaign)
+                                        <li>
+                                            <a href="{{ route('list.edit', [$campaign->code, $list->id]) }}" class="block px-3 py-2 text-left hover:bg-gray-100" wire:navigate>
+                                                Editar
+                                            </a>
+                                        </li>
+
+                                        @if (! $list->status)
+                                        <li>
+                                            <button type="button" class="w-full px-3 py-2 text-left text-green-600 hover:bg-gray-100" wire:click.stop="activeList({{ $list->id }})">
+                                                Activar
+                                            </button>
+                                        </li>
+                                        @else
+                                        <li>
+                                            <button type="button" class="w-full px-3 py-2 text-left text-yellow-600 hover:bg-gray-100" wire:click.stop="inactiveList({{ $list->id }})">
+                                                Inactivar
+                                            </button>
+                                        </li>
+                                        @endif
+                                        @endcan
+
+                                        @can('deleteLists', $campaign)
+                                        <li>
+                                            <button type="button" class="w-full px-3 py-2 text-left text-red-500 hover:bg-red-50" wire:click.stop="confirmDelete({{ $list->id }})">
+                                                Eliminar
+                                            </button>
+                                        </li>
+                                        @endcan
+                                    </ul>
                                 </div>
                             </div>
                         </div>
-                    </li>
-                @endforeach
+                    </div>
+
+                    @if ($openListId === $list->id)
+                    <div class="border-t bg-gray-50 p-3">
+                        <h4 class="mb-2 font-semibold text-gray-700">Integrantes</h4>
+
+                        <div class="max-h-60 overflow-y-auto">
+                            @forelse ($listUsers as $user)
+                            <div class="flex items-center justify-between border-b py-2">
+                                <div>
+                                    <p class="font-medium">
+                                        {{ $user->first_name }} {{ $user->paternal_surname }}
+                                    </p>
+                                    <small class="text-gray-400">
+                                        {{ $user->document_number }}
+                                    </small>
+                                </div>
+
+                                <span class="text-sm text-gray-500">
+                                    {{ $user->celphone }}
+                                </span>
+                            </div>
+                            @empty
+                            <p class="py-3 text-center text-gray-400">
+                                Sin usuarios
+                            </p>
+                            @endforelse
+                        </div>
+                    </div>
+                    @endif
+                </li>
+                @empty
+                <li class="rounded-xl border bg-white p-4 text-center text-gray-500">
+                    No se encontraron listados registrados.
+                </li>
+                @endforelse
             </ul>
-            <div class="">
-               {{ $lists->links() }}
+
+            <div class="mt-4">
+                {{ $lists->links() }}
             </div>
         </div>
     </article>

@@ -1,6 +1,6 @@
 <section class="dashboard__main__section">
     <div class="breadcrumbs">
-        <a href="">Puesto de Votación</a> 
+        <a href="">Puesto de Votación</a>
     </div>
 
     <div class="container-v mb-4">
@@ -9,7 +9,6 @@
         @endif
     </div>
 
-    <!-- BUSCADOR -->
     <form wire:submit.prevent="searchUser">
         <div class="container-v">
             <div class="group-form-v">
@@ -38,23 +37,20 @@
 
     <hr class="my-4">
 
-    <!-- NO ENCONTRADO -->
     @if($notFound)
         <div class="mt-4 p-4 rounded-lg border border-red-300 bg-red-50 flex justify-between items-center">
             <span class="text-red-800 font-medium">
                 No está registrado en el sistema
             </span>
 
-            <a href="{{ route('campaign.add-supporter', $campaign) }}" class="btn-primary">
-    Registrar usuario
-</a>
-
-
-
+            @can('referSupporters', $campaign)
+                <a href="{{ route('campaign.add-supporter', $campaign) }}" class="btn-primary">
+                    Registrar usuario
+                </a>
+            @endcan
         </div>
     @endif
 
-    <!-- USUARIO -->
     @if($user)
         <div class="mt-4 p-4 rounded-lg border border-gray-300 bg-gray-50">
             <p class="font-semibold text-lg">Información del usuario</p>
@@ -63,14 +59,12 @@
             </p>
         </div>
 
-        <!-- FORMULARIO (CREAR / EDITAR) -->
         <div class="mt-6">
             <h3 class="text-lg font-semibold mb-4">
                 {{ $isComplete ? 'Editar información' : 'Completar información' }}
             </h3>
 
             <form wire:submit.prevent="save" class="space-y-5">
-
                 <livewire:components.location-selector />
 
                 @if (session()->has('error'))
@@ -111,5 +105,4 @@
             </form>
         </div>
     @endif
-
 </section>

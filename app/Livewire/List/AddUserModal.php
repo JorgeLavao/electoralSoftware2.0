@@ -2,6 +2,7 @@
 
 namespace App\Livewire\List;
 
+use App\Models\Campaign;
 use App\Models\CampaignList;
 use App\Models\User;
 use Livewire\Attributes\On;

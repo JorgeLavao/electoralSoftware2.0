@@ -67,9 +67,9 @@ class Register extends Component
             'document_type_id'  => $this->doc_type,
             'document_number'   => $this->doc_number,
             'first_name' => $this->first_name,
-            'middle_name' => $this->middle_name,
+            'middle_name' => $this->middle_name ?? null,
             'paternal_surname' => $this->paternal_surname,
-            'maternal_surname' => $this->maternal_surname,
+            'maternal_surname' => $this->maternal_surname ?? null,
             'celphone' => $this->celphone,
             'email' => $this->email,
             'password' => bcrypt($this->password),
@@ -107,9 +107,9 @@ class Register extends Component
         } elseif ($this->page == 2) {
             $this->validate([
                 'first_name'        => ['required', 'string', 'max:50'],
-                'middle_name'       => ['sometimes', 'string', 'max:50'],
+                'middle_name'       => ['sometimes', 'nullable', 'string', 'max:50'],
                 'paternal_surname'  => ['required', 'string', 'max:50'],
-                'maternal_surname'  => ['sometimes', 'string', 'max:50']
+                'maternal_surname'  => ['sometimes', 'nullable', 'string', 'max:50']
             ],[
                 '*.required' => 'Este campo es obligatorio.',
                 '*.string' => 'Este campo debe contener solo texto.',

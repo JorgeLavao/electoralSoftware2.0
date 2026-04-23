@@ -29,7 +29,7 @@
                                 <div class="profile-data__display">
                                     <ul>
                                         <li>
-                                            <a href="">
+                                            <a href="{{ route('profile.show') }}">
                                                 <span class="iconify" data-icon="mingcute:user-3-fill"><x-icons.user-3-fill /></span>
                                                 Mi Perfil
                                             </a>
@@ -81,18 +81,60 @@
                             </div>
                             <nav>
                                 <ul class="lateral-menu">
-                                    <li><a href="{{ route('dashboard') }}" class="{{ request()->routeIs('dashboard') ? 'item__active' : '' }}">Noticias</a></li>
-                                    <li><a href="{{ route('campaign.index') }}" class="{{ request()->routeIs('campaign.index') ? 'item__active' : '' }}">Gestionar Campañas</a></li>
+                                    <li>
+                                        <a href="{{ route('campaign.index') }}" class="{{ request()->routeIs('campaign.index') ? 'item__active' : '' }}">
+                                            Gestionar Campañas
+                                        </a>
+                                    </li>
+
+                                    <li>
+                                        <a href="{{ route('dashboard') }}" class="{{ request()->routeIs('dashboard') ? 'item__active' : '' }}">
+                                            Noticias
+                                        </a>
+                                    </li>
+
+
+                                    @if(Auth::user()->is_super_admin == 1)
+
                                     @if (session('current_campaign'))
-                                    <li><a href="{{ route('supporter.index', session('current_campaign')->code) }}" class="{{ request()->routeIs('supporter.*') ? 'item__active' : '' }}">Simpatizantes</a></li>
-                                    <li><a href="{{ route('list.index', session('current_campaign')->code) }}" class="{{ request()->routeIs('list.*') ? 'item__active' : '' }}">Listados</a></li>
-                                    <li><a href="{{ route('campaign.add-supporter', session('current_campaign')->code) }}" class="{{ request()->routeIs('campaign.add-supporter') ? 'item__active' : '' }}">Referir Simpatizante <span class="iconify" data-icon="mingcute:right-fill"></span></a></li>
+                                    <li>
+                                        <a href="{{ route('supporter.index', session('current_campaign')->code) }}"
+                                            class="{{ request()->routeIs('supporter.*') ? 'item__active' : '' }}">
+                                            Simpatizantes
+                                        </a>
+                                    </li>
+
+                                    <!-- <li>
+                                        <a href="{{ route('list.index', session('current_campaign')->code) }}"
+                                            class="{{ request()->routeIs('list.*') ? 'item__active' : '' }}">
+                                            Listados
+                                        </a>
+                                    </li> -->
+
+                                    <li>
+                                        <a href="{{ route('campaign.groups', session('current_campaign')->code) }}"
+                                            class="{{ request()->routeIs('campaign.groups*') ? 'item__active' : '' }}">
+                                            Grupos de la Campaña
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a href="{{ route('campaign.add-supporter', session('current_campaign')->code) }}"
+                                            class="{{ request()->routeIs('campaign.add-supporter') ? 'item__active' : '' }}">
+                                            Referir Simpatizante
+                                        </a>
+                                    </li>
+
+
+                                    @endif
+
                                     @endif
                                 </ul>
                             </nav>
                             @if (session('current_campaign'))
                             <div class="dashboard__main__aside--vote">
+                                @can('viewVotationPoint', session('current_campaign'))
                                 <a href="{{ route('point.index', session('current_campaign')->code) }}" class="item__accent"><span class="iconify" data-icon="mdi:vote"></span> Punto de Votación</a>
+                                @endcan
                             </div>
                             @endif
                             @livewire('components.campaign-select', ['mode' => 'mobile'])
