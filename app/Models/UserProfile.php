@@ -11,6 +11,9 @@ class UserProfile extends Model
 
     protected $fillable = [
         'user_id',
+        'birth_date',
+        'birth_day',
+        'birth_month',
         'gender_id',
         'age_range_id',
         'occupation_id',
@@ -25,12 +28,18 @@ class UserProfile extends Model
         'current_location'
     ];
 
+    protected $casts = [
+        'birth_date' => 'date',
+        'birth_day' => 'integer',
+        'birth_month' => 'integer',
+    ];
+
     public function foreign_gender(){
-        return $this->hasOne(Gender::class);
+        return $this->hasOne(Gender::class, 'id', 'gender_id');
     }
 
     public function foreign_occupations(){
-        return $this->hasMany(Occupation::class);
+        return $this->hasOne(Occupation::class, 'id', 'occupation_id');
     }
 
     public function foreign_user(){
@@ -38,6 +47,6 @@ class UserProfile extends Model
     }
 
     public function foreign_range_age(){
-        return $this->belongsTo(AgeRange::class);
+        return $this->belongsTo(AgeRange::class, 'age_range_id', 'id');
     }
 }

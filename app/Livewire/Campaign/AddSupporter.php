@@ -7,6 +7,7 @@ use App\Models\Campaign;
 use App\Models\DocumentType;
 use App\Models\Invitation;
 use App\Models\User;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -19,6 +20,8 @@ use Livewire\Component;
 #[Layout('components.layouts.app')]
 class AddSupporter extends Component
 {
+    use AuthorizesRequests;
+
     public $documents_type = [];
     public $user;
     public $campaign;
@@ -78,11 +81,13 @@ class AddSupporter extends Component
     }
 
     public function mount(Campaign $campaign){
+        $this->authorize('referSupporters', $campaign);
         $this->campaign       = $campaign;
         $this->documents_type = DocumentType::all();
     }
 
     public function searchUser(){
+        $this->authorize('referSupporters', $this->campaign);
         $this->showForm = false;
         $this->validateOnly('doc_type');
         $this->validateOnly('document_number');
@@ -106,6 +111,7 @@ class AddSupporter extends Component
     }
 
     public function sendInvitation(){
+        $this->authorize('referSupporters', $this->campaign);
         $this->validate();
         $this->resetValidation();
         //validate user campaign
@@ -157,5 +163,12 @@ class AddSupporter extends Component
         $invitation->save();
         //send email
         Mail::to($user->email)->send(new InviteToCampaign($this->campaign, $user->first_name, $invitation->token, $invitation->expires_at));
+    }
+
+    public function render()
+    {
+        $this->authorize('referSupporters', $this->campaign);
+
+        return view('livewire.campaign.add-supporter');
     }
 }

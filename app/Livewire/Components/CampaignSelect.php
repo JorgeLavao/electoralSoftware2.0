@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Components;
 
+use App\Models\Campaign;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 
@@ -16,7 +17,21 @@ class CampaignSelect extends Component
         $campaign   = session('current_campaign');
         $this->campaign_selected = $campaign->code ?? null;
         $this->mode         = $mode;
-        $this->campaigns    = Auth::user()->foreign_campaings()->where('status', '1')->get();
+        $user = Auth::user();
+
+        $this->campaigns = Campaign::query()
+            ->where('status', '1')
+            ->when(! $user->is_super_admin, function ($query) use ($user) {
+                $query->whereHas('staff_users', function ($staffQuery) use ($user) {
+                    $staffQuery->where('users.id', $user->id)
+                        ->where('campaign_staff.status', true);
+                })->orWhereHas('foreign_users', function ($supporterQuery) use ($user) {
+                    $supporterQuery->where('users.id', $user->id)
+                        ->where('campaign_user.validate', '!=', 2);
+                });
+            })
+            ->orderBy('name')
+            ->get();
     }
 
     public function selectCampaign($campaignCode){

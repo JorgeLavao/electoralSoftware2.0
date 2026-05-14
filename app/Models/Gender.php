@@ -10,9 +10,9 @@ class Gender extends Model
     use HasFactory;
 
     protected $fillable = [
+        'code',
         'name',
-        'abrev',
-        'ocupation'
+        'status',
     ];
     
 }

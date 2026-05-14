@@ -151,7 +151,7 @@ button {
 
 /* default */
 /* [type=button]:not(.btn-icon), [type=reset]:not(.btn-icon), [type=submit]:not(.btn-icon), a.button:not(.btn-icon), .sequence-links a:not(.btn-icon) { */
-[type=button]:not(.btn-icon):not(.pagination *),
+[type=button]:not(.btn-icon):not(.pagination *):not(.btn-paginate),
 [type=reset]:not(.btn-icon):not(.pagination *),
 [type=submit]:not(.btn-icon):not(.pagination *),
 a.button:not(.btn-icon):not(.pagination *),

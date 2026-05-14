@@ -21,7 +21,7 @@ return new class extends Migration
             $table->enum('zone', ['urbana', 'rural']);
             $table->json('department');
             $table->json('municipality');
-            $table->string('district_commune');
+            $table->string('district_commune')->nullable();
             $table->string('neighborhood_village_name');
             $table->decimal('latitude', 10, 8);
             $table->decimal('longitude', 11, 8);

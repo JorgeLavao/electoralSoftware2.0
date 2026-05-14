@@ -49,7 +49,8 @@ class AcceptCampaign extends Component
     public function acceptInvitation(){
         $this->campaign->foreign_users()->attach($this->invitation->user_id,
             ['reffer_by'    => $this->invitation->reffer_id,
-            'approach'     => 4]);
+            'validate'      => 0,
+            'approach'      => 4]);
         $this->invitation->update(['accepted_at' => now()]);
         $this->acepted = true;
     }

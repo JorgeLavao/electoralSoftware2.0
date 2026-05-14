@@ -1,22 +1,35 @@
 FROM php:8.3-fpm
 
-# Dependencias del sistema
-RUN apt-get update && apt-get install -y \
-    git unzip libpng-dev libonig-dev libxml2-dev libzip-dev libicu-dev \
-    libjpeg62-turbo-dev libfreetype6-dev libssl-dev \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+    unzip \
+    libpng-dev \
+    libonig-dev \
+    libxml2-dev \
+    libzip-dev \
+    libicu-dev \
+    libjpeg62-turbo-dev \
+    libfreetype6-dev \
+    libssl-dev \
+    autoconf \
+    g++ \
+    make \
+    pkg-config \
     && docker-php-ext-configure intl \
-    && docker-php-ext-install pdo pdo_mysql mbstring exif pcntl bcmath gd zip intl \
-    && rm -rf /var/lib/apt/lists/*
+    && docker-php-ext-install -j"$(nproc)" pdo pdo_mysql mbstring exif pcntl bcmath gd zip intl \
+    && pecl install redis \
+    && docker-php-ext-enable redis \
+    && apt-get purge -y --auto-remove autoconf g++ make pkg-config \
+    && rm -rf /var/lib/apt/lists/* /tmp/pear
 
-# Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# Configuración opcional de PHP
-RUN echo "memory_limit=512M" > /usr/local/etc/php/conf.d/memory-limit.ini \
- && echo "upload_max_filesize=64M" > /usr/local/etc/php/conf.d/uploads.ini \
- && echo "post_max_size=64M" > /usr/local/etc/php/conf.d/post.ini
-
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
-    && apt-get install -y nodejs
+RUN printf "memory_limit=512M\nupload_max_filesize=64M\npost_max_size=64M\n" > /usr/local/etc/php/conf.d/app.ini
 
 WORKDIR /var/www/html
+
+COPY docker/php/entrypoint-dev.sh /usr/local/bin/entrypoint-dev
+RUN chmod +x /usr/local/bin/entrypoint-dev
+
+ENTRYPOINT ["entrypoint-dev"]
+CMD ["php-fpm"]
