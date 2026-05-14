@@ -75,7 +75,7 @@ class ImportSupporter extends Component
         $this->batchId = $batch->id;
         $this->step = 'processing';
 
-        ProcessSupportersPreviewJob::dispatch($batch->id)->onConnection('redis');
+        ProcessSupportersPreviewJob::dispatch($batch->id);
         $this->refreshBatch();
     }
 
@@ -100,10 +100,10 @@ class ImportSupporter extends Component
             return;
         }
 
-        $campaign_id = session('current_campaign')->id;
+        $campaign_id = $this->campaign->id;
         $reffer_id = Auth::user()->id;
 
-        ImportSupportersJob::dispatch($batch->id, $campaign_id, $reffer_id)->onConnection('redis');
+        ImportSupportersJob::dispatch($batch->id, $campaign_id, $reffer_id);
 
         $this->dispatch('alert', [
             'icon' => 'success',

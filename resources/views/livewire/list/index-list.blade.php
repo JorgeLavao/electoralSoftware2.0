@@ -1,6 +1,7 @@
 <section class="dashboard__main__section">
     <div class="breadcrumbs">
-        Listados
+        <a href="{{ route('list.index', session('current_campaign')->code) }}" wire:navigate>Listados</a>
+        / Guardados
     </div>
     <article class="dashboard__main__section__article mb-24">
         @if (session()->has('success'))
@@ -13,8 +14,8 @@
 
             @can('createLists', $campaign)
             <div class="flex justify-end md:mb-4">
-                <a href="{{ route('list.create', session('current_campaign')->code) }}" class="button btn-primary" wire:navigate>
-                    <x-icons.add-fill /> Agregar Listado
+                <a href="{{ route('list.index', session('current_campaign')->code) }}" class="button btn-primary" wire:navigate>
+                    <x-icons.add-fill /> Nuevo Listado
                 </a>
             </div>
             @endcan
@@ -154,9 +155,7 @@
                 @endforelse
             </ul>
 
-            <div class="mt-4">
-                {{ $lists->links() }}
-            </div>
+            <x-pagination :paginator="$lists" :livewire="true" />
         </div>
     </article>
 </section>

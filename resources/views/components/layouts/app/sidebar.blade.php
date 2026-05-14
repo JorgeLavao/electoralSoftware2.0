@@ -78,6 +78,7 @@
                                 Campaña
                                 <h4>{{ session('current_campaign')->candidate_name ?? 'Sin campañas' }}</h4>
                                 <h5 class="text-gray-300">{{ session('current_campaign')->position ?? '-' }}</h5>
+                                <h6 class="text-gray-400">{{ Auth::user()->campaignRoleLabel(session('current_campaign')) }}</h6>
                             </div>
                             <nav>
                                 <ul class="lateral-menu">
@@ -93,39 +94,67 @@
                                         </a>
                                     </li>
 
+                                    @php
+                                        $sidebarCampaign = session('current_campaign');
+                                        $canManageRoles = Auth::user()->is_super_admin
+                                            || Auth::user()->effectiveRole() === \App\Models\User::ROLE_TECH_SUPPORT
+                                            || ($sidebarCampaign && $sidebarCampaign->staff_users()
+                                                ->where('users.id', Auth::id())
+                                                ->wherePivot('status', true)
+                                                ->wherePivot('role', 'coordinator')
+                                                ->exists());
+                                    @endphp
 
-                                    @if(Auth::user()->is_super_admin == 1)
+                                    @if($canManageRoles)
+                                    <li>
+                                        <a href="{{ route('admin.users.roles') }}" class="{{ request()->routeIs('admin.users.roles') ? 'item__active' : '' }}">
+                                            Roles y Permisos
+                                        </a>
+                                    </li>
+                                    @endif
 
                                     @if (session('current_campaign'))
+                                    @can('viewSupporters', session('current_campaign'))
                                     <li>
                                         <a href="{{ route('supporter.index', session('current_campaign')->code) }}"
                                             class="{{ request()->routeIs('supporter.*') ? 'item__active' : '' }}">
                                             Simpatizantes
                                         </a>
                                     </li>
+                                    @endcan
 
-                                    <!-- <li>
+                                    @can('viewLists', session('current_campaign'))
+                                    <li>
                                         <a href="{{ route('list.index', session('current_campaign')->code) }}"
                                             class="{{ request()->routeIs('list.*') ? 'item__active' : '' }}">
                                             Listados
                                         </a>
-                                    </li> -->
+                                    </li>
+                                    @endcan
 
-                                    <li>
+                                    <!-- <li>
                                         <a href="{{ route('campaign.groups', session('current_campaign')->code) }}"
                                             class="{{ request()->routeIs('campaign.groups*') ? 'item__active' : '' }}">
                                             Grupos de la Campaña
                                         </a>
+                                    </li> -->
+                                    @can('viewSupporters', session('current_campaign'))
+                                    <li>
+                                        <a href="{{ route('campaign.committees', session('current_campaign')->code) }}"
+                                            class="{{ request()->routeIs('campaign.committees') ? 'item__active' : '' }}">
+                                            Comites
+                                        </a>
                                     </li>
+                                    @endcan
+                                    @can('referSupporters', session('current_campaign'))
                                     <li>
                                         <a href="{{ route('campaign.add-supporter', session('current_campaign')->code) }}"
                                             class="{{ request()->routeIs('campaign.add-supporter') ? 'item__active' : '' }}">
-                                            Referir Simpatizante
+                                            Referir Simpatizantes
                                         </a>
                                     </li>
+                                    @endcan
 
-
-                                    @endif
 
                                     @endif
                                 </ul>

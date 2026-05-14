@@ -14,13 +14,13 @@
             </a>
 
             @can('importSupporters', $campaign)
-            <a href="{{ route('supporter.import', session('current_campaign')->code) }}" class="button btn-primary">
+            <a href="{{ route('supporter.import', $campaign->code) }}" class="button btn-primary">
                 <x-icons.upload-line /> Importar
             </a>
             @endcan
 
             @can('referSupporters', $campaign)
-            <a href="{{ route('campaign.add-supporter', session('current_campaign')->code) }}" class="button btn-primary" wire:navigate>
+            <a href="{{ route('campaign.add-supporter', $campaign->code) }}" class="button btn-primary" wire:navigate>
                 <x-icons.add-fill /> Agregar
             </a>
             @endcan
@@ -144,11 +144,9 @@
                 </table>
             </div>
 
-            <div class="mt-4">
-                {{ $users->links() }}
-            </div>
+            <x-pagination :paginator="$users" :livewire="true" />
         </div>
     </div>
 
-    <livewire:supporters.show-user-modal />
+    <livewire:supporters.show-user-modal :campaign="$campaign" />
 </section>

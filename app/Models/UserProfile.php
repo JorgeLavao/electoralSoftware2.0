@@ -11,6 +11,9 @@ class UserProfile extends Model
 
     protected $fillable = [
         'user_id',
+        'birth_date',
+        'birth_day',
+        'birth_month',
         'gender_id',
         'age_range_id',
         'occupation_id',
@@ -23,6 +26,12 @@ class UserProfile extends Model
         'latitude',
         'longitude',
         'current_location'
+    ];
+
+    protected $casts = [
+        'birth_date' => 'date',
+        'birth_day' => 'integer',
+        'birth_month' => 'integer',
     ];
 
     public function foreign_gender(){

@@ -29,6 +29,8 @@ class CompleteInfo extends Component
     public $district;
     public $neighborhood;
     public $age_id;
+    public $birth_day;
+    public $birth_month;
 
     public function mount(){
         if(Auth::user()->foreing_aditional_info){
@@ -70,6 +72,8 @@ class CompleteInfo extends Component
                     'district'      => 'sometimes| nullable | max:100 | string',
                     'neighborhood'  => 'required | max:100 | string',
                     'age_id'        => 'required',
+                    'birth_day'     => 'required|integer|min:1|max:31',
+                    'birth_month'   => 'required|integer|min:1|max:12',
                     'address'       => 'required'],
                         ['gender.required'      => 'El género es obligatorio.',
                         'occupation.required'   => 'La ocupación es requerida.',
@@ -92,6 +96,8 @@ class CompleteInfo extends Component
         //guardar info
         UserProfile::create([
             'user_id'                   => Auth::user()->id,
+            'birth_day'                 => $this->birth_day,
+            'birth_month'               => $this->birth_month,
             'gender_id'                 => $this->gender,
             'occupation_id'             => $this->occupation,
             'vehicle'                   => $this->vehicle,

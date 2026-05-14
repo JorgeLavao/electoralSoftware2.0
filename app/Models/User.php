@@ -12,6 +12,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Support\Facades\DB;
 
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
@@ -36,6 +37,7 @@ class User extends Authenticatable
         'maternal_surname',
         'current_campaign',
         'is_super_admin',
+        'platform_role',
         'celphone',
         'email',
         'password',
@@ -65,6 +67,93 @@ class User extends Authenticatable
             'is_super_admin'    => 'boolean',
             'password'          => 'hashed',
         ];
+    }
+
+    public const ROLE_ADMIN = 'admin';
+    public const ROLE_CAMPAIGN_MANAGER = 'campaign_manager';
+    public const ROLE_CALL_CENTER = 'call_center';
+    public const ROLE_TECH_SUPPORT = 'technical_support';
+    public const ROLE_SUPPORTER = 'supporter';
+
+    public const ROLE_LABELS = [
+        self::ROLE_ADMIN => 'Administrador',
+        self::ROLE_CAMPAIGN_MANAGER => 'Coordinador de Campaña',
+        self::ROLE_CALL_CENTER => 'Call Center',
+        self::ROLE_TECH_SUPPORT => 'Soporte tecnico',
+        self::ROLE_SUPPORTER => 'Simpatizante',
+    ];
+
+    public const CALL_CENTER_CAMPAIGN_PERMISSIONS = [
+        'campaign.supporters.view',
+        'campaign.supporters.refer',
+        'campaign.supporters.validate',
+        'campaign.lists.view',
+        'campaign.votation-point.view',
+        'campaign.votation-point.manage',
+    ];
+
+    public function effectiveRole(): string
+    {
+        if ($this->is_super_admin) {
+            return self::ROLE_ADMIN;
+        }
+
+        return $this->platform_role ?: self::ROLE_SUPPORTER;
+    }
+
+    public function roleLabel(): string
+    {
+        return self::ROLE_LABELS[$this->effectiveRole()] ?? self::ROLE_LABELS[self::ROLE_SUPPORTER];
+    }
+
+    public function campaignRoleLabel(?Campaign $campaign = null): string
+    {
+        if ($this->is_super_admin) {
+            return self::ROLE_LABELS[self::ROLE_ADMIN];
+        }
+
+        if (! $campaign) {
+            return $this->roleLabel();
+        }
+
+        $roleNames = DB::table(config('permission.table_names.model_has_roles', 'model_has_roles'))
+            ->join(config('permission.table_names.roles', 'roles'), 'roles.id', '=', 'model_has_roles.role_id')
+            ->where('model_has_roles.model_type', self::class)
+            ->where('model_has_roles.model_id', $this->id)
+            ->where('model_has_roles.campaign_id', $campaign->id)
+            ->where('roles.campaign_id', $campaign->id)
+            ->orderBy('roles.name')
+            ->pluck('roles.name')
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($roleNames->isNotEmpty()) {
+            return $roleNames->implode(', ');
+        }
+
+        $staffRole = $this->foreign_campaings()
+            ->where('campaigns.id', $campaign->id)
+            ->wherePivot('status', true)
+            ->first()?->pivot?->role;
+
+        if ($staffRole) {
+            return match ($staffRole) {
+                'coordinator' => 'Coordinador',
+                'support' => self::ROLE_LABELS[self::ROLE_TECH_SUPPORT],
+                'call_center' => self::ROLE_LABELS[self::ROLE_CALL_CENTER],
+                default => str($staffRole)->replace(['_', '-'], ' ')->headline()->toString(),
+            };
+        }
+
+        if ($this->supporter_campaigns()
+            ->where('campaigns.id', $campaign->id)
+            ->wherePivot('validate', '!=', 2)
+            ->exists()) {
+            return self::ROLE_LABELS[self::ROLE_SUPPORTER];
+        }
+
+        return $this->roleLabel();
     }
 
     public function scopeSearch($query, $search){
@@ -122,6 +211,13 @@ class User extends Authenticatable
             ->withTimestamps();
     }
 
+    public function committees()
+    {
+        return $this->belongsToMany(Committee::class, 'committee_user', 'user_id', 'committee_id')
+            ->withPivot('role')
+            ->withTimestamps();
+    }
+
     public function platform_permissions(): BelongsToMany
     {
         return $this->belongsToMany(PlatformPermission::class, 'platform_permission_user')->withTimestamps();
@@ -142,7 +238,11 @@ class User extends Authenticatable
         return $this->foreign_campaings()
             ->where('campaigns.id', $campaignId)
             ->wherePivot('status', true)
-            ->exists();
+            ->exists()
+            || $this->supporter_campaigns()
+                ->where('campaigns.id', $campaignId)
+                ->wherePivot('validate', '!=', 2)
+                ->exists();
     }
 
     public function hasCampaignPermission(string $permission, Campaign|int $campaign): bool
@@ -155,6 +255,11 @@ class User extends Authenticatable
 
         if (! $this->belongsToCampaign($campaignId)) {
             return false;
+        }
+
+        if ($this->effectiveRole() === self::ROLE_CALL_CENTER
+            && in_array($permission, self::CALL_CENTER_CAMPAIGN_PERMISSIONS, true)) {
+            return true;
         }
 
         $previousTeamId = getPermissionsTeamId();

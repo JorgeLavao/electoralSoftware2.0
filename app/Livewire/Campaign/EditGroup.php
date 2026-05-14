@@ -95,8 +95,7 @@ class EditGroup extends Component
         ]);
 
         if ($data['mode'] === 'supporters') {
-            $validIds = $this->campaign->foreign_users()
-                ->wherePivot('validate', 1)
+            $validIds = $this->campaign->groupAssignableUsers()
                 ->whereIn('users.id', $data['selectedSupporters'] ?? [])
                 ->pluck('users.id')
                 ->all();
@@ -115,8 +114,7 @@ class EditGroup extends Component
     {
         $this->authorize('manageGroups', $this->campaign);
 
-        $supporters = $this->campaign->foreign_users()
-            ->wherePivot('validate', 1)
+        $supporters = $this->campaign->groupAssignableUsers()
             ->when($this->supporterSearch !== '', fn ($query) => $query->search($this->supporterSearch))
             ->orderBy('first_name')
             ->limit(30)

@@ -102,9 +102,7 @@
                 </table>
             </div>
 
-            <div>
-                {{ $users->links('vendor.pagination.tailwind') }}
-            </div>
+            <x-pagination :paginator="$users" :livewire="true" />
         </div>
     </div>
 

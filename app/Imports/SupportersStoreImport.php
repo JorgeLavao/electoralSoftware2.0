@@ -2,15 +2,8 @@
 
 namespace App\Imports;
 
-use App\Mail\InviteToCampaign;
-use App\Models\Campaign;
-use App\Models\Supporter;
 use App\Models\DocumentType;
-use App\Models\Invitation;
 use App\Models\User;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Str;
 
 class SupportersStoreImport extends AbstractSupportersImport
 {
@@ -70,8 +63,10 @@ class SupportersStoreImport extends AbstractSupportersImport
 
         $existingByDoc = User::where('document_type_id', $documentTypeId)->where('document_number', $doc)->first();
 
-        if (!$existingByDoc && $email !== '') {
-            $emailInUse = User::where('email', $email)->exists();
+        if ($email !== '') {
+            $emailInUse = User::where('email', $email)
+                ->when($existingByDoc, fn ($query) => $query->where('id', '!=', $existingByDoc->id))
+                ->exists();
 
             if ($emailInUse) {
                 $this->counts['valid']   = max(0, $this->counts['valid'] - 1);
@@ -120,8 +115,11 @@ class SupportersStoreImport extends AbstractSupportersImport
             return;
         }
 
-        $alreadyInCampaign = $user->foreign_campaings()->where('campaign_id', $this->campaignId)->exists();
-        if($alreadyInCampaign){
+        $campaignMembership = $user->supporter_campaigns()
+            ->where('campaigns.id', $this->campaignId)
+            ->first();
+
+        if ($campaignMembership && (int) $campaignMembership->pivot->validate !== 2) {
             $this->counts['valid']   = max(0, $this->counts['valid'] - 1);
             $this->counts['invalid'] = ($this->counts['invalid'] ?? 0) + 1;
             $messages[] = 'El usuario ya hace parte de esta camapaña';
@@ -136,22 +134,18 @@ class SupportersStoreImport extends AbstractSupportersImport
             return;
         }
         
-        Invitation::where('user_id', $user->id)->where('active', true)->update(['active' => false]);
-        $token = Str::uuid()->toString();
-        //create invitation
-        $invitation = new Invitation();
-        $invitation->user_id    = $user->id;
-        $invitation->campaign_id= $this->campaignId;
-        $invitation->expires_at = now()->addHours(48);
-        $invitation->reffer_id  = $this->refferId;
-        $invitation->token      = $token;
-        $invitation->active     = true;
-        $invitation->save();
+        $pivotData = [
+            'reffer_by' => $this->refferId,
+            'approach' => 4,
+            'validate' => 0,
+        ];
 
-        //send email
-        $campaign = Campaign::find($this->campaignId);
+        if ($campaignMembership) {
+            $user->supporter_campaigns()->updateExistingPivot($this->campaignId, $pivotData);
+        } else {
+            $user->supporter_campaigns()->attach($this->campaignId, $pivotData);
+        }
 
-        Mail::to($user->email)->send(new InviteToCampaign($campaign, $user->first_name, $invitation->token, $invitation->expires_at));
         $this->imported++;
     }
 

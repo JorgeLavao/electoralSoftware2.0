@@ -170,11 +170,15 @@ class EditCampaignModal extends Component
                 ->all();
 
             $this->campaign->staff_users()->sync($syncData);
+            $this->campaign->syncStaffAsSupporters($incomingStaffIds);
 
             foreach ($incomingStaffIds as $userId) {
                 $user = $currentStaff->get($userId) ?? $this->campaign->staff_users()->where('users.id', $userId)->first();
 
                 if ($user) {
+                    $user->forceFill([
+                        'platform_role' => $user->is_super_admin ? $user->platform_role : \App\Models\User::ROLE_CAMPAIGN_MANAGER,
+                    ])->save();
                     $user->assignCampaignRole(self::COORDINATOR_ROLE, $this->campaign);
                 }
             }

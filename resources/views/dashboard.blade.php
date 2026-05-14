@@ -8,6 +8,7 @@
                     'id' => $item->id,
                     'title' => $item->title,
                     'description' => $item->description,
+                    'image_url' => $item->image_path ? asset('storage/' . $item->image_path) : "https://picsum.photos/320/220?random={$item->id}",
                     'published_at' => optional($item->published_at)->format('Y-m-d'),
                     'published_at_label' => \Illuminate\Support\Str::ucfirst(optional($item->published_at)->translatedFormat('F d \\d\\e Y')),
                     'author_name' => $item->user?->name ?? '',
@@ -25,13 +26,13 @@
         </div>
 
         <ul class="flex items-center">
-            @if (auth()->user()?->is_super_admin)
+            @can('create', \App\Models\News::class)
             <li class="ml-auto">
                 <a href="{{ route('news.manager') }}" class="button btn-primary">
                     Crear Noticia
                 </a>
             </li>
-            @endif
+            @endcan
         </ul>
 
         <div class="flex flex-col gap-6 bg-white">
@@ -41,7 +42,7 @@
                 class="flex cursor-pointer flex-col items-start gap-4 rounded-xl p-3 transition hover:bg-gray-50 sm:flex-row">
                 <div class="shrink-0">
                     <img
-                        src="https://picsum.photos/320/220?random={{ $item->id }}"
+                        src="{{ $item->image_path ? asset('storage/' . $item->image_path) : "https://picsum.photos/320/220?random={$item->id}" }}"
                         alt="{{ $item->title }}"
                         class="h-24 w-full rounded-xl object-cover sm:w-40" />
                 </div>
@@ -58,7 +59,7 @@
                     <p class="mt-2 text-sm text-gray-600">
                         {{ \Illuminate\Support\Str::limit($item->description, 180) }}
                     </p>
-                    @if (auth()->user()?->is_super_admin)
+                    @can('update', $item)
                     <div class="mt-4 flex justify-end">
                         <a
                             href="{{ route('news.edit', $item) }}"
@@ -67,7 +68,7 @@
                             Editar Noticia
                         </a>
                     </div>
-                    @endif
+                    @endcan
                 </div>
             </article>
             @empty
@@ -77,11 +78,7 @@
             @endforelse
         </div>
 
-        @if ($news->hasPages())
-        <div>
-            {{ $news->links() }}
-        </div>
-        @endif
+        <x-pagination :paginator="$news" />
 
         <div
             x-show="modal"
@@ -120,7 +117,7 @@
                 <template x-if="selectedNews">
                     <div>
                         <img
-                            :src="`https://picsum.photos/320/220?random=${selectedNews.id}`"
+                            :src="selectedNews.image_url"
                             :alt="selectedNews.title"
                             class="mb-4 h-48 w-full rounded-xl object-cover">
 

@@ -52,9 +52,17 @@ class Login extends Component
         RateLimiter::clear($this->throttleKey());
         Session::regenerate();
 
-        $campaign = Campaign::firstWhere('code',  Auth::user()->current_campaign);
-        session(['current_campaign' => $campaign]);
-        $this->redirectIntended(default: route('dashboard', absolute: false), navigate: true);
+        $campaign = $this->resolveCurrentCampaign($user);
+
+        if ($campaign) {
+            $user->forceFill(['current_campaign' => $campaign->code])->save();
+            session(['current_campaign' => $campaign]);
+        } else {
+            $user->forceFill(['current_campaign' => null])->save();
+            session()->forget('current_campaign');
+        }
+
+        $this->redirectRoute('campaign.index', navigate: true);
     }
 
     /**
@@ -102,5 +110,37 @@ class Login extends Component
     protected function throttleKey(): string
     {
         return Str::transliterate(Str::lower($this->email).'|'.request()->ip());
+    }
+
+    protected function resolveCurrentCampaign(User $user): ?Campaign
+    {
+        $currentCampaign = $user->current_campaign
+            ? Campaign::firstWhere('code', $user->current_campaign)
+            : null;
+
+        if ($currentCampaign && ($user->is_super_admin || $user->belongsToCampaign($currentCampaign))) {
+            return $currentCampaign;
+        }
+
+        if ($user->is_super_admin) {
+            return Campaign::query()
+                ->where('status', '1')
+                ->orderBy('name')
+                ->first();
+        }
+
+        return Campaign::query()
+            ->where('status', '1')
+            ->where(function ($query) use ($user) {
+                $query->whereHas('staff_users', function ($staffQuery) use ($user) {
+                    $staffQuery->where('users.id', $user->id)
+                        ->where('campaign_staff.status', true);
+                })->orWhereHas('foreign_users', function ($supporterQuery) use ($user) {
+                    $supporterQuery->where('users.id', $user->id)
+                        ->where('campaign_user.validate', '!=', 2);
+                });
+            })
+            ->orderBy('name')
+            ->first();
     }
 }

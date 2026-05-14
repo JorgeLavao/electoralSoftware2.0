@@ -10,11 +10,14 @@ use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
 use Livewire\Component;
+use Livewire\WithPagination;
 
 #[Layout('components.layouts.app')]
 class IndexList extends Component
 {
-    use AuthorizesRequests;
+    use AuthorizesRequests, WithPagination;
+
+    protected string $paginationTheme = 'tailwind';
 
     public $start_date;
     public $end_date;

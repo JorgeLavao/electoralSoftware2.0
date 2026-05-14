@@ -197,10 +197,6 @@
         @endforelse
     </div>
 
-    @if ($groups->hasPages())
-    <div class="mt-4">
-        {{ $groups->links() }}
-    </div>
-    @endif
+    <x-pagination :paginator="$groups" :livewire="true" />
     </div>
 </section>

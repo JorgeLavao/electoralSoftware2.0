@@ -116,7 +116,12 @@ class AddCampaignModal extends Component
                 ])->all()
             );
 
+            $campaign->syncStaffAsSupporters($this->user_ids);
+
             foreach ($campaign->staff_users as $user) {
+                $user->forceFill([
+                    'platform_role' => $user->is_super_admin ? $user->platform_role : \App\Models\User::ROLE_CAMPAIGN_MANAGER,
+                ])->save();
                 $user->assignCampaignRole(self::COORDINATOR_ROLE, $campaign);
             }
 

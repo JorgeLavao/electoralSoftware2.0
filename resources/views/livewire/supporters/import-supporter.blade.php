@@ -8,7 +8,7 @@
     <div class="flex flex-col gap-3 w-full md:flex-row md:justify-between md:items-center">
         <h4></h4>
         {{-- Enlace directo para que el usuario no cometa errores de formato --}}
-        <a href="http://localhost/download/plantilla-simpatizantes" class="button btn-secundary text-primary border-primary">
+        <a href="{{ route('download.template.supporter') }}" class="button btn-secundary text-primary border-primary">
             <x-icons.file-download-line/> Plantilla
         </a>
     </div>
@@ -156,4 +156,3 @@
         @endif
     </div>
 </section>
-

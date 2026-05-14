@@ -23,7 +23,7 @@
             <div x-show="active === 1" x-transition class="px-6 pb-6">
                 <div class="grid gap-4 md:grid-cols-2">
                     <div class="rounded-2xl border p-4">
-                        <p class="text-xs text-gray-400">Nombre completo</p>
+                        <p class="text-xs text-gray-400">Nombre Completo</p>
                         <p class="mt-2 font-semibold">{{ $user->full_name ?: '-' }}</p>
                     </div>
 

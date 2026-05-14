@@ -1,7 +1,7 @@
 <div class="container-v">
     <div class="space-y-6">
         <label>
-            Administrador/Coordinador de la campaña
+            {{ $label }}
             <span class="text-red-500">*</span>
         </label>
 
@@ -9,6 +9,7 @@
             <select data-search-users multiple class="form-select clear"></select>
         </div>
     </div>
+
     @script
     <script>
         (function() {
@@ -18,10 +19,11 @@
             if (select.tomselect) {
                 select.tomselect.destroy();
             }
+
             select.tomselect = new TomSelect(select, {
-                maxItems: null,
-                plugins: ['remove_button'],
-                placeholder: 'Busca y selecciona usuarios…',
+                maxItems: @js($maxItems),
+                plugins: @js($allowRemoval ? ['remove_button'] : []),
+                placeholder: @js($placeholder),
                 valueField: 'id',
                 labelField: 'text',
                 searchField: 'text',
@@ -32,18 +34,20 @@
                 options: @js($userOptions),
                 create: false,
                 load: function(query, callback) {
-                    if (!query.length) return callback();
-                    axios.get('/api/buscar-usuarios', {
-                            params: {
-                                q: query
-                            }
-                        })
+                    if (!query.length || query.length < @js($minSearchLength)) {
+                        return callback();
+                    }
+
+                    axios.get(@js($searchUrl), {
+                        params: {
+                            q: query
+                        }
+                    })
                         .then(response => {
                             callback(response.data);
                         })
                         .catch(() => callback());
                 },
-                // Evento hacia Livewire (escúchalo en el componente padre)
                 onItemAdd: function(value) {
                     $wire.$dispatch('user-added', {
                         userId: value
@@ -55,6 +59,7 @@
                     });
                 },
             });
+
             select.tomselect.setValue(@js($userIds));
         })();
     </script>

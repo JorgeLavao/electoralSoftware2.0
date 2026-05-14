@@ -15,6 +15,8 @@ class EditList extends Component
 {
     use WithPagination, AuthorizesRequests;
 
+    protected string $paginationTheme = 'tailwind';
+
     public $list;
 
     #[Validate('required', message: 'Debe ingresar el nombre del listado.')]

@@ -185,6 +185,16 @@ class RolesAndPermissionsSeeder extends Seeder
             array_column($campaignPermissions, 'name')
         );
 
+        $callCenterRole = Role::query()->firstOrCreate(
+            [
+                'name' => 'Call Center',
+                'guard_name' => 'web',
+                'campaign_id' => null,
+            ]
+        );
+
+        $callCenterRole->syncPermissions(User::CALL_CENTER_CAMPAIGN_PERMISSIONS);
+
         $superAdmin = User::query()->updateOrCreate(
             ['email' => 'softwarenuevastic@gmail.com'],
             [
@@ -200,6 +210,7 @@ class RolesAndPermissionsSeeder extends Seeder
 
         $superAdmin->forceFill([
             'is_super_admin' => true,
+            'platform_role' => User::ROLE_ADMIN,
         ])->save();
 
         $superAdmin->foreing_aditional_info()->updateOrCreate(
