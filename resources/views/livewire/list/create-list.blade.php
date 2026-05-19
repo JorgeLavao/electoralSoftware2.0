@@ -5,15 +5,15 @@
 
     <article class="dashboard__main__section__article mb-24">
         @if (session()->has('success'))
-            <div class="mb-4">
-                <x-toast.success-toast :message="session('success')" />
-            </div>
+        <div class="mb-4">
+            <x-toast.success-toast :message="session('success')" />
+        </div>
         @endif
 
         @if (session()->has('error'))
-            <div class="mb-4">
-                <x-toast.error-toast :message="session('error')" />
-            </div>
+        <div class="mb-4">
+            <x-toast.error-toast :message="session('error')" />
+        </div>
         @endif
 
         <div class="relative">
@@ -74,7 +74,7 @@
                             <select id="birth_month" wire:model="birth_month">
                                 <option value="">Seleccione</option>
                                 @foreach (range(1, 12) as $month)
-                                    <option value="{{ $month }}">{{ str_pad($month, 2, '0', STR_PAD_LEFT) }}</option>
+                                <option value="{{ $month }}">{{ str_pad($month, 2, '0', STR_PAD_LEFT) }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -84,15 +84,15 @@
                             <select id="birth_day" wire:model="birth_day">
                                 <option value="">Seleccione</option>
                                 @foreach (range(1, 31) as $day)
-                                    <option value="{{ $day }}">{{ str_pad($day, 2, '0', STR_PAD_LEFT) }}</option>
+                                <option value="{{ $day }}">{{ str_pad($day, 2, '0', STR_PAD_LEFT) }}</option>
                                 @endforeach
                             </select>
                         </div>
                     </div>
-                
+
                     <br>
 
-                
+
                     <div class="group-form-v">
                         <div class="flex justify-between items-center">
                             <label for="searchTerm">Busqueda General</label>
@@ -169,7 +169,7 @@
                             <select wire:model="gender_id">
                                 <option value="">Seleccione</option>
                                 @foreach ($genders as $gender)
-                                    <option value="{{ $gender->id }}">{{ $gender->name }}</option>
+                                <option value="{{ $gender->id }}">{{ $gender->name }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -185,7 +185,7 @@
                             <select wire:model="age_range">
                                 <option value="">Seleccione</option>
                                 @foreach ($age_ranges as $age)
-                                    <option value="{{ $age->id }}">{{ $age->range }}</option>
+                                <option value="{{ $age->id }}">{{ $age->range }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -201,7 +201,7 @@
                             <select wire:model="occupation_id">
                                 <option value="">Seleccione</option>
                                 @foreach ($occupations as $occupation)
-                                    <option value="{{ $occupation->id }}">{{ $occupation->name }}</option>
+                                <option value="{{ $occupation->id }}">{{ $occupation->name }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -219,7 +219,7 @@
                             <select wire:model.live="department">
                                 <option value="">Seleccione</option>
                                 @foreach ($departments as $department)
-                                    <option value="{{ $department['id'] }}">{{ $department['name'] }}</option>
+                                <option value="{{ $department['id'] }}">{{ $department['name'] }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -235,7 +235,7 @@
                             <select wire:model.live="municipality" @disabled(empty($municipalities))>
                                 <option value="">Seleccione</option>
                                 @foreach ($municipalities as $municipality)
-                                    <option value="{{ $municipality['id'] }}">{{ $municipality['name'] }}</option>
+                                <option value="{{ $municipality['id'] }}">{{ $municipality['name'] }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -251,7 +251,7 @@
                             <select wire:model.live="neighborhood" @disabled(empty($neighborhoods))>
                                 <option value="">Seleccione</option>
                                 @foreach ($neighborhoods as $neighborhood)
-                                    <option value="{{ $neighborhood }}">{{ $neighborhood }}</option>
+                                <option value="{{ $neighborhood }}">{{ $neighborhood }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -267,7 +267,7 @@
                             <select wire:model.live="district_commune" @disabled(empty($districtsCommunes))>
                                 <option value="">Seleccione</option>
                                 @foreach ($districtsCommunes as $districtCommune)
-                                    <option value="{{ $districtCommune }}">{{ $districtCommune }}</option>
+                                <option value="{{ $districtCommune }}">{{ $districtCommune }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -316,7 +316,7 @@
                         </div>
 
                         @if (collect($committees)->isEmpty())
-                            <p class="text-sm text-slate-500">No hay comites creados en esta campana.</p>
+                        <p class="text-sm text-slate-500">No hay comites creados en esta campana.</p>
                         @endif
                     </div>
 
@@ -360,13 +360,13 @@
                                 class="form-select clear"
                                 @disabled(collect($roles)->isEmpty())>
                                 @foreach ($roles as $role)
-                                    <option value="{{ $role->id }}">{{ $role->name }}</option>
+                                <option value="{{ $role->id }}">{{ $role->name }}</option>
                                 @endforeach
                             </select>
                         </div>
 
                         @if (collect($roles)->isEmpty())
-                            <p class="text-sm text-slate-500">No hay roles creados en esta campana.</p>
+                        <p class="text-sm text-slate-500">No hay roles creados en esta campana.</p>
                         @endif
                     </div>
 
@@ -390,7 +390,7 @@
                         </div>
 
                         @if (collect($referents)->isEmpty())
-                            <p class="text-sm text-slate-500">No hay referidos disponibles para esta campana.</p>
+                        <p class="text-sm text-slate-500">No hay referidos disponibles para esta campana.</p>
                         @endif
                     </div>
                 </div>
@@ -437,7 +437,7 @@
                     </div>
 
                     <p class="mb-2 text-sm text-slate-500">
-                             <span x-text="selectedColumns.length"></span>/5
+                        <span x-text="selectedColumns.length"></span>/5
                     </p>
 
                     <p
@@ -449,75 +449,67 @@
 
                     <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
                         @foreach ($columnOptions as $columnKey => $columnLabel)
-                            <label
-                                class="flex items-center gap-3 rounded-xl border border-slate-200 px-4 py-3 cursor-pointer hover:bg-slate-50"
-                                @click="if (selectedColumns.length >= maxColumns && ! selectedColumns.includes(@js($columnKey))) showLimitMessage()">
-                                <input
-                                    type="checkbox"
-                                    :checked="selectedColumns.includes(@js($columnKey))"
-                                    :disabled="selectedColumns.length >= maxColumns && ! selectedColumns.includes(@js($columnKey))"
-                                    @change="toggleColumn(@js($columnKey), $event)"
-                                    value="{{ $columnKey }}">
+                        <label
+                            class="flex items-center gap-3 rounded-xl border border-slate-200 px-4 py-3 cursor-pointer hover:bg-slate-50"
+                            @click="if (selectedColumns.length >= maxColumns && ! selectedColumns.includes(@js($columnKey))) showLimitMessage()">
+                            <input
+                                type="checkbox"
+                                :checked="selectedColumns.includes(@js($columnKey))"
+                                :disabled="selectedColumns.length >= maxColumns && ! selectedColumns.includes(@js($columnKey))"
+                                @change="toggleColumn(@js($columnKey), $event)"
+                                value="{{ $columnKey }}">
 
-                                <span class="text-sm text-slate-700">{{ $columnLabel }}</span>
-                            </label>
+                            <span class="text-sm text-slate-700">{{ $columnLabel }}</span>
+                        </label>
                         @endforeach
                     </div>
                 </div>
 
                 <div class="rounded-2xl border border-slate-200 bg-white p-5">
-                    <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                        <div class="text-sm text-slate-500">
+                    <div class="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
+                        <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+
+
                             @if ($hasSearched)
-                                {{ $totalResults }} resultado(s) encontrado(s)
-                            @else
-                                Presiona buscar para consultar registros.
+                            <label class="flex w-full items-center justify-between gap-3 rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-600 sm:w-auto">
+                                <span>Ver</span>
+                                <select class="!w-24 !rounded-lg !py-2" wire:model.live="perPage">
+                                    @foreach ($perPageOptions as $option)
+                                    <option value="{{ $option }}">{{ $option }}</option>
+                                    @endforeach
+                                </select>
+                                <span>por pagina</span>
+                            </label>
                             @endif
                         </div>
 
-                        <div class="flex flex-col gap-3 md:flex-row">
-                            @if ($hasSearched)
-                                <label class="flex items-center gap-2 text-sm text-slate-600">
-                                    Ver
-                                    <select class="min-w-20" wire:model.live="perPage">
-                                        @foreach ($perPageOptions as $option)
-                                            <option value="{{ $option }}">{{ $option }}</option>
-                                        @endforeach
-                                    </select>
-                                    por pagina
-                                </label>
-                            @endif
-
-                            <button type="button" class="btn-secondary" wire:click="clearFilters">
+                        <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:flex lg:flex-wrap lg:justify-end">
+                            <button type="button" class="btn-secondary w-full lg:w-auto" wire:click="clearFilters">
                                 Limpiar filtros
                             </button>
 
-                            <button type="button" class="btn-secondary" wire:click="applyFilters">
+                            <button type="button" class="btn-secondary w-full lg:w-auto" wire:click="applyFilters">
                                 Buscar
                             </button>
 
                             @if ($hasSearched && $totalResults > 0)
-                                <button type="button" class="btn-secondary" wire:click="showGeolocation">
-                                    Mirar Geolocalizacion
-                                </button>
+                            <button type="button" class="btn-secondary w-full lg:w-auto" wire:click="showGeolocation">
+                                Mirar Geolocalizacion
+                            </button>
 
-                                <button type="button" class="btn-secondary" wire:click="requestExport('current_page')">
-                                    Exportar pagina actual
-                                </button>
-
-                                <button type="button" class="btn-primary" wire:click="requestExport('all_filtered')">
-                                    Exportar todo
-                                </button>
+                            <button type="button" class="btn-primary w-full lg:w-auto" wire:click="requestExport('current_page')">
+                                Exportar
+                            </button>
                             @endif
                         </div>
                     </div>
 
                     @if ($exportBatchId)
-                        <div class="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-                            <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                                <div>
-                                    <strong>Exportacion:</strong>
-                                    {{ match($exportStatus) {
+                    <div class="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+                        <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                            <div>
+                                <strong>Exportacion:</strong>
+                                {{ match($exportStatus) {
                                         'queued' => 'en cola',
                                         'processing' => 'procesando',
                                         'done' => 'lista',
@@ -525,109 +517,108 @@
                                         default => $exportStatus ?? 'pendiente',
                                     } }}
 
-                                    @if ($exportErrorMessage)
-                                        <p class="mt-1 text-red-600">{{ $exportErrorMessage }}</p>
-                                    @endif
-                                </div>
+                                @if ($exportErrorMessage)
+                                <p class="mt-1 text-red-600">{{ $exportErrorMessage }}</p>
+                                @endif
+                            </div>
 
-                                <div class="flex gap-2">
-                                    <button type="button" class="btn-secondary" wire:click="refreshExportStatus">
-                                        Actualizar estado
-                                    </button>
+                            <div class="flex gap-2">
+                                <button type="button" class="btn-secondary" wire:click="refreshExportStatus">
+                                    Actualizar estado
+                                </button>
 
-                                    @if ($exportDownloadUrl)
-                                        <a href="{{ $exportDownloadUrl }}" class="btn-primary">
-                                            Descargar
-                                        </a>
-                                    @endif
-                                </div>
+                                @if ($exportDownloadUrl)
+                                <a href="{{ $exportDownloadUrl }}" class="btn-primary">
+                                    Descargar
+                                </a>
+                                @endif
                             </div>
                         </div>
+                    </div>
                     @endif
                 </div>
 
                 @if ($hasSearched)
-                    <div class="area-2 container-v mt-6">
-                        <div class="rounded-2xl border border-slate-200 bg-white overflow-hidden">
-                            <div class="border-b border-slate-200 px-5 py-4">
-                                <h4 class="font-semibold text-slate-900">Resultados</h4>
-                            </div>
-
-                            @if (count($visibleColumns) === 0)
-                                <div class="px-5 py-8 text-center text-slate-500">
-                                    Selecciona al menos una columna para ver la tabla o exportar.
-                                </div>
-                            @else
-                                <div class="overflow-x-auto">
-                                    <table class="min-w-full text-sm whitespace-nowrap">
-                                        <thead class="bg-slate-50">
-                                            <tr>
-                                                @foreach ($visibleColumns as $columnKey)
-                                                    @if (isset($columnOptions[$columnKey]))
-                                                        <th class="px-4 py-3 text-left font-semibold text-slate-600">
-                                                            {{ $columnOptions[$columnKey] }}
-                                                        </th>
-                                                    @endif
-                                                @endforeach
-                                            </tr>
-                                        </thead>
-
-                                        <tbody>
-                                            @forelse ($results as $user)
-                                                <tr class="border-t border-slate-100 hover:bg-slate-50">
-                                                    @foreach ($visibleColumns as $columnKey)
-                                                        @if (isset($columnOptions[$columnKey]))
-                                                            <td class="px-4 py-3 text-slate-700">
-                                                                {{ $user[$columnKey] ?? '-' }}
-                                                            </td>
-                                                        @endif
-                                                    @endforeach
-                                                </tr>
-                                            @empty
-                                                <tr>
-                                                    <td colspan="{{ max(count($visibleColumns), 1) }}" class="px-4 py-8 text-center text-slate-500">
-                                                        No se encontraron resultados.
-                                                    </td>
-                                                </tr>
-                                            @endforelse
-                                        </tbody>
-                                    </table>
-                                </div>
-
-                                <div class="border-t border-slate-200 px-5 py-4">
-                                    <x-pagination :paginator="$results" :livewire="true" />
-                                </div>
-                            @endif
+                <div class="area-2 container-v mt-6">
+                    <div class="rounded-2xl border border-slate-200 bg-white overflow-hidden">
+                        <div class="border-b border-slate-200 px-5 py-4">
+                            <h4 class="font-semibold text-slate-900">Resultados</h4>
                         </div>
+
+                        @if (count($visibleColumns) === 0)
+                        <div class="px-5 py-8 text-center text-slate-500">
+                            Selecciona al menos una columna para ver la tabla o exportar.
+                        </div>
+                        @else
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full text-sm whitespace-nowrap">
+                                <thead class="bg-slate-50">
+                                    <tr>
+                                        @foreach ($visibleColumns as $columnKey)
+                                        @if (isset($columnOptions[$columnKey]))
+                                        <th class="px-4 py-3 text-left font-semibold text-slate-600">
+                                            {{ $columnOptions[$columnKey] }}
+                                        </th>
+                                        @endif
+                                        @endforeach
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+                                    @forelse ($results as $user)
+                                    <tr class="border-t border-slate-100 hover:bg-slate-50">
+                                        @foreach ($visibleColumns as $columnKey)
+                                        @if (isset($columnOptions[$columnKey]))
+                                        <td class="px-4 py-3 text-slate-700">
+                                            {{ $user[$columnKey] ?? '-' }}
+                                        </td>
+                                        @endif
+                                        @endforeach
+                                    </tr>
+                                    @empty
+                                    <tr>
+                                        <td colspan="{{ max(count($visibleColumns), 1) }}" class="px-4 py-8 text-center text-slate-500">
+                                            No se encontraron resultados.
+                                        </td>
+                                    </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="border-t border-slate-200 px-5 py-4">
+                            <x-pagination :paginator="$results" :livewire="true" />
+                        </div>
+                        @endif
                     </div>
+                </div>
 
-                    @if ($showMap)
-                        <div class="area-2 container-v mt-6">
-                            <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-                                <div class="flex flex-col gap-3 border-b border-slate-200 px-5 py-4 md:flex-row md:items-center md:justify-between">
-                                    <div>
-                                        <h4 class="font-semibold text-slate-900">Geolocalizacion</h4>
-                                        <p class="text-sm text-slate-500">
-                                            Mostrando solo las personas encontradas con los filtros actuales.
-                                        </p>
-                                    </div>
-                                </div>
-
-                                @if (count($mapPoints) > 0)
-                                    <div
-                                        wire:ignore
-                                        data-list-location-map
-                                        data-payload='@json($mapPayload)'
-                                        class="h-[540px] min-h-[420px] w-full bg-slate-100"
-                                    ></div>
-                                @else
-                                    <div class="px-5 py-8 text-center text-slate-500">
-                                        Los resultados actuales no tienen coordenadas para mostrar en el mapa.
-                                    </div>
-                                @endif
+                @if ($showMap)
+                <div class="area-2 container-v mt-6">
+                    <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+                        <div class="flex flex-col gap-3 border-b border-slate-200 px-5 py-4 md:flex-row md:items-center md:justify-between">
+                            <div>
+                                <h4 class="font-semibold text-slate-900">Geolocalizacion</h4>
+                                <p class="text-sm text-slate-500">
+                                    Mostrando solo las personas encontradas con los filtros actuales.
+                                </p>
                             </div>
                         </div>
-                    @endif
+
+                        @if (count($mapPoints) > 0)
+                        <div
+                            wire:ignore
+                            data-list-location-map
+                            data-payload='@json($mapPayload)'
+                            class="h-[540px] min-h-[420px] w-full bg-slate-100"></div>
+                        @else
+                        <div class="px-5 py-8 text-center text-slate-500">
+                            Los resultados actuales no tienen coordenadas para mostrar en el mapa.
+                        </div>
+                        @endif
+                    </div>
+                </div>
+                @endif
                 @endif
             </div>
 

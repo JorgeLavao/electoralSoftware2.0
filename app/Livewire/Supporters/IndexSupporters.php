@@ -21,7 +21,8 @@ class IndexSupporters extends Component
     public $count_requests;
     public $suspensions;
     public $filter = null;
-    public $perPage = 15;
+    public int $perPage = 25;
+    public array $perPageOptions = [10, 25, 50, 100];
 
     public function mount(Campaign $campaign): void
     {
@@ -34,6 +35,20 @@ class IndexSupporters extends Component
     public function applyFilter($filter): void
     {
         $this->filter = $filter;
+        $this->resetPage();
+    }
+
+    public function updatedSearchTerm(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedPerPage($value): void
+    {
+        $this->perPage = in_array((int) $value, $this->perPageOptions, true)
+            ? (int) $value
+            : 25;
+
         $this->resetPage();
     }
 
@@ -97,7 +112,7 @@ class IndexSupporters extends Component
                 $query->where('campaign_user.validate', '!=', 2);
             })
             ->orderBy('campaign_user.created_at', 'DESC')
-            ->paginate();
+            ->paginate($this->perPage);
 
         return view('livewire.supporters.index-supporters', ['users' => $users]);
     }

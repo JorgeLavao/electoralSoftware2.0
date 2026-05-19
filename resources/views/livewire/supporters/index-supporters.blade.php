@@ -63,8 +63,18 @@
             <x-toast.success-toast :message="session('success')" />
             @endif
 
-            <div class="mb-2 flex items-center justify-between">
+            <div class="mb-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <h4>{{ $users->total() }} Resultados</h4>
+
+                <label class="flex w-full items-center justify-between gap-3 rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-600 sm:w-auto">
+                    <span>Ver</span>
+                    <select class="!w-24 !rounded-lg !py-2" wire:model.live="perPage">
+                        @foreach ($perPageOptions as $option)
+                        <option value="{{ $option }}">{{ $option }}</option>
+                        @endforeach
+                    </select>
+                    <span>por pagina</span>
+                </label>
             </div>
 
             <div class="overflow-x-auto">

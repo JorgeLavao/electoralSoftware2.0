@@ -2,6 +2,7 @@
 
 namespace App\Livewire\List;
 
+use App\Exports\FilteredUsersExport;
 use App\Jobs\ExportFilteredUsersJob;
 use App\Models\AgeRange;
 use App\Models\Campaign;
@@ -18,6 +19,7 @@ use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithPagination;
+use Maatwebsite\Excel\Facades\Excel;
 use Spatie\Permission\Models\Role;
 
 #[Layout('components.layouts.app')]
@@ -315,7 +317,7 @@ class CreateList extends Component
         $this->dispatch('electoral-map-updated', payload: $this->mapPayload);
     }
 
-    public function requestExport(string $scope): void
+    public function requestExport(string $scope)
     {
         $campaign = Campaign::findOrFail($this->campaign_id);
         $this->authorize('exportLists', $campaign);
@@ -332,6 +334,10 @@ class CreateList extends Component
 
         if (! in_array($scope, [ExportBatch::SCOPE_CURRENT_PAGE, ExportBatch::SCOPE_ALL_FILTERED], true)) {
             abort(422);
+        }
+
+        if ($scope === ExportBatch::SCOPE_CURRENT_PAGE) {
+            return $this->downloadCurrentPage($campaign);
         }
 
         $batch = ExportBatch::query()->create([
@@ -354,6 +360,31 @@ class CreateList extends Component
         ExportFilteredUsersJob::dispatch($batch->id);
 
         session()->flash('success', 'Exportación en cola. Te avisaremos cuando el archivo esté listo.');
+    }
+
+    protected function downloadCurrentPage(Campaign $campaign)
+    {
+        $columns = $this->normalizedSelectedColumns();
+        $users = $this->buildQuery($campaign, $this->appliedFilters)
+            ->forPage($this->getPage(), $this->perPage)
+            ->get();
+        $rowMapper = app(SupporterRowMapper::class);
+        $roleNamesByUser = $rowMapper->roleNamesByUser($this->rolesCampaign($campaign), $users);
+
+        $rows = $users->map(function (User $user) use ($columns, $roleNamesByUser, $rowMapper) {
+            $row = $rowMapper->map($user, $roleNamesByUser);
+
+            return array_values($rowMapper->onlyColumns($row, $columns));
+        });
+
+        $headings = collect($columns)
+            ->map(fn ($column) => $this->columnOptions[$column] ?? $column)
+            ->all();
+
+        return Excel::download(
+            new FilteredUsersExport($rows, $headings),
+            'listado-pagina-' . now()->format('Y-m-d-His') . '.xlsx'
+        );
     }
 
     public function refreshExportStatus(): void
