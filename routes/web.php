@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Exports\DownloadExportController;
 use App\Http\Controllers\Users\SearchCampaignUsersController;
 use App\Http\Controllers\Users\SearchUserController;
 use App\Livewire\Admin\UserRoles;
@@ -29,10 +30,14 @@ Route::get('/', function () {
     return redirect()->route('dashboard');
 })->name('home');
 
-Route::get('api/buscar-usuarios', SearchUserController::class)->middleware('axios', 'auth');
+Route::get('api/buscar-usuarios', SearchUserController::class)->middleware('axios', 'auth', 'throttle:30,1');
 Route::get('api/campanias/{campaign:code}/buscar-usuarios', SearchCampaignUsersController::class)
-    ->middleware('axios', 'auth')
+    ->middleware('axios', 'auth', 'throttle:30,1')
     ->name('campaign.users.search');
+
+Route::get('exports/{exportBatch}/download', DownloadExportController::class)
+    ->middleware('auth')
+    ->name('exports.download');
 
 Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', function () {

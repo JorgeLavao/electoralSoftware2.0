@@ -8,8 +8,10 @@ use App\Models\DocumentType;
 use App\Models\Gender;
 use App\Models\Occupation;
 use App\Models\User;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
@@ -118,35 +120,49 @@ class ShowUserModal extends Component
 
         $validated = $this->validate($this->rules(), $this->messages());
 
-        DB::transaction(function () use ($validated) {
-            $this->user->update([
-                'document_type_id' => $validated['doc_type'],
-                'document_number' => $validated['document_number'],
-                'first_name' => $validated['first_name'],
-                'middle_name' => $this->emptyToNull($validated['middle_name'] ?? null),
-                'paternal_surname' => $validated['paternal_surname'],
-                'maternal_surname' => $this->emptyToNull($validated['maternal_surname'] ?? null),
-                'celphone' => $validated['celphone'],
-                'email' => strtolower($validated['email']),
-            ]);
-
-            $profile = $this->user->foreing_aditional_info;
-
-            if ($profile) {
-                $profile->update([
-                    'gender_id' => $validated['gender'],
-                    'birth_date' => $this->emptyToNull($validated['birth_date'] ?? null),
-                    'occupation_id' => $validated['occupation'],
-                    'age_range_id' => $validated['age_id'],
-                    'vehicle' => (bool) $validated['vehicle'],
-                    'zone' => $validated['zone'],
-                    'department' => json_encode($this->sanitizeLocation($validated['department'])),
-                    'municipality' => json_encode($this->sanitizeLocation($validated['municipality'])),
-                    'district_commune' => $this->emptyToNull($validated['district'] ?? null),
-                    'neighborhood_village_name' => $validated['neighborhood'],
+        try {
+            DB::transaction(function () use ($validated) {
+                $this->user->update([
+                    'document_type_id' => $validated['doc_type'],
+                    'document_number' => $validated['document_number'],
+                    'first_name' => $validated['first_name'],
+                    'middle_name' => $this->emptyToNull($validated['middle_name'] ?? null),
+                    'paternal_surname' => $validated['paternal_surname'],
+                    'maternal_surname' => $this->emptyToNull($validated['maternal_surname'] ?? null),
+                    'celphone' => $validated['celphone'],
+                    'email' => strtolower($validated['email']),
                 ]);
+
+                $profile = $this->user->foreing_aditional_info;
+
+                if ($profile) {
+                    $profile->update([
+                        'gender_id' => $validated['gender'],
+                        'birth_date' => $this->emptyToNull($validated['birth_date'] ?? null),
+                        'occupation_id' => $validated['occupation'],
+                        'age_range_id' => $validated['age_id'],
+                        'vehicle' => (bool) $validated['vehicle'],
+                        'zone' => $validated['zone'],
+                        'department' => json_encode($this->sanitizeLocation($validated['department'])),
+                        'municipality' => json_encode($this->sanitizeLocation($validated['municipality'])),
+                        'district_commune' => $this->emptyToNull($validated['district'] ?? null),
+                        'neighborhood_village_name' => $validated['neighborhood'],
+                    ]);
+                }
+            });
+        } catch (QueryException $e) {
+            if ($this->isDocumentUniqueConstraintViolation($e)) {
+                $this->addError('document_number', 'Ya existe un usuario con este tipo y número de documento.');
+                return;
             }
-        });
+
+            if ($this->isEmailUniqueConstraintViolation($e)) {
+                $this->addError('email', 'El correo ya está siendo usado por otro usuario.');
+                return;
+            }
+
+            throw $e;
+        }
 
         $this->user->refresh();
         $this->user->load([
@@ -174,7 +190,15 @@ class ShowUserModal extends Component
     {
         $rules = [
             'doc_type' => ['required', 'exists:document_types,id'],
-            'document_number' => ['required', 'string', 'min:3', 'max:255'],
+            'document_number' => [
+                'required',
+                'string',
+                'min:3',
+                'max:255',
+                Rule::unique('users', 'document_number')
+                    ->where(fn ($query) => $query->where('document_type_id', $this->doc_type))
+                    ->ignore($this->user?->id),
+            ],
             'first_name' => ['required', 'string', 'max:50'],
             'middle_name' => ['nullable', 'string', 'max:50'],
             'paternal_surname' => ['required', 'string', 'max:50'],
@@ -212,6 +236,7 @@ class ShowUserModal extends Component
             'doc_type.exists' => 'Selecciona un tipo de documento válido.',
             'document_number.required' => 'Ingresa el número de documento.',
             'document_number.min' => 'Ingresa un documento válido.',
+            'document_number.unique' => 'Ya existe un usuario con este tipo y número de documento.',
             'first_name.required' => 'El primer nombre es obligatorio.',
             'paternal_surname.required' => 'El primer apellido es obligatorio.',
             'celphone.required' => 'El celular es obligatorio.',
@@ -315,6 +340,23 @@ class ShowUserModal extends Component
         $trimmed = trim((string) $value);
 
         return $trimmed === '' ? null : $trimmed;
+    }
+
+    private function isDocumentUniqueConstraintViolation(QueryException $e): bool
+    {
+        $message = strtolower($e->getMessage());
+
+        return str_contains($message, 'users_document_type_number_unique')
+            || str_contains($message, 'users.document_type_id')
+            || str_contains($message, 'document_type_id, document_number');
+    }
+
+    private function isEmailUniqueConstraintViolation(QueryException $e): bool
+    {
+        $message = strtolower($e->getMessage());
+
+        return str_contains($message, 'users_email_unique')
+            || str_contains($message, 'users.email');
     }
 
     public function render()

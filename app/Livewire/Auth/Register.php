@@ -4,6 +4,7 @@ namespace App\Livewire\Auth;
 
 use App\Models\DocumentType;
 use App\Models\User;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Validation\Rule;
@@ -47,12 +48,12 @@ class Register extends Component
         ],[
             'celphone.required' => 'El número de celular es obligatorio.',
             'celphone.digits'   => 'El número de celular debe tener 10 dígitos.',
-            'email.required'    => 'El correo electronico es obligatorio.',
-            'email.string'      => 'El correo electronico no es válido.',
-            'email.lowercase'   => 'El correo electronico no es válido.',
-            'email.email'       => 'El correo electronico no es válido.',
-            'email.max'         => 'El correo electronico no es válido.',
-            'email.unique'      => 'El correo electronico ya está en uso',
+            'email.required'    => 'El correo electrónico es obligatorio.',
+            'email.string'      => 'El correo electrónico no es válido.',
+            'email.lowercase'   => 'El correo electrónico no es válido.',
+            'email.email'       => 'El correo electrónico no es válido.',
+            'email.max'         => 'El correo electrónico no es válido.',
+            'email.unique'      => 'El correo electrónico ya está en uso',
             'password.required' => 'La contraseña es obligatoria',
             'password.string'   => 'La contraseña tiene un formato inválido',
             'password.confirmed'=> 'Las contraseñas no coinciden.',
@@ -63,17 +64,34 @@ class Register extends Component
             'password.symbols'  => 'La contraseña debe contener al menos un símbolo.',
             'password.uncompromised' => 'La contraseña proporcionada ha sido comprometida en una filtración de datos. Por favor, elige otra.',
         ]);
-        $user = User::create([
-            'document_type_id'  => $this->doc_type,
-            'document_number'   => $this->doc_number,
-            'first_name' => $this->first_name,
-            'middle_name' => $this->middle_name ?? null,
-            'paternal_surname' => $this->paternal_surname,
-            'maternal_surname' => $this->maternal_surname ?? null,
-            'celphone' => $this->celphone,
-            'email' => $this->email,
-            'password' => bcrypt($this->password),
-        ]);
+        try {
+            $user = User::create([
+                'document_type_id'  => $this->doc_type,
+                'document_number'   => $this->doc_number,
+                'first_name' => $this->first_name,
+                'middle_name' => $this->middle_name ?? null,
+                'paternal_surname' => $this->paternal_surname,
+                'maternal_surname' => $this->maternal_surname ?? null,
+                'celphone' => $this->celphone,
+                'email' => $this->email,
+                'password' => bcrypt($this->password),
+            ]);
+        } catch (QueryException $e) {
+            if ($this->isDocumentUniqueConstraintViolation($e)) {
+                $this->addError('doc_number', 'Ya existe un usuario registrado con este tipo y número de documento.');
+                $this->page = 1;
+
+                return;
+            }
+
+            if ($this->isEmailUniqueConstraintViolation($e)) {
+                $this->addError('email', 'El correo electrónico ya está en uso');
+
+                return;
+            }
+
+            throw $e;
+        }
 
         Auth::login($user);
 
@@ -117,5 +135,22 @@ class Register extends Component
             ]);
         }
         $this->page++;
+    }
+
+    private function isDocumentUniqueConstraintViolation(QueryException $e): bool
+    {
+        $message = strtolower($e->getMessage());
+
+        return str_contains($message, 'users_document_type_number_unique')
+            || str_contains($message, 'users.document_type_id')
+            || str_contains($message, 'document_type_id, document_number');
+    }
+
+    private function isEmailUniqueConstraintViolation(QueryException $e): bool
+    {
+        $message = strtolower($e->getMessage());
+
+        return str_contains($message, 'users_email_unique')
+            || str_contains($message, 'users.email');
     }
 }

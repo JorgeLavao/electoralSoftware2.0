@@ -4,6 +4,8 @@ namespace App\Imports;
 
 use App\Models\DocumentType;
 use App\Models\User;
+use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\DB;
 
 class SupportersStoreImport extends AbstractSupportersImport
 {
@@ -11,142 +13,290 @@ class SupportersStoreImport extends AbstractSupportersImport
 
     protected int $lastErrorsLimit = 20;
 
+    protected int $storeBufferLimit = 500;
+
     protected int $campaignId;
 
     protected int $refferId;
+
+    protected array $pendingRows = [];
+
     /**
-     * Cache local de código -> id de tipo de documento
+     * Cache local de código -> id de tipo de documento.
      *
      * @var array<string,int>
      */
     protected static array $documentTypeMap = [];
 
-
-    public function __construct( int $batchId, int $campaignId,int $refferId, string $docKey = '', string $emailKey = '')
+    public function __construct(int $batchId, int $campaignId, int $refferId, string $docKey = '', string $emailKey = '')
     {
         parent::__construct($batchId, $docKey, $emailKey);
         $this->campaignId = $campaignId;
         $this->refferId = $refferId;
     }
 
-
-
-    protected function handleRowResult( int $rowIndex, array $data, string $status, array $messages): void
+    protected function handleRowResult(int $rowIndex, array $data, string $status, array $messages): void
     {
         if ($status !== 'valid') {
             return;
         }
 
         $tipoCodigo = strtoupper($data['tipo_de_documento'] ?? '');
-        $doc        = $data['numero_de_documento'] ?? null;
-        $email      = mb_strtolower(trim((string)($data['correo_electronico'] ?? '')));
-
+        $doc = (string) ($data['numero_de_documento'] ?? '');
+        $email = mb_strtolower(trim((string) ($data['correo_electronico'] ?? '')));
         $documentTypeId = $this->resolveDocumentTypeId($tipoCodigo);
 
-        if (!$documentTypeId) {
+        if (! $documentTypeId) {
+            $this->markRowInvalid(
+                $rowIndex,
+                $tipoCodigo,
+                $doc,
+                [...$messages, "Tipo de documento '{$tipoCodigo}' no existe en la tabla document_types"]
+            );
 
-            $messages[] = "Tipo de documento '{$tipoCodigo}' no existe en la tabla document_types";
-
-            $this->counts['valid']   = max(0, $this->counts['valid'] - 1);
-            $this->counts['invalid'] = ($this->counts['invalid'] ?? 0) + 1;
-
-            $issue = [
-                'row' => $rowIndex,
-                'tipo_de_documento' => $tipoCodigo,
-                'nro_documento' => (string)$doc,
-                'estado' => 'invalid',
-                'mensaje' => implode(' | ', $messages),
-            ];
-            $this->pushLastError($issue);
             return;
         }
 
-        $existingByDoc = User::where('document_type_id', $documentTypeId)->where('document_number', $doc)->first();
-
-        if ($email !== '') {
-            $emailInUse = User::where('email', $email)
-                ->when($existingByDoc, fn ($query) => $query->where('id', '!=', $existingByDoc->id))
-                ->exists();
-
-            if ($emailInUse) {
-                $this->counts['valid']   = max(0, $this->counts['valid'] - 1);
-                $this->counts['invalid'] = ($this->counts['invalid'] ?? 0) + 1;
-                $messages[] = 'Correo ya está en uso por otro simpatizante';
-                $issue = [
-                    'row' => $rowIndex,
-                    'tipo_de_documento' => $tipoCodigo,
-                    'nro_documento' => (string)$doc,
-                    'estado' => 'invalid',
-                    'mensaje' => implode(' | ', $messages),
-                ];
-                $this->pushLastError($issue);
-                return;
-            }
-        }
-
-        $user = User::updateOrCreate(
-            [
-                'document_type_id' => $documentTypeId,
-                'document_number' => $doc, // ajusta a tu nombre real de columna si hace falta
-            ],
-            [
-                'first_name'     => $data['primer_nombre'] ?? null,
-                'middle_name'    => $data['segundo_nombre'] ?? null,
-                'paternal_surname'   => $data['primer_apellido'] ?? null,
-                'maternal_surname'  => $data['segundo_apellido'] ?? null,
-                'celphone'           => $data['numero_de_celular'] ?? null,
-                'email'             => $email ?: null,
-            ]
-        );
-
-
-        if(!$user){
-            $this->counts['valid']   = max(0, $this->counts['valid'] - 1);
-            $this->counts['invalid'] = ($this->counts['invalid'] ?? 0) + 1;
-            $messages[] = 'No se encontro el usuario';
-            $issue = [
-                'row' => $rowIndex,
-                'tipo_de_documento' => $tipoCodigo,
-                'nro_documento' => (string)$doc,
-                'estado' => 'invalid',
-                'mensaje' => implode(' | ', $messages),
-            ];
-            $this->pushLastError($issue);
-            return;
-        }
-
-        $campaignMembership = $user->supporter_campaigns()
-            ->where('campaigns.id', $this->campaignId)
-            ->first();
-
-        if ($campaignMembership && (int) $campaignMembership->pivot->validate !== 2) {
-            $this->counts['valid']   = max(0, $this->counts['valid'] - 1);
-            $this->counts['invalid'] = ($this->counts['invalid'] ?? 0) + 1;
-            $messages[] = 'El usuario ya hace parte de esta camapaña';
-            $issue = [
-                'row' => $rowIndex,
-                'tipo_de_documento' => $tipoCodigo,
-                'nro_documento' => (string)$doc,
-                'estado' => 'invalid',
-                'mensaje' => implode(' | ', $messages),
-            ];
-            $this->pushLastError($issue);
-            return;
-        }
-        
-        $pivotData = [
-            'reffer_by' => $this->refferId,
-            'approach' => 4,
-            'validate' => 0,
+        $this->pendingRows[] = [
+            'rowIndex' => $rowIndex,
+            'data' => $data,
+            'messages' => $messages,
+            'tipoCodigo' => $tipoCodigo,
+            'documentTypeId' => $documentTypeId,
+            'doc' => $doc,
+            'email' => $email,
         ];
 
-        if ($campaignMembership) {
-            $user->supporter_campaigns()->updateExistingPivot($this->campaignId, $pivotData);
-        } else {
-            $user->supporter_campaigns()->attach($this->campaignId, $pivotData);
+        if (count($this->pendingRows) >= $this->storeBufferLimit) {
+            $this->storePendingRows();
+        }
+    }
+
+    protected function storePendingRows(): void
+    {
+        if ($this->pendingRows === []) {
+            return;
         }
 
-        $this->imported++;
+        $rows = $this->pendingRows;
+        $this->pendingRows = [];
+
+        $usersByDocument = $this->preloadUsersByDocument($rows);
+        $usersByEmail = $this->preloadUsersByEmail($rows);
+        $storedRows = [];
+
+        foreach ($rows as $row) {
+            $documentKey = $this->documentKey($row['documentTypeId'], $row['doc']);
+            $existingByDoc = $usersByDocument[$documentKey] ?? null;
+
+            if ($row['email'] !== '') {
+                $emailOwner = $usersByEmail[$row['email']] ?? null;
+
+                if ($emailOwner && (! $existingByDoc || (int) $emailOwner->id !== (int) $existingByDoc->id)) {
+                    $this->markPendingRowInvalid($row, 'Correo ya está en uso por otro simpatizante');
+                    continue;
+                }
+            }
+
+            $user = $this->storeUser($row, $existingByDoc);
+
+            if (! $user) {
+                $this->markPendingRowInvalid($row, 'No se encontró el usuario');
+                continue;
+            }
+
+            $usersByDocument[$documentKey] = $user;
+
+            if ($row['email'] !== '') {
+                $usersByEmail[$row['email']] = $user;
+            }
+
+            $storedRows[] = [
+                'row' => $row,
+                'user' => $user,
+            ];
+        }
+
+        $this->syncCampaignMemberships($storedRows);
+    }
+
+    protected function preloadUsersByDocument(array $rows): array
+    {
+        $documentsByType = collect($rows)
+            ->groupBy('documentTypeId')
+            ->map(fn ($typeRows) => $typeRows->pluck('doc')->filter()->unique()->values()->all())
+            ->filter()
+            ->all();
+
+        if ($documentsByType === []) {
+            return [];
+        }
+
+        return User::query()
+            ->where(function ($query) use ($documentsByType) {
+                foreach ($documentsByType as $documentTypeId => $documents) {
+                    $query->orWhere(function ($documentQuery) use ($documentTypeId, $documents) {
+                        $documentQuery
+                            ->where('document_type_id', (int) $documentTypeId)
+                            ->whereIn('document_number', $documents);
+                    });
+                }
+            })
+            ->get()
+            ->keyBy(fn (User $user) => $this->documentKey((int) $user->document_type_id, (string) $user->document_number))
+            ->all();
+    }
+
+    protected function preloadUsersByEmail(array $rows): array
+    {
+        $emails = collect($rows)
+            ->pluck('email')
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($emails->isEmpty()) {
+            return [];
+        }
+
+        return User::query()
+            ->whereIn('email', $emails)
+            ->get()
+            ->keyBy(fn (User $user) => mb_strtolower((string) $user->email))
+            ->all();
+    }
+
+    protected function storeUser(array $row, ?User $existingByDoc): ?User
+    {
+        $attributes = [
+            'first_name' => $row['data']['primer_nombre'] ?? null,
+            'middle_name' => $row['data']['segundo_nombre'] ?? null,
+            'paternal_surname' => $row['data']['primer_apellido'] ?? null,
+            'maternal_surname' => $row['data']['segundo_apellido'] ?? null,
+            'celphone' => $row['data']['numero_de_celular'] ?? null,
+            'email' => $row['email'] ?: null,
+        ];
+
+        if ($existingByDoc) {
+            $existingByDoc->fill($attributes);
+            $existingByDoc->save();
+
+            return $existingByDoc;
+        }
+
+        try {
+            return User::query()->create($attributes + [
+                'document_type_id' => $row['documentTypeId'],
+                'document_number' => $row['doc'],
+            ]);
+        } catch (QueryException $e) {
+            if ($this->isDocumentUniqueConstraintViolation($e)) {
+                return User::query()
+                    ->where('document_type_id', $row['documentTypeId'])
+                    ->where('document_number', $row['doc'])
+                    ->first();
+            }
+
+            throw $e;
+        }
+    }
+
+    protected function syncCampaignMemberships(array $storedRows): void
+    {
+        if ($storedRows === []) {
+            return;
+        }
+
+        $userIds = collect($storedRows)
+            ->pluck('user.id')
+            ->filter()
+            ->unique()
+            ->values();
+
+        $memberships = DB::table('campaign_user')
+            ->where('campaign_id', $this->campaignId)
+            ->whereIn('user_id', $userIds)
+            ->get()
+            ->keyBy('user_id');
+
+        $now = now();
+        $newMemberships = [];
+
+        foreach ($storedRows as $storedRow) {
+            /** @var User $user */
+            $user = $storedRow['user'];
+            $row = $storedRow['row'];
+            $membership = $memberships[$user->id] ?? null;
+
+            if ($membership && (int) $membership->validate !== 2) {
+                $this->markPendingRowInvalid($row, 'El usuario ya hace parte de esta campaña');
+                continue;
+            }
+
+            $pivotData = [
+                'reffer_by' => $this->refferId,
+                'approach' => 4,
+                'validate' => 0,
+                'updated_at' => $now,
+            ];
+
+            if ($membership) {
+                DB::table('campaign_user')
+                    ->where('campaign_id', $this->campaignId)
+                    ->where('user_id', $user->id)
+                    ->update($pivotData);
+            } else {
+                $newMemberships[] = $pivotData + [
+                    'campaign_id' => $this->campaignId,
+                    'user_id' => $user->id,
+                    'created_at' => $now,
+                ];
+            }
+
+            $this->imported++;
+        }
+
+        if ($newMemberships !== []) {
+            DB::table('campaign_user')->insertOrIgnore($newMemberships);
+        }
+    }
+
+    protected function markPendingRowInvalid(array $row, string $message): void
+    {
+        $this->markRowInvalid(
+            $row['rowIndex'],
+            $row['tipoCodigo'],
+            $row['doc'],
+            [...$row['messages'], $message]
+        );
+    }
+
+    protected function markRowInvalid(int $rowIndex, string $tipoCodigo, string $doc, array $messages): void
+    {
+        $this->counts['valid'] = max(0, $this->counts['valid'] - 1);
+        $this->counts['invalid'] = ($this->counts['invalid'] ?? 0) + 1;
+
+        $this->pushLastError([
+            'row' => $rowIndex,
+            'tipo_de_documento' => $tipoCodigo,
+            'nro_documento' => $doc,
+            'estado' => 'invalid',
+            'mensaje' => implode(' | ', $messages),
+        ]);
+    }
+
+    protected function documentKey(int $documentTypeId, string $documentNumber): string
+    {
+        return $documentTypeId . '|' . $documentNumber;
+    }
+
+    protected function isDocumentUniqueConstraintViolation(QueryException $e): bool
+    {
+        $message = strtolower($e->getMessage());
+
+        return str_contains($message, 'users_document_type_number_unique')
+            || str_contains($message, 'users.document_type_id')
+            || str_contains($message, 'document_type_id, document_number');
     }
 
     /**
@@ -155,7 +305,7 @@ class SupportersStoreImport extends AbstractSupportersImport
      */
     protected function resolveDocumentTypeId(?string $code): ?int
     {
-        if (!$code) {
+        if (! $code) {
             return null;
         }
 
@@ -183,11 +333,8 @@ class SupportersStoreImport extends AbstractSupportersImport
 
     public function __destruct()
     {
+        $this->storePendingRows();
+
         parent::__destruct();
-        // $batch = \App\Models\ImportBatch::find($this->batchId);
-        // if ($batch) {
-        //     $batch->imported_rows = $this->imported;
-        //     $batch->save();
-        // }
     }
 }

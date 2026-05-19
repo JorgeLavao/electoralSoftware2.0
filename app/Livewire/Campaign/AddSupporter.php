@@ -7,6 +7,7 @@ use App\Models\Campaign;
 use App\Models\DocumentType;
 use App\Models\Invitation;
 use App\Models\User;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -61,10 +62,10 @@ class AddSupporter extends Component
     public $celphone;
 
     #[Validate('required',  message : 'Este campo es obligatorio.')]
-    #[Validate('string',    message : 'El correo electronico no es válido.')]
-    #[Validate('lowercase', message : 'El correo electronico no es válido.')]
-    #[Validate('email',     message : 'El correo electronico no es válido.')]
-    #[Validate('max:100',   message : 'El correo electronico excede la longitud maxima permitida.')]
+    #[Validate('string',    message : 'El correo electrónico no es válido.')]
+    #[Validate('lowercase', message : 'El correo electrónico no es válido.')]
+    #[Validate('email',     message : 'El correo electrónico no es válido.')]
+    #[Validate('max:100',   message : 'El correo electrónico excede la longitud máxima permitida.')]
     public $email;
 
 
@@ -129,6 +130,19 @@ class AddSupporter extends Component
             session()->flash('success', 'Invitación enviada correctamente.');
 
             $this->redirectIntended(default: route('campaign.add-supporter', $this->campaign->code, absolute: false), navigate: true);
+        } catch (QueryException $e) {
+            if ($this->isDocumentUniqueConstraintViolation($e)) {
+                session()->flash('error', 'Ya existe un usuario con este tipo y número de documento.');
+                return;
+            }
+
+            if ($this->isEmailUniqueConstraintViolation($e)) {
+                session()->flash('error', 'El correo ya está siendo usado por otro usuario.');
+                return;
+            }
+
+            session()->flash('error', 'Error al enviar la invitación. No se guardaron cambios.');
+            Log::error('Campaign supporter invitation failed', ['exception' => $e]);
         }catch(\Throwable $e){
             session()->flash('error', 'Error al enviar la invitación. No se guardaron cambios.');
             Log::error('Campaign creation failed', ['exception' => $e]);
@@ -163,6 +177,23 @@ class AddSupporter extends Component
         $invitation->save();
         //send email
         Mail::to($user->email)->send(new InviteToCampaign($this->campaign, $user->first_name, $invitation->token, $invitation->expires_at));
+    }
+
+    private function isDocumentUniqueConstraintViolation(QueryException $e): bool
+    {
+        $message = strtolower($e->getMessage());
+
+        return str_contains($message, 'users_document_type_number_unique')
+            || str_contains($message, 'users.document_type_id')
+            || str_contains($message, 'document_type_id, document_number');
+    }
+
+    private function isEmailUniqueConstraintViolation(QueryException $e): bool
+    {
+        $message = strtolower($e->getMessage());
+
+        return str_contains($message, 'users_email_unique')
+            || str_contains($message, 'users.email');
     }
 
     public function render()

@@ -7,7 +7,7 @@ use App\Models\Campaign;
 use App\Models\Gender;
 use App\Models\Occupation;
 use App\Models\User;
-use Carbon\Carbon;
+use App\Services\SupporterListQueryService;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -481,199 +481,56 @@ class IndexCommittee extends Component
 
     protected function buildFilteredUsersQuery(Campaign $campaign)
     {
-        $rolesCampaign = $this->rolesCampaign($campaign);
-
-        $query = $campaign->foreign_users()
-            ->with([
-                'foreing_aditional_info.foreign_gender',
-                'foreing_aditional_info.foreign_range_age',
-                'foreing_aditional_info.foreign_occupations',
-                'committees' => fn ($committeeQuery) => $committeeQuery
-                    ->where('committees.campaign_id', $campaign->id)
-                    ->orderBy('name'),
-                'roles' => fn ($roleQuery) => $roleQuery
-                    ->where('roles.campaign_id', $rolesCampaign->id)
-                    ->orderBy('name'),
-            ])
-            ->select('users.*');
-
-        $this->applySearchFilter($query);
-        $this->applyProfileFilters($query);
-        $this->applyCampaignPivotFilters($query);
-        $this->applyRelationshipFilters($query, $campaign);
-
-        return $query->orderBy('first_name')->orderBy('paternal_surname');
+        return app(SupporterListQueryService::class)->build(
+            $campaign,
+            $this->rolesCampaign($campaign),
+            $this->listFilters()
+        );
     }
 
-    protected function applySearchFilter($query): void
+    protected function listFilters(): array
     {
-        if (trim((string) $this->searchTerm) === '') {
-            return;
-        }
-
-        $this->sw_search
-            ? $query->whereNot(fn ($searchQuery) => $searchQuery->search($this->searchTerm))
-            : $query->search($this->searchTerm);
-    }
-
-    protected function applyProfileFilters($query): void
-    {
-        $this->applyWhereHasFilter($query, 'foreing_aditional_info', 'gender_id', $this->gender_id, $this->sw_gender, true);
-        $this->applyWhereHasFilter($query, 'foreing_aditional_info', 'age_range_id', $this->age_range, $this->sw_age);
-        $this->applyWhereHasFilter($query, 'foreing_aditional_info', 'occupation_id', $this->occupation_id, $this->sw_occupation);
-        $this->applyWhereHasFilter($query, 'foreing_aditional_info', 'zone', $this->zone, $this->sw_zone);
-        $this->applyWhereHasFilter($query, 'foreing_aditional_info', 'department->id', $this->department, $this->sw_department);
-        $this->applyWhereHasFilter($query, 'foreing_aditional_info', 'municipality->id', $this->municipality, $this->sw_municipality);
-        $this->applyWhereHasFilter($query, 'foreing_aditional_info', 'district_commune', $this->district_commune, $this->sw_district);
-        $this->applyWhereHasFilter($query, 'foreing_aditional_info', 'neighborhood_village_name', $this->neighborhood, $this->sw_nghd);
-        $this->applyWhereHasFilter($query, 'foreing_aditional_info', 'vehicle', $this->vehicle, $this->sw_vehicle);
-
-        if ($this->birth_month || $this->birth_day) {
-            $callback = function ($q) {
-                if ($this->birth_month) {
-                    $q->where('birth_month', (int) $this->birth_month);
-                }
-
-                if ($this->birth_day) {
-                    $q->where('birth_day', (int) $this->birth_day);
-                }
-            };
-
-            $this->sw_birth
-                ? $query->whereDoesntHave('foreing_aditional_info', $callback)
-                : $query->whereHas('foreing_aditional_info', $callback);
-        }
-    }
-
-    protected function applyWhereHasFilter($query, string $relation, string $column, $value, bool $exclude = false, bool $castInt = false): void
-    {
-        if (is_null($value) || $value === '') {
-            return;
-        }
-
-        $filterValue = $castInt ? (int) $value : $value;
-        $callback = fn ($q) => $q->where($column, $filterValue);
-
-        $exclude
-            ? $query->whereDoesntHave($relation, $callback)
-            : $query->whereHas($relation, $callback);
-    }
-
-    protected function applyCampaignPivotFilters($query): void
-    {
-        if (! is_null($this->approach) && $this->approach !== '') {
-            $this->sw_approach
-                ? $query->wherePivot('approach', '!=', $this->approach)
-                : $query->wherePivot('approach', $this->approach);
-        }
-
-        if (! is_null($this->verify) && $this->verify !== '') {
-            $this->sw_verify
-                ? $query->wherePivot('validate', '!=', $this->verify)
-                : $query->wherePivot('validate', $this->verify);
-        }
-
-        if (! empty($this->refer_ids)) {
-            $this->sw_refers
-                ? $query->wherePivotNotIn('reffer_by', $this->refer_ids)
-                : $query->wherePivotIn('reffer_by', $this->refer_ids);
-        }
-
-        if ($this->joined_from && $this->joined_to) {
-            $dates = [
-                Carbon::parse($this->joined_from)->startOfDay(),
-                Carbon::parse($this->joined_to)->endOfDay(),
-            ];
-
-            $this->sw_joined
-                ? $query->whereNotBetween('campaign_user.created_at', $dates)
-                : $query->whereBetween('campaign_user.created_at', $dates);
-        } elseif ($this->joined_from) {
-            $operator = $this->sw_joined ? '<' : '>=';
-            $query->where('campaign_user.created_at', $operator, Carbon::parse($this->joined_from)->startOfDay());
-        } elseif ($this->joined_to) {
-            $operator = $this->sw_joined ? '>' : '<=';
-            $query->where('campaign_user.created_at', $operator, Carbon::parse($this->joined_to)->endOfDay());
-        }
-
-        if ($this->validation_from || $this->validation_to) {
-            if ($this->validation_from && $this->validation_to) {
-                $dates = [
-                    Carbon::parse($this->validation_from)->startOfDay(),
-                    Carbon::parse($this->validation_to)->endOfDay(),
-                ];
-
-                $this->sw_validation
-                    ? $query->where(function ($validationQuery) use ($dates) {
-                        $validationQuery
-                            ->where('campaign_user.validate', '!=', 1)
-                            ->orWhereNotBetween('campaign_user.updated_at', $dates);
-                    })
-                    : $query
-                        ->wherePivot('validate', 1)
-                        ->whereBetween('campaign_user.updated_at', $dates);
-            } elseif ($this->validation_from) {
-                $date = Carbon::parse($this->validation_from)->startOfDay();
-
-                $this->sw_validation
-                    ? $query->where(function ($validationQuery) use ($date) {
-                        $validationQuery
-                            ->where('campaign_user.validate', '!=', 1)
-                            ->orWhere('campaign_user.updated_at', '<', $date);
-                    })
-                    : $query
-                        ->wherePivot('validate', 1)
-                        ->where('campaign_user.updated_at', '>=', $date);
-            } elseif ($this->validation_to) {
-                $date = Carbon::parse($this->validation_to)->endOfDay();
-
-                $this->sw_validation
-                    ? $query->where(function ($validationQuery) use ($date) {
-                        $validationQuery
-                            ->where('campaign_user.validate', '!=', 1)
-                            ->orWhere('campaign_user.updated_at', '>', $date);
-                    })
-                    : $query
-                        ->wherePivot('validate', 1)
-                        ->where('campaign_user.updated_at', '<=', $date);
-            }
-        }
-    }
-
-    protected function applyRelationshipFilters($query, Campaign $campaign): void
-    {
-        if (! empty($this->committee_ids)) {
-            $this->sw_committees
-                ? $query->whereDoesntHave('committees', function ($committeeQuery) use ($campaign) {
-                    $committeeQuery
-                        ->where('committees.campaign_id', $campaign->id)
-                        ->whereIn('committees.id', $this->committee_ids);
-                })
-                : $query->whereHas('committees', function ($committeeQuery) use ($campaign) {
-                    $committeeQuery
-                        ->where('committees.campaign_id', $campaign->id)
-                        ->whereIn('committees.id', $this->committee_ids);
-                });
-        }
-
-        if (! empty($this->role_ids)) {
-            $roleUserIds = $this->roleUserIdsSubquery($this->rolesCampaign($campaign));
-
-            $this->sw_roles
-                ? $query->whereNotIn('users.id', $roleUserIds)
-                : $query->whereIn('users.id', $roleUserIds);
-        }
-    }
-
-    protected function roleUserIdsSubquery(Campaign $campaign)
-    {
-        return DB::table('model_has_roles')
-            ->join('roles', 'roles.id', '=', 'model_has_roles.role_id')
-            ->where('model_has_roles.model_type', User::class)
-            ->where('model_has_roles.campaign_id', $campaign->id)
-            ->where('roles.campaign_id', $campaign->id)
-            ->whereIn('roles.id', $this->role_ids)
-            ->select('model_has_roles.model_id');
+        return [
+            'searchTerm' => $this->searchTerm,
+            'sw_search' => $this->sw_search,
+            'approach' => $this->approach,
+            'sw_approach' => $this->sw_approach,
+            'verify' => $this->verify,
+            'sw_verify' => $this->sw_verify,
+            'vehicle' => $this->vehicle,
+            'sw_vehicle' => $this->sw_vehicle,
+            'gender_id' => $this->gender_id,
+            'sw_gender' => $this->sw_gender,
+            'age_range' => $this->age_range,
+            'sw_age' => $this->sw_age,
+            'occupation_id' => $this->occupation_id,
+            'sw_occupation' => $this->sw_occupation,
+            'zone' => $this->zone,
+            'sw_zone' => $this->sw_zone,
+            'department' => $this->department,
+            'sw_department' => $this->sw_department,
+            'municipality' => $this->municipality,
+            'sw_municipality' => $this->sw_municipality,
+            'district_commune' => $this->district_commune,
+            'sw_district' => $this->sw_district,
+            'neighborhood' => $this->neighborhood,
+            'sw_nghd' => $this->sw_nghd,
+            'refer_ids' => $this->refer_ids,
+            'sw_refers' => $this->sw_refers,
+            'committee_ids' => $this->committee_ids,
+            'sw_committees' => $this->sw_committees,
+            'role_ids' => $this->role_ids,
+            'sw_roles' => $this->sw_roles,
+            'joined_from' => $this->joined_from,
+            'joined_to' => $this->joined_to,
+            'sw_joined' => $this->sw_joined,
+            'validation_from' => $this->validation_from,
+            'validation_to' => $this->validation_to,
+            'sw_validation' => $this->sw_validation,
+            'birth_month' => $this->birth_month,
+            'birth_day' => $this->birth_day,
+            'sw_birth' => $this->sw_birth,
+        ];
     }
 
     protected function rolesCampaign(Campaign $fallback): Campaign

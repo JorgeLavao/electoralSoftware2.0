@@ -76,6 +76,10 @@
                         wire:click='leaveCampaign({{ $campaign->id }})'>
                         <x-icons.log-out />
                     </button>
+                    @elseif(in_array($campaign->id, $pendingCampaignIds, true))
+                    <span class="button btn-secundary cursor-not-allowed opacity-70">
+                        Pendiente de aprobación
+                    </span>
                     @elseif(in_array($campaign->id, $availableCampaignIds, true))
                     <a href="javascript:void(0)"
                         class="button btn-secundary"

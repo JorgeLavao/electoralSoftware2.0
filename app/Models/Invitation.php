@@ -20,6 +20,15 @@ class Invitation extends Model
 
     protected $hidden = ['token'];
 
+    protected function casts(): array
+    {
+        return [
+            'expires_at' => 'datetime',
+            'accepted_at' => 'datetime',
+            'active' => 'boolean',
+        ];
+    }
+
     public function foreign_user(){
         return $this->belongsTo(User::class);
     }

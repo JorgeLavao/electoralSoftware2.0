@@ -64,6 +64,8 @@ class ImportSupporter extends Component
         $path = $this->file->store('imports/source', 'local');
 
         $batch = ImportBatch::create([
+            'user_id' => Auth::id(),
+            'campaign_id' => $this->campaign->id,
             'type' => 'supporters_preview',
             'status' => 'queued',
             'source_path' => $path,
@@ -88,7 +90,7 @@ class ImportSupporter extends Component
             return;
         }
 
-        $batch = ImportBatch::find($this->batchId);
+        $batch = $this->currentBatch();
 
         if (! $batch) {
             $this->alertImport('No se encontró el lote de importación.');
@@ -100,10 +102,7 @@ class ImportSupporter extends Component
             return;
         }
 
-        $campaign_id = $this->campaign->id;
-        $reffer_id = Auth::user()->id;
-
-        ImportSupportersJob::dispatch($batch->id, $campaign_id, $reffer_id);
+        ImportSupportersJob::dispatch($batch->id, $this->campaign->id, (int) Auth::id());
 
         $this->dispatch('alert', [
             'icon' => 'success',
@@ -119,7 +118,7 @@ class ImportSupporter extends Component
             return;
         }
 
-        $batch = ImportBatch::find($this->batchId);
+        $batch = $this->currentBatch();
 
         if (! $batch) {
             return;
@@ -149,7 +148,7 @@ class ImportSupporter extends Component
             abort(404);
         }
 
-        $batch = ImportBatch::find($this->batchId);
+        $batch = $this->currentBatch();
 
         if (! $batch || ! $batch->errors_csv_path || ! Storage::disk('local')->exists($batch->errors_csv_path)) {
             abort(404);
@@ -200,7 +199,7 @@ class ImportSupporter extends Component
                 return;
             }
 
-            $batch = ImportBatch::find($this->batchId);
+            $batch = $this->currentBatch();
 
             if ($batch) {
                 if ($batch->source_path && Storage::disk('local')->exists($batch->source_path)) {
@@ -228,6 +227,19 @@ class ImportSupporter extends Component
             'text' => $message,
             'timer' => 4000,
         ]);
+    }
+
+    private function currentBatch(): ?ImportBatch
+    {
+        if (! $this->batchId) {
+            return null;
+        }
+
+        return ImportBatch::query()
+            ->whereKey($this->batchId)
+            ->where('user_id', Auth::id())
+            ->where('campaign_id', $this->campaign->id)
+            ->first();
     }
 
     public function render()

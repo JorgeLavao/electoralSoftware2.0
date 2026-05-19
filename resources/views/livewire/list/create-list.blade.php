@@ -19,7 +19,7 @@
         <div class="relative">
             <div
                 wire:loading
-                wire:target="applyFilters,showGeolocation,exportExcel,selectAllColumns,resetSelectedColumns"
+                wire:target="applyFilters,showGeolocation,requestExport,selectAllColumns,resetSelectedColumns,refreshExportStatus"
                 class="absolute inset-0 z-30 rounded-2xl bg-white/70 backdrop-blur-sm">
             </div>
 
@@ -469,13 +469,25 @@
                     <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                         <div class="text-sm text-slate-500">
                             @if ($hasSearched)
-                                {{ $results->count() }} resultado(s) encontrado(s)
+                                {{ $totalResults }} resultado(s) encontrado(s)
                             @else
                                 Presiona buscar para consultar registros.
                             @endif
                         </div>
 
                         <div class="flex flex-col gap-3 md:flex-row">
+                            @if ($hasSearched)
+                                <label class="flex items-center gap-2 text-sm text-slate-600">
+                                    Ver
+                                    <select class="min-w-20" wire:model.live="perPage">
+                                        @foreach ($perPageOptions as $option)
+                                            <option value="{{ $option }}">{{ $option }}</option>
+                                        @endforeach
+                                    </select>
+                                    por pagina
+                                </label>
+                            @endif
+
                             <button type="button" class="btn-secondary" wire:click="clearFilters">
                                 Limpiar filtros
                             </button>
@@ -484,17 +496,54 @@
                                 Buscar
                             </button>
 
-                            @if ($results->isNotEmpty())
+                            @if ($hasSearched && $totalResults > 0)
                                 <button type="button" class="btn-secondary" wire:click="showGeolocation">
                                     Mirar Geolocalizacion
                                 </button>
 
-                                <button type="button" class="btn-primary" wire:click="exportExcel">
-                                    Exportar Excel
+                                <button type="button" class="btn-secondary" wire:click="requestExport('current_page')">
+                                    Exportar pagina actual
+                                </button>
+
+                                <button type="button" class="btn-primary" wire:click="requestExport('all_filtered')">
+                                    Exportar todo
                                 </button>
                             @endif
                         </div>
                     </div>
+
+                    @if ($exportBatchId)
+                        <div class="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+                            <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                                <div>
+                                    <strong>Exportacion:</strong>
+                                    {{ match($exportStatus) {
+                                        'queued' => 'en cola',
+                                        'processing' => 'procesando',
+                                        'done' => 'lista',
+                                        'failed' => 'fallida',
+                                        default => $exportStatus ?? 'pendiente',
+                                    } }}
+
+                                    @if ($exportErrorMessage)
+                                        <p class="mt-1 text-red-600">{{ $exportErrorMessage }}</p>
+                                    @endif
+                                </div>
+
+                                <div class="flex gap-2">
+                                    <button type="button" class="btn-secondary" wire:click="refreshExportStatus">
+                                        Actualizar estado
+                                    </button>
+
+                                    @if ($exportDownloadUrl)
+                                        <a href="{{ $exportDownloadUrl }}" class="btn-primary">
+                                            Descargar
+                                        </a>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                    @endif
                 </div>
 
                 @if ($hasSearched)
@@ -543,6 +592,10 @@
                                             @endforelse
                                         </tbody>
                                     </table>
+                                </div>
+
+                                <div class="border-t border-slate-200 px-5 py-4">
+                                    <x-pagination :paginator="$results" :livewire="true" />
                                 </div>
                             @endif
                         </div>

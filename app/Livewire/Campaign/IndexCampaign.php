@@ -54,27 +54,46 @@ class IndexCampaign extends Component
             return;
         }
 
-        $alreadyJoinedAsSupporter = $user->supporter_campaigns()
+        $supporterMembership = $user->supporter_campaigns()
             ->where('campaigns.id', $campaign->id)
-            ->exists();
+            ->first();
 
         $alreadyJoinedAsStaff = $user->foreign_campaings()
             ->where('campaigns.id', $campaign->id)
             ->wherePivot('status', true)
             ->exists();
 
-        if (! $alreadyJoinedAsSupporter && ! $alreadyJoinedAsStaff) {
-            $user->supporter_campaigns()->attach($campaign->id, [
-                'reffer_by' => null,
-                'approach' => 4,
-                'validate' => 1,
-            ]);
+        if ($alreadyJoinedAsStaff || (int) ($supporterMembership?->pivot?->validate ?? -1) === 1) {
+            $this->campaign_code = '';
+            $this->setCurrentCampaign($user, $campaign);
+
+            session()->flash('success', 'Ya haces parte de esta campana.');
+            $this->dispatch('campaign-joined');
+            return;
         }
 
-        $this->campaign_code = '';
-        $this->setCurrentCampaign($user, $campaign);
+        if ((int) ($supporterMembership?->pivot?->validate ?? -1) === 0) {
+            $this->campaign_code = '';
 
-        session()->flash('success', 'Te uniste correctamente a la campana.');
+            session()->flash('success', 'Tu solicitud para esta campana sigue pendiente de aprobacion.');
+            $this->dispatch('campaign-joined');
+            return;
+        }
+
+        if ((int) ($supporterMembership?->pivot?->validate ?? -1) === 2) {
+            $this->addError('campaign_code', 'Tu solicitud para esta campana fue rechazada.');
+            return;
+        }
+
+        $user->supporter_campaigns()->attach($campaign->id, [
+            'reffer_by' => null,
+            'approach' => 4,
+            'validate' => 0,
+        ]);
+
+        $this->campaign_code = '';
+
+        session()->flash('success', 'Solicitud enviada. Un coordinador debe aprobar tu vinculacion a la campana.');
         $this->dispatch('campaign-joined');
     }
 
@@ -133,7 +152,7 @@ class IndexCampaign extends Component
             ->exists()
             || $user->supporter_campaigns()
                 ->where('campaigns.id', $campaign->id)
-                ->where('campaign_user.validate', '!=', 2)
+                ->where('campaign_user.validate', 1)
                 ->exists();
 
         abort_unless($belongsToCampaign, 403);
@@ -182,7 +201,11 @@ class IndexCampaign extends Component
         return view('livewire.campaign.index-campaign', [
             'campaigns' => $campaigns->paginate(3),
             'supporterCampaignIds' => $user->supporter_campaigns()
-                ->where('campaign_user.validate', '!=', 2)
+                ->where('campaign_user.validate', 1)
+                ->pluck('campaigns.id')
+                ->all(),
+            'pendingCampaignIds' => $user->supporter_campaigns()
+                ->where('campaign_user.validate', 0)
                 ->pluck('campaigns.id')
                 ->all(),
             'availableCampaignIds' => $user->is_super_admin
@@ -192,7 +215,7 @@ class IndexCampaign extends Component
                     ->pluck('campaigns.id')
                     ->merge(
                         $user->supporter_campaigns()
-                            ->where('campaign_user.validate', '!=', 2)
+                            ->where('campaign_user.validate', 1)
                             ->pluck('campaigns.id')
                     )
                     ->unique()

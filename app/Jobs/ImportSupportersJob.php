@@ -33,6 +33,14 @@ class ImportSupportersJob implements ShouldQueue
         $batch = ImportBatch::find($this->batchId);
         if (!$batch) return;
 
+        if ((int) $batch->campaign_id !== $this->campaignId || (int) $batch->user_id !== $this->referrerId) {
+            $batch->status = 'import_failed';
+            $batch->error_message = 'El lote de importación no pertenece a la campaña o al usuario solicitante.';
+            $batch->finished_at = now();
+            $batch->save();
+            return;
+        }
+
         // Usamos claves distintas en Redis para la fase de importación
         $docKey = "import:batch:{$batch->id}:doc:import";
         $emailKey = "import:batch:{$batch->id}:email:import";

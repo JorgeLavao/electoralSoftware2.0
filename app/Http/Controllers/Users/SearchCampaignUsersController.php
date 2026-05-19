@@ -11,6 +11,8 @@ class SearchCampaignUsersController extends Controller
 {
     public function __invoke(Request $request, Campaign $campaign)
     {
+        abort_unless($request->user()?->can('viewSupporters', $campaign), 403);
+
         $search = trim($request->input('q', ''));
 
         if (strlen($search) < 2) {

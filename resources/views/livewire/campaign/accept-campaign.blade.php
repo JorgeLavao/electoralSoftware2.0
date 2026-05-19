@@ -4,11 +4,11 @@
 
     <div class="login-register">
         <div class="bg-white rounded-xl shadow-lg border border-grey-200 overflow-hidden">
-            
+
             {{-- BLOQUE 1: Manejo de Errores mediante Switch --}}
             @if ($error_type)
                 @switch($error_type)
-                    
+                
                     {{-- Caso: El usuario ya está logueado pero con un correo diferente al de la invitación --}}
                     @case('user_log')
                         <div class="bg-grey-50 px-6 py-4 border-b border-grey-200">
@@ -71,6 +71,16 @@
                             <a href="{{ route('dashboard') }}" class="btn-primary">Volver al Inicio</a>
                         </div>
                     @break
+
+                    @case('already_member')
+                        <div class="bg-grey-50 px-6 py-4 border-b border-grey-200">
+                            <h4 class="font-bold text-amber-500">Ya perteneces a esta campaña</h4>
+                        </div>
+                        <div class="p-6">
+                            <p class="mb-4">La invitación ya no es necesaria porque este usuario ya está vinculado a la campaña.</p>
+                            <a href="{{ route('dashboard') }}" class="btn-primary">Ir al Panel</a>
+                        </div>
+                    @break
                 @endswitch
 
             {{-- BLOQUE 2: Invitación Aceptada con Éxito --}}
@@ -84,7 +94,7 @@
                         <strong>Campaña:</strong> {{ $campaign->name }}<br>
                         <strong>Candidato:</strong> {{ $campaign->candidate_name }}
                     </div>
-                    
+
                     {{-- Si el usuario es nuevo y no tiene contraseña, se le invita a crear una --}}
                     @if (!$user->password)
                         <button type="button" class="btn-secundary w-full" wire:click='resetPassword' wire:loading.attr="disabled">
@@ -106,8 +116,8 @@
                         <div><strong>Cargo:</strong> {{$campaign->position}} </div>
                     </div>
                     {{-- Acción principal para aceptar --}}
-                    <button type="button" class="btn-primary all-w" 
-                        wire:click='acceptInvitation' 
+                    <button type="button" class="btn-primary all-w"
+                        wire:click='acceptInvitation'
                         wire:loading.attr="disabled">
                         ACEPTAR INVITACIÓN
                     </button>

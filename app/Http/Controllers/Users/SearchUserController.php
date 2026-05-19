@@ -11,6 +11,12 @@ class SearchUserController extends Controller
 {
     public function __invoke(Request $request)
     {
+        abort_unless(
+            $request->user()?->hasPlatformPermission('platform.campaign.create')
+                || $request->user()?->hasPlatformPermission('platform.campaign.update'),
+            403
+        );
+
         $search = trim($request->input('q', ''));
 
         // Evitar consultas costosas cuando la búsqueda está vacía

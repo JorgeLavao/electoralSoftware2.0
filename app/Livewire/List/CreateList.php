@@ -2,25 +2,28 @@
 
 namespace App\Livewire\List;
 
-use App\Exports\FilteredUsersExport;
+use App\Jobs\ExportFilteredUsersJob;
 use App\Models\AgeRange;
 use App\Models\Campaign;
+use App\Models\ExportBatch;
 use App\Models\Gender;
 use App\Models\Occupation;
 use App\Models\User;
-use Carbon\Carbon;
+use App\Services\SupporterListQueryService;
+use App\Services\SupporterRowMapper;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
-use Maatwebsite\Excel\Facades\Excel;
+use Livewire\WithPagination;
 use Spatie\Permission\Models\Role;
 
 #[Layout('components.layouts.app')]
 class CreateList extends Component
 {
-    use AuthorizesRequests;
+    use AuthorizesRequests, WithPagination;
 
     public Campaign $campaign;
 
@@ -80,7 +83,14 @@ class CreateList extends Component
     public $sw_birth = false;
     public bool $hasSearched = false;
     public bool $showMap = false;
-    public Collection $results;
+    public int $perPage = 25;
+    public array $perPageOptions = [10, 25, 50, 100];
+    public int $totalResults = 0;
+    public array $appliedFilters = [];
+    public ?int $exportBatchId = null;
+    public ?string $exportStatus = null;
+    public ?string $exportErrorMessage = null;
+    public ?string $exportDownloadUrl = null;
     public array $mapPoints = [];
     public array $mapPayload = [];
     public array $roleColorLegend = [];
@@ -133,7 +143,7 @@ class CreateList extends Component
             ->values()
             ->toArray();
 
-        $this->results = collect();
+        $this->appliedFilters = [];
     }
 
     public function clearFilters(): void
@@ -185,12 +195,14 @@ class CreateList extends Component
         $this->districtsCommunes = [];
         $this->neighborhoods = [];
         $this->selectedColumns = [];
-        $this->results = collect();
         $this->mapPoints = [];
         $this->mapPayload = [];
         $this->roleColorLegend = [];
         $this->showMap = false;
         $this->hasSearched = false;
+        $this->totalResults = 0;
+        $this->appliedFilters = [];
+        $this->resetPage();
     }
 
     public function updated($property, $value): void
@@ -280,248 +292,147 @@ class CreateList extends Component
             [$this->validation_from, $this->validation_to] = [$this->validation_to, $this->validation_from];
         }
 
-        $users = $this->buildQuery($campaign)->get();
-        $roleNamesByUser = $this->campaignRoleNamesByUser($this->rolesCampaign($campaign), $users);
-
-        $this->results = $users
-            ->map(fn($user) => $this->mapUserRow($user, $roleNamesByUser));
-        $this->mapPoints = $this->mapUsersForMap($users, $roleNamesByUser);
-        $this->mapPayload = $this->buildMapPayload($users);
+        $this->appliedFilters = $this->listFilters();
+        $this->totalResults = (clone $this->buildQuery($campaign, $this->appliedFilters))->count();
         $this->showMap = false;
         $this->hasSearched = true;
+        $this->resetPage();
     }
 
     public function showGeolocation(): void
     {
-        if (! $this->hasSearched || $this->results->isEmpty()) {
+        if (! $this->hasSearched || $this->totalResults === 0) {
             return;
         }
 
+        $campaign = Campaign::findOrFail($this->campaign_id);
+        $users = $this->buildQuery($campaign, $this->appliedFilters)->get();
+        $roleNamesByUser = app(SupporterRowMapper::class)->roleNamesByUser($this->rolesCampaign($campaign), $users);
+
+        $this->mapPoints = $this->mapUsersForMap($users, $roleNamesByUser);
+        $this->mapPayload = $this->buildMapPayload($users);
         $this->showMap = true;
         $this->dispatch('electoral-map-updated', payload: $this->mapPayload);
     }
 
-    public function exportExcel()
+    public function requestExport(string $scope): void
     {
         $campaign = Campaign::findOrFail($this->campaign_id);
-        $this->authorize('viewLists', $campaign);
+        $this->authorize('exportLists', $campaign);
 
         if ($this->normalizedSelectedColumns() === []) {
             session()->flash('error', 'Selecciona al menos una columna para exportar.');
-
-            return null;
+            return;
         }
 
-        $rows = $this->exportRows($campaign);
-        if ($rows->isEmpty()) {
+        if (! $this->hasSearched || $this->totalResults === 0) {
             session()->flash('error', 'No hay resultados para exportar.');
-
-            return null;
-        }
-
-        $fileName = 'listados-filtrados-' . $campaign->code . '-' . now()->format('Ymd_His') . '.xlsx';
-        $headings = collect($this->normalizedSelectedColumns())
-            ->map(fn($key) => $this->columnOptions[$key] ?? $key)
-            ->all();
-
-        return Excel::download(new FilteredUsersExport($rows, $headings), $fileName);
-    }
-
-    protected function buildQuery(Campaign $campaign)
-    {
-        $rolesCampaign = $this->rolesCampaign($campaign);
-
-        $query = $campaign->foreign_users()
-            ->with([
-                'foreing_aditional_info.foreign_gender',
-                'foreing_aditional_info.foreign_range_age',
-                'foreing_aditional_info.foreign_occupations',
-                'committees' => fn($committeeQuery) => $committeeQuery
-                    ->where('committees.campaign_id', $campaign->id)
-                    ->orderBy('name'),
-                'roles' => fn($roleQuery) => $roleQuery
-                    ->where('roles.campaign_id', $rolesCampaign->id)
-                    ->orderBy('name'),
-            ])
-            ->select('users.*');
-
-        $this->applySearchFilter($query);
-        $this->applyProfileFilters($query);
-        $this->applyCampaignPivotFilters($query);
-        $this->applyRelationshipFilters($query, $campaign);
-
-        return $query->orderBy('first_name')->orderBy('paternal_surname');
-    }
-
-    protected function applySearchFilter($query): void
-    {
-        if (trim((string) $this->searchTerm) === '') {
             return;
         }
 
-        $this->sw_search
-            ? $query->whereNot(fn($searchQuery) => $searchQuery->search($this->searchTerm))
-            : $query->search($this->searchTerm);
-    }
-
-    protected function applyProfileFilters($query): void
-    {
-        $this->applyWhereHasFilter($query, 'foreing_aditional_info', 'gender_id', $this->gender_id, $this->sw_gender, true);
-        $this->applyWhereHasFilter($query, 'foreing_aditional_info', 'age_range_id', $this->age_range, $this->sw_age);
-        $this->applyWhereHasFilter($query, 'foreing_aditional_info', 'occupation_id', $this->occupation_id, $this->sw_occupation);
-        $this->applyWhereHasFilter($query, 'foreing_aditional_info', 'zone', $this->zone, $this->sw_zone);
-        $this->applyWhereHasFilter($query, 'foreing_aditional_info', 'department->id', $this->department, $this->sw_department);
-        $this->applyWhereHasFilter($query, 'foreing_aditional_info', 'municipality->id', $this->municipality, $this->sw_municipality);
-        $this->applyWhereHasFilter($query, 'foreing_aditional_info', 'district_commune', $this->district_commune, $this->sw_district);
-        $this->applyWhereHasFilter($query, 'foreing_aditional_info', 'neighborhood_village_name', $this->neighborhood, $this->sw_nghd);
-        $this->applyWhereHasFilter($query, 'foreing_aditional_info', 'vehicle', $this->vehicle, $this->sw_vehicle);
-
-        if ($this->birth_month || $this->birth_day) {
-            $callback = function ($q) {
-                if ($this->birth_month) {
-                    $q->where('birth_month', (int) $this->birth_month);
-                }
-
-                if ($this->birth_day) {
-                    $q->where('birth_day', (int) $this->birth_day);
-                }
-            };
-
-            $this->sw_birth
-                ? $query->whereDoesntHave('foreing_aditional_info', $callback)
-                : $query->whereHas('foreing_aditional_info', $callback);
+        if (! in_array($scope, [ExportBatch::SCOPE_CURRENT_PAGE, ExportBatch::SCOPE_ALL_FILTERED], true)) {
+            abort(422);
         }
+
+        $batch = ExportBatch::query()->create([
+            'user_id' => Auth::id(),
+            'campaign_id' => $campaign->id,
+            'type' => 'filtered_users',
+            'scope' => $scope,
+            'status' => 'queued',
+            'filters' => $this->appliedFilters,
+            'columns' => $this->normalizedSelectedColumns(),
+            'page' => $scope === ExportBatch::SCOPE_CURRENT_PAGE ? $this->getPage() : null,
+            'per_page' => $scope === ExportBatch::SCOPE_CURRENT_PAGE ? $this->perPage : null,
+        ]);
+
+        $this->exportBatchId = $batch->id;
+        $this->exportStatus = $batch->status;
+        $this->exportErrorMessage = null;
+        $this->exportDownloadUrl = null;
+
+        ExportFilteredUsersJob::dispatch($batch->id);
+
+        session()->flash('success', 'Exportación en cola. Te avisaremos cuando el archivo esté listo.');
     }
 
-    protected function applyWhereHasFilter($query, string $relation, string $column, $value, bool $exclude = false, bool $castInt = false): void
+    public function refreshExportStatus(): void
     {
-        if (is_null($value) || $value === '') {
+        $batch = $this->currentExportBatch();
+
+        if (! $batch) {
             return;
         }
 
-        $filterValue = $castInt ? (int) $value : $value;
-        $callback = fn($q) => $q->where($column, $filterValue);
-
-        $exclude
-            ? $query->whereDoesntHave($relation, $callback)
-            : $query->whereHas($relation, $callback);
+        $this->exportStatus = $batch->status;
+        $this->exportErrorMessage = $batch->error_message;
+        $this->exportDownloadUrl = $batch->status === 'done'
+            ? route('exports.download', $batch)
+            : null;
     }
 
-    protected function applyCampaignPivotFilters($query): void
+    public function updatedPerPage(): void
     {
-        if (! is_null($this->approach) && $this->approach !== '') {
-            $this->sw_approach
-                ? $query->wherePivot('approach', '!=', $this->approach)
-                : $query->wherePivot('approach', $this->approach);
-        }
+        $this->perPage = in_array((int) $this->perPage, $this->perPageOptions, true)
+            ? (int) $this->perPage
+            : 25;
 
-        if (! is_null($this->verify) && $this->verify !== '') {
-            $this->sw_verify
-                ? $query->wherePivot('validate', '!=', $this->verify)
-                : $query->wherePivot('validate', $this->verify);
-        }
-
-        if (! empty($this->refer_ids)) {
-            $this->sw_refers
-                ? $query->wherePivotNotIn('reffer_by', $this->refer_ids)
-                : $query->wherePivotIn('reffer_by', $this->refer_ids);
-        }
-
-        if ($this->joined_from && $this->joined_to) {
-            $dates = [
-                Carbon::parse($this->joined_from)->startOfDay(),
-                Carbon::parse($this->joined_to)->endOfDay(),
-            ];
-
-            $this->sw_joined
-                ? $query->whereNotBetween('campaign_user.created_at', $dates)
-                : $query->whereBetween('campaign_user.created_at', $dates);
-        } elseif ($this->joined_from) {
-            $operator = $this->sw_joined ? '<' : '>=';
-            $query->where('campaign_user.created_at', $operator, Carbon::parse($this->joined_from)->startOfDay());
-        } elseif ($this->joined_to) {
-            $operator = $this->sw_joined ? '>' : '<=';
-            $query->where('campaign_user.created_at', $operator, Carbon::parse($this->joined_to)->endOfDay());
-        }
-
-        if ($this->validation_from || $this->validation_to) {
-            if ($this->validation_from && $this->validation_to) {
-                $dates = [
-                    Carbon::parse($this->validation_from)->startOfDay(),
-                    Carbon::parse($this->validation_to)->endOfDay(),
-                ];
-
-                $this->sw_validation
-                    ? $query->where(function ($validationQuery) use ($dates) {
-                        $validationQuery
-                            ->where('campaign_user.validate', '!=', 1)
-                            ->orWhereNotBetween('campaign_user.updated_at', $dates);
-                    })
-                    : $query
-                        ->wherePivot('validate', 1)
-                        ->whereBetween('campaign_user.updated_at', $dates);
-            } elseif ($this->validation_from) {
-                $date = Carbon::parse($this->validation_from)->startOfDay();
-
-                $this->sw_validation
-                    ? $query->where(function ($validationQuery) use ($date) {
-                        $validationQuery
-                            ->where('campaign_user.validate', '!=', 1)
-                            ->orWhere('campaign_user.updated_at', '<', $date);
-                    })
-                    : $query
-                        ->wherePivot('validate', 1)
-                        ->where('campaign_user.updated_at', '>=', $date);
-            } elseif ($this->validation_to) {
-                $date = Carbon::parse($this->validation_to)->endOfDay();
-
-                $this->sw_validation
-                    ? $query->where(function ($validationQuery) use ($date) {
-                        $validationQuery
-                            ->where('campaign_user.validate', '!=', 1)
-                            ->orWhere('campaign_user.updated_at', '>', $date);
-                    })
-                    : $query
-                        ->wherePivot('validate', 1)
-                        ->where('campaign_user.updated_at', '<=', $date);
-            }
-        }
+        $this->resetPage();
+        $this->showMap = false;
     }
 
-    protected function applyRelationshipFilters($query, Campaign $campaign): void
+    protected function buildQuery(Campaign $campaign, ?array $filters = null)
     {
-        if (! empty($this->committee_ids)) {
-            $this->sw_committees
-                ? $query->whereDoesntHave('committees', function ($committeeQuery) use ($campaign) {
-                    $committeeQuery
-                        ->where('committees.campaign_id', $campaign->id)
-                        ->whereIn('committees.id', $this->committee_ids);
-                })
-                : $query->whereHas('committees', function ($committeeQuery) use ($campaign) {
-                    $committeeQuery
-                        ->where('committees.campaign_id', $campaign->id)
-                        ->whereIn('committees.id', $this->committee_ids);
-                });
-        }
-
-        if (! empty($this->role_ids)) {
-            $roleUserIds = $this->roleUserIdsSubquery($this->rolesCampaign($campaign));
-
-            $this->sw_roles
-                ? $query->whereNotIn('users.id', $roleUserIds)
-                : $query->whereIn('users.id', $roleUserIds);
-        }
+        return app(SupporterListQueryService::class)->build(
+            $campaign,
+            $this->rolesCampaign($campaign),
+            $filters ?? $this->listFilters()
+        );
     }
 
-    protected function roleUserIdsSubquery(Campaign $campaign)
+    protected function listFilters(): array
     {
-        return DB::table('model_has_roles')
-            ->join('roles', 'roles.id', '=', 'model_has_roles.role_id')
-            ->where('model_has_roles.model_type', User::class)
-            ->where('model_has_roles.campaign_id', $campaign->id)
-            ->where('roles.campaign_id', $campaign->id)
-            ->whereIn('roles.id', $this->role_ids)
-            ->select('model_has_roles.model_id');
+        return [
+            'searchTerm' => $this->searchTerm,
+            'sw_search' => $this->sw_search,
+            'approach' => $this->approach,
+            'sw_approach' => $this->sw_approach,
+            'verify' => $this->verify,
+            'sw_verify' => $this->sw_verify,
+            'vehicle' => $this->vehicle,
+            'sw_vehicle' => $this->sw_vehicle,
+            'gender_id' => $this->gender_id,
+            'sw_gender' => $this->sw_gender,
+            'age_range' => $this->age_range,
+            'sw_age' => $this->sw_age,
+            'occupation_id' => $this->occupation_id,
+            'sw_occupation' => $this->sw_occupation,
+            'zone' => $this->zone,
+            'sw_zone' => $this->sw_zone,
+            'department' => $this->department,
+            'sw_department' => $this->sw_department,
+            'municipality' => $this->municipality,
+            'sw_municipality' => $this->sw_municipality,
+            'district_commune' => $this->district_commune,
+            'sw_district' => $this->sw_district,
+            'neighborhood' => $this->neighborhood,
+            'sw_nghd' => $this->sw_nghd,
+            'refer_ids' => $this->refer_ids,
+            'sw_refers' => $this->sw_refers,
+            'committee_ids' => $this->committee_ids,
+            'sw_committees' => $this->sw_committees,
+            'role_ids' => $this->role_ids,
+            'sw_roles' => $this->sw_roles,
+            'joined_from' => $this->joined_from,
+            'joined_to' => $this->joined_to,
+            'sw_joined' => $this->sw_joined,
+            'validation_from' => $this->validation_from,
+            'validation_to' => $this->validation_to,
+            'sw_validation' => $this->sw_validation,
+            'birth_month' => $this->birth_month,
+            'birth_day' => $this->birth_day,
+            'sw_birth' => $this->sw_birth,
+        ];
     }
 
     protected function rolesCampaign(Campaign $fallback): Campaign
@@ -539,81 +450,14 @@ class CreateList extends Component
         return $fallback;
     }
 
-    protected function exportRows(Campaign $campaign): Collection
-    {
-        $users = $this->buildQuery($campaign)->get();
-        $roleNamesByUser = $this->campaignRoleNamesByUser($this->rolesCampaign($campaign), $users);
-
-        return $users
-            ->map(fn($user) => $this->filterSelectedColumns($this->mapUserRow($user, $roleNamesByUser)));
-    }
-
     protected function campaignRoleNamesByUser(Campaign $campaign, Collection $users): array
     {
-        $userIds = $users->pluck('id')->filter()->unique()->values();
-
-        if ($userIds->isEmpty()) {
-            return [];
-        }
-
-        return DB::table('model_has_roles')
-            ->join('roles', 'roles.id', '=', 'model_has_roles.role_id')
-            ->where('model_has_roles.model_type', User::class)
-            ->where('model_has_roles.campaign_id', $campaign->id)
-            ->where('roles.campaign_id', $campaign->id)
-            ->whereIn('model_has_roles.model_id', $userIds)
-            ->orderBy('roles.name')
-            ->get(['model_has_roles.model_id', 'roles.name'])
-            ->groupBy('model_id')
-            ->map(fn($rows) => $rows->pluck('name')->filter()->unique()->implode(', '))
-            ->all();
+        return app(SupporterRowMapper::class)->roleNamesByUser($campaign, $users);
     }
 
     protected function mapUserRow($user, array $roleNamesByUser = []): array
     {
-        $profile = $user->foreing_aditional_info;
-        $department = $profile?->department ? json_decode($profile->department, true) : null;
-        $municipality = $profile?->municipality ? json_decode($profile->municipality, true) : null;
-        $committeeNames = $user->committees
-            ->pluck('name')
-            ->filter()
-            ->implode(', ');
-        $roleNames = $roleNamesByUser[$user->id] ?? '';
-        $joinedAt = $user->pivot?->created_at
-            ? Carbon::parse($user->pivot->created_at)->format('Y-m-d H:i')
-            : '-';
-        $birthMonth = $profile?->birth_month;
-        $birthDay = $profile?->birth_day;
-
-        return [
-            'document_number' => $user->document_number ?: '-',
-            'first_name' => $user->first_name ?: '-',
-            'middle_name' => $user->middle_name ?: '-',
-            'paternal_surname' => $user->paternal_surname ?: '-',
-            'maternal_surname' => $user->maternal_surname ?: '-',
-            'full_name' => $user->fullName ?: '-',
-            'celphone' => $user->celphone ?: '-',
-            'email' => $user->email ?: '-',
-            'validate' => (string) $user->pivot->validate === '1' ? 'Si' : 'No',
-            'approach' => $user->pivot->approach ?: '-',
-            'vehicle' => $profile ? ($profile->vehicle ? 'Si' : 'No') : '-',
-            'gender' => $profile?->foreign_gender?->name ?: '-',
-            'birth_month' => $birthMonth ? str_pad((string) $birthMonth, 2, '0', STR_PAD_LEFT) : '-',
-            'birth_day' => $birthDay ? str_pad((string) $birthDay, 2, '0', STR_PAD_LEFT) : '-',
-            'age_range' => $profile?->foreign_range_age?->range ?: '-',
-            'occupation' => $profile?->foreign_occupations?->name ?: '-',
-            'zone' => $profile?->zone ? ucfirst($profile->zone) : '-',
-            'department' => data_get($department, 'name', '-'),
-            'municipality' => data_get($municipality, 'name', '-'),
-            'district_commune' => $profile?->district_commune ?: '-',
-            'neighborhood_village_name' => $profile?->neighborhood_village_name ?: '-',
-            'committees' => $committeeNames !== '' ? $committeeNames : '-',
-            'roles' => $roleNames !== '' ? $roleNames : '-',
-            'joined_at' => $joinedAt,
-            'validated_at' => (string) $user->pivot->validate === '1' && $user->pivot?->updated_at
-                ? Carbon::parse($user->pivot->updated_at)->format('Y-m-d H:i')
-                : '-',
-        ];
+        return app(SupporterRowMapper::class)->map($user, $roleNamesByUser);
     }
 
     protected function mapUsersForMap(Collection $users, array $roleNamesByUser = []): array
@@ -798,17 +642,10 @@ class CreateList extends Component
         return $columns;
     }
 
-    protected function filterSelectedColumns(array $row): array
-    {
-        return collect($this->normalizedSelectedColumns())
-            ->mapWithKeys(fn($column) => [$column => $row[$column] ?? '-'])
-            ->all();
-    }
-
     protected function cleanColumnOptions(): array
     {
         return [
-            'document_number' => 'Cedula',
+            'document_number' => 'Cédula',
             'first_name' => 'Primer Nombre',
             'middle_name' => 'Segundo Nombre',
             'paternal_surname' => 'Primer Apellido',
@@ -832,7 +669,7 @@ class CreateList extends Component
             'committees' => 'Comites',
             'roles' => 'Roles',
             'joined_at' => 'Fecha de ingreso',
-            'validated_at' => 'Fecha de validacion',
+            'validated_at' => 'Fecha de validación',
         ];
     }
 
@@ -880,9 +717,41 @@ class CreateList extends Component
             ->all();
     }
 
+    protected function paginatedResults(): LengthAwarePaginator
+    {
+        if (! $this->hasSearched || $this->normalizedSelectedColumns() === []) {
+            return new LengthAwarePaginator(collect(), 0, $this->perPage);
+        }
+
+        $campaign = Campaign::findOrFail($this->campaign_id);
+        $users = $this->buildQuery($campaign, $this->appliedFilters)->paginate($this->perPage);
+        $userCollection = $users->getCollection();
+        $roleNamesByUser = app(SupporterRowMapper::class)->roleNamesByUser($this->rolesCampaign($campaign), $userCollection);
+
+        $users->setCollection(
+            $userCollection->map(fn ($user) => $this->mapUserRow($user, $roleNamesByUser))
+        );
+
+        return $users;
+    }
+
+    protected function currentExportBatch(): ?ExportBatch
+    {
+        if (! $this->exportBatchId) {
+            return null;
+        }
+
+        return ExportBatch::query()
+            ->whereKey($this->exportBatchId)
+            ->where('user_id', Auth::id())
+            ->where('campaign_id', $this->campaign->id)
+            ->first();
+    }
+
     public function render()
     {
         return view('livewire.list.create-list', [
+            'results' => $this->paginatedResults(),
             'visibleColumns' => $this->normalizedSelectedColumns(),
             'selectedColumnsCount' => count($this->normalizedSelectedColumns()),
             'activeFiltersCount' => collect([
