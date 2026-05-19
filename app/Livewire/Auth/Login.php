@@ -62,7 +62,7 @@ class Login extends Component
             session()->forget('current_campaign');
         }
 
-        $this->redirectRoute('campaign.index', navigate: true);
+        $this->redirectIntended(default: route('campaign.index', absolute: false), navigate: true);
     }
 
     /**
