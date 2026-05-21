@@ -7,10 +7,10 @@ La infraestructura actual del proyecto corre con servicios separados para:
 - `app`: PHP-FPM + Composer
 - `nginx`: servidor web
 - `vite`: frontend con hot reload
-- `db`: MySQL 8
+- `pgsql`: PostgreSQL 16
 - `redis`: cache y soporte para colas/eventos
 - `queue`: worker de Laravel
-- `phpmyadmin`: administracion visual de base de datos
+- `pgadmin`: administracion visual de base de datos
 
 ## Requisitos
 
@@ -21,7 +21,7 @@ Antes de iniciar, asegurate de tener:
 - Puertos libres:
   - `80`
   - `5173`
-  - `3306`
+  - `5432`
   - `6379`
   - `8080`
 
@@ -55,10 +55,10 @@ Esto levantara:
 - `app`
 - `nginx`
 - `vite`
-- `db`
+- `pgsql`
 - `redis`
 - `queue`
-- `phpmyadmin`
+- `pgadmin`
 
 ### 2. Ejecutar migraciones y seeders
 
@@ -84,15 +84,20 @@ Una vez levantado el entorno, puedes entrar a:
 
 - Aplicacion: [http://localhost](http://localhost)
 - Vite dev server: [http://localhost:5173](http://localhost:5173)
-- phpMyAdmin: [http://localhost:8080](http://localhost:8080)
+- pgAdmin: [http://localhost:8080](http://localhost:8080)
 
 Credenciales de base de datos por defecto:
 
-- Host: `db`
-- Puerto: `3306`
-- Base de datos: `laravel`
-- Usuario: `laravel`
-- Contrasena: `laravel`
+- Host: `pgsql`
+- Puerto: `5432`
+- Base de datos: `simpaconia`
+- Usuario: `sail`
+- Contrasena: `password`
+
+Credenciales de pgAdmin:
+
+- Email: `admin@example.com`
+- Contrasena: `password`
 
 ## Arranque diario
 
@@ -128,7 +133,7 @@ Para detener y eliminar volumenes del entorno:
 docker compose down -v
 ```
 
-Usa `-v` solo si realmente quieres reiniciar datos persistidos como MySQL, Redis, `vendor` o `node_modules`.
+Usa `-v` solo si realmente quieres reiniciar datos persistidos como PostgreSQL, Redis, `vendor` o `node_modules`.
 
 ## Comandos utiles
 
@@ -139,7 +144,7 @@ docker compose logs -f app
 docker compose logs -f nginx
 docker compose logs -f vite
 docker compose logs -f queue
-docker compose logs -f db
+docker compose logs -f pgsql
 docker compose logs -f redis
 ```
 
@@ -194,14 +199,14 @@ Si el frontend no refleja cambios:
 
 Servicios disponibles:
 
-- MySQL en `db:3306`
+- PostgreSQL en `pgsql:5432`
 - Redis en `redis:6379`
 - Worker de colas en el servicio `queue`
 
 Nota importante:
 
-- El archivo `.env` actual usa `QUEUE_CONNECTION=database`.
-- Aunque Redis esta disponible, las colas seguiran usando base de datos mientras esa variable no cambie.
+- El archivo `.env` actual usa `QUEUE_CONNECTION=redis`.
+- PostgreSQL queda disponible para la aplicacion y para migraciones en `pgsql:5432`.
 
 ## Troubleshooting
 
@@ -230,11 +235,11 @@ docker compose exec app sh -lc "chown -R www-data:www-data storage bootstrap/cac
 
 ### Problemas con migraciones
 
-Verifica que MySQL este saludable:
+Verifica que PostgreSQL este saludable:
 
 ```powershell
 docker compose ps
-docker compose logs -f db
+docker compose logs -f pgsql
 ```
 
 Luego vuelve a correr:
