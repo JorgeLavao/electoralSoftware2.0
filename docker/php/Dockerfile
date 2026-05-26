@@ -8,6 +8,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxml2-dev \
     libzip-dev \
     libicu-dev \
+    libpq-dev \
     libjpeg62-turbo-dev \
     libfreetype6-dev \
     libssl-dev \
@@ -16,7 +17,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     make \
     pkg-config \
     && docker-php-ext-configure intl \
-    && docker-php-ext-install -j"$(nproc)" pdo pdo_mysql mbstring exif pcntl bcmath gd zip intl \
+    && docker-php-ext-install -j"$(nproc)" pdo pdo_pgsql mbstring exif pcntl bcmath gd zip intl \
     && pecl install redis \
     && docker-php-ext-enable redis \
     && apt-get purge -y --auto-remove autoconf g++ make pkg-config \

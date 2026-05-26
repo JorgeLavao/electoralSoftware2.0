@@ -103,24 +103,7 @@ Route::middleware(['auth', 'complete-info'])->group(function () {
     Route::get('/download/plantilla-simpatizantes', function () {
         return response()->download(public_path('templates/Plantilla_Simpatizantes.xlsx'));
     })->name('download.template.supporter');
-
-    function get_size_in_mb($size)
-    {
-        $unit = strtoupper(substr($size, -1));
-        $value = (float) $size;
-
-        switch ($unit) {
-            case 'G':
-                return $value * 1024;
-            case 'M':
-                return $value;
-            case 'K':
-                return $value / 1024;
-            default:
-                return $value / (1024 * 1024);
-        }
-    }
-
+    
     Route::get('campanias/{campaign:code}/punto-votacion/', IndexPoint::class)->name('point.index');
 
     Route::get('campanias/{campaign:code}/listados/', CreateList::class)->name('list.index');

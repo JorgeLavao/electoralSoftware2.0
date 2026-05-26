@@ -13,7 +13,7 @@ services:
     environment:
       BOOTSTRAP_COMPOSER: "1"
     depends_on:
-      db:
+      pgsql:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -46,21 +46,20 @@ services:
       app:
         condition: service_started
 
-  db:
-    image: mysql:8.0
-    container_name: laravel-db
+  pgsql:
+    image: postgres:16-alpine
+    container_name: laravel-pgsql
     restart: unless-stopped
     environment:
-      MYSQL_DATABASE: laravel
-      MYSQL_USER: laravel
-      MYSQL_PASSWORD: laravel
-      MYSQL_ROOT_PASSWORD: root
+      POSTGRES_DB: simpaconia
+      POSTGRES_USER: sail
+      POSTGRES_PASSWORD: password
     ports:
-      - "3306:3306"
+      - "5432:5432"
     volumes:
-      - mysql_data:/var/lib/mysql
+      - pgsql_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-proot"]
+      test: ["CMD-SHELL", "pg_isready -U sail -d simpaconia"]
       interval: 5s
       timeout: 5s
       retries: 20
@@ -96,26 +95,26 @@ services:
     environment:
       BOOTSTRAP_COMPOSER: "0"
     depends_on:
-      db:
+      pgsql:
         condition: service_healthy
       redis:
         condition: service_healthy
     command: php artisan queue:work --sleep=1 --tries=3 --timeout=90
 
-  phpmyadmin:
-    image: phpmyadmin:5
-    container_name: laravel-phpmyadmin
+  pgadmin:
+    image: dpage/pgadmin4:8
+    container_name: laravel-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: password
     ports:
       - "8080:80"
-    environment:
-      PMA_HOST: db
-      PMA_USER: laravel
-      PMA_PASSWORD: laravel
     depends_on:
-      - db
+      - pgsql
 
 volumes:
-  mysql_data:
+  pgsql_data:
   redis_data:
   vendor_data:
   node_modules_data:
