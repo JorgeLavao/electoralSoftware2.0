@@ -89,14 +89,9 @@
                                             $nextTick(() => {
                                                 flatpickr($refs.startDate, {
                                                     dateFormat: 'Y-m-d',
-                                                    minDate: 'today',
                                                     locale: 'es',
                                                     onChange: function(selectedDates, dateStr, instance) {
                                                         $wire.start_date = dateStr; // Sincroniza con el backend
-                                                        const endDate = document.getElementById('end_date');
-                                                        if (endDate && endDate._flatpickr) {
-                                                            endDate._flatpickr.set('minDate', dateStr); // La fecha fin no puede ser menor a la de inicio
-                                                        }
                                                     }
                                                 });
                                             })">
@@ -115,7 +110,6 @@
                                             $nextTick(() => {
                                                 flatpickr($refs.endDate, {
                                                     dateFormat: 'Y-m-d',
-                                                    minDate: $wire.start_date || 'today',
                                                     locale: 'es',
                                                     onChange: function(selectedDates, dateStr, instance) {
                                                         $wire.end_date = dateStr;

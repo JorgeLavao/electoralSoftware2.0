@@ -75,7 +75,6 @@
                                     x-init="
                                             flatpickr($refs.startDate, {
                                                 dateFormat: 'Y-m-d',
-                                                minDate: 'today',
                                                 locale: 'es',
                                                 onChange: (selectedDates, dateStr) => {
                                                     $wire.set('start_date', dateStr);
@@ -96,7 +95,6 @@
                                     x-init="
                                             flatpickr($refs.endDate, {
                                                 dateFormat: 'Y-m-d',
-                                                minDate: 'today',
                                                 locale: 'es',
                                                 onChange: (selectedDates, dateStr) => {
                                                     $wire.set('end_date', dateStr);

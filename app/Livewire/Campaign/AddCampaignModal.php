@@ -43,7 +43,6 @@ class AddCampaignModal extends Component
 
     #[Validate('required',              message: 'Debe seleccionar el inicio de la campaña.')]
     #[Validate('date',                  message: 'La fecha de inicio no tiene un formato válido.')]
-    #[Validate('after_or_equal:today',  message: 'La fecha de inicio no puede ser en el pasado.')]
     public $start_date;
 
     #[Validate('required',          message: 'Debe seleccionar la finalización de la campaña.')]
