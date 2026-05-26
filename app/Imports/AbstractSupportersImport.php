@@ -70,7 +70,7 @@ abstract class AbstractSupportersImport implements
         [$status, $messages] = $this->validateRow($d);
 
         // 2) Reglas de duplicados (tipo+doc y email)
-        [$status, $messages] = $this->applyDuplicateRules($d, $status, $messages);
+        [$status, $messages] = $this->applyDuplicateRules($d, $status, $messages, $row->getIndex());
 
         $this->counts[$status]++;
 
@@ -99,7 +99,7 @@ abstract class AbstractSupportersImport implements
         array $messages
     ): void;
 
-    protected function applyDuplicateRules(array $d, string $status, array $messages): array
+    protected function applyDuplicateRules(array $d, string $status, array $messages, int $rowIndex): array
     {
         $tipo = strtoupper(trim((string)($d['tipo_de_documento'] ?? '')));
         $doc  = trim((string)($d['numero_de_documento'] ?? ''));
@@ -108,18 +108,22 @@ abstract class AbstractSupportersImport implements
         // Duplicado Tipo+Documento
         if ($tipo !== '' && $doc !== '') {
             $value = $tipo . '|' . $doc;
-            $added = Redis::sadd($this->docKey, $value);
+            $added = Redis::hsetnx($this->docKey, $value, (string) $rowIndex);
             if ((int)$added === 0) {
-                $messages[] = 'Documento duplicado (Tipo + Número ya existe en el archivo)';
+                $firstRow = Redis::hget($this->docKey, $value);
+                $messages[] = "Documento duplicado en el archivo: {$tipo} {$doc}"
+                    . ($firstRow ? " (tambien aparece en la fila {$firstRow})" : '');
                 $status = 'invalid';
             }
         }
 
         // Duplicado Email
         if ($email !== '') {
-            $added = Redis::sadd($this->emailKey, $email);
+            $added = Redis::hsetnx($this->emailKey, $email, (string) $rowIndex);
             if ((int)$added === 0) {
-                $messages[] = 'Correo duplicado (ya existe en el archivo)';
+                $firstRow = Redis::hget($this->emailKey, $email);
+                $messages[] = "Correo duplicado en el archivo: {$email}"
+                    . ($firstRow ? " (tambien aparece en la fila {$firstRow})" : '');
                 $status = 'invalid';
             }
         }

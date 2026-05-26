@@ -34,6 +34,7 @@ class ImportSupporter extends Component
 
     public ?string $status = null;
     public ?string $errorMessage = null;
+    public ?string $lastAlertedStatus = null;
 
     public Campaign $campaign;
 
@@ -103,11 +104,15 @@ class ImportSupporter extends Component
         }
 
         ImportSupportersJob::dispatch($batch->id, $this->campaign->id, (int) Auth::id());
+        $this->step = 'importing';
+        $this->status = 'importing';
+        $this->progress = 0;
+        $this->processedRows = 0;
 
         $this->dispatch('alert', [
             'icon' => 'success',
-            'title' => 'Importación en progreso',
-            'text' => 'Estamos importando los simpatizantes válidos en segundo plano.',
+            'title' => 'Importacion en progreso',
+            'text' => $this->queuedImportMessage($batch),
             'timer' => 3000,
         ]);
     }
@@ -134,6 +139,33 @@ class ImportSupporter extends Component
 
         if ($batch->status === 'done') {
             $this->step = 'preview';
+        }
+
+        if ($batch->status === 'importing') {
+            $this->step = 'importing';
+        }
+
+        if ($batch->status === 'import_done') {
+            $this->step = 'preview';
+
+            if ($this->lastAlertedStatus !== 'import_done') {
+                $this->lastAlertedStatus = 'import_done';
+                $this->dispatch('alert', [
+                    'icon' => 'success',
+                    'title' => 'Importacion finalizada',
+                    'text' => $this->finishedImportMessage($batch),
+                    'timer' => 5000,
+                ]);
+            }
+        }
+
+        if ($batch->status === 'import_failed') {
+            $this->step = 'preview';
+
+            if ($this->lastAlertedStatus !== 'import_failed') {
+                $this->lastAlertedStatus = 'import_failed';
+                $this->alertImport($batch->error_message ?: 'No se pudo importar el archivo.');
+            }
         }
 
         if ($batch->status === 'failed') {
@@ -190,6 +222,7 @@ class ImportSupporter extends Component
         $this->totalRows = null;
         $this->status = null;
         $this->errorMessage = null;
+        $this->lastAlertedStatus = null;
     }
 
     private function cleanupBatch(): void
@@ -240,6 +273,30 @@ class ImportSupporter extends Component
             ->where('user_id', Auth::id())
             ->where('campaign_id', $this->campaign->id)
             ->first();
+    }
+
+    private function queuedImportMessage(ImportBatch $batch): string
+    {
+        $invalidCount = (int) ($batch->counts['invalid'] ?? 0);
+        $validCount = (int) ($batch->counts['valid'] ?? 0);
+
+        if ($invalidCount <= 0) {
+            return "Estamos importando {$validCount} simpatizante(s) validos en segundo plano.";
+        }
+
+        return "Estamos importando {$validCount} simpatizante(s) validos. {$invalidCount} fila(s) duplicada(s) o invalidas no se importaran.";
+    }
+
+    private function finishedImportMessage(ImportBatch $batch): string
+    {
+        $invalidCount = (int) ($batch->counts['invalid'] ?? 0);
+        $validCount = (int) ($batch->counts['valid'] ?? 0);
+
+        if ($invalidCount <= 0) {
+            return "Se importaron {$validCount} simpatizante(s) correctamente.";
+        }
+
+        return "Se importaron {$validCount} simpatizante(s). {$invalidCount} fila(s) duplicada(s) o invalidas fueron omitidas.";
     }
 
     public function render()

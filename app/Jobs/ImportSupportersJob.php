@@ -70,6 +70,7 @@ class ImportSupportersJob implements ShouldQueue
 
             $batch->refresh();
             $batch->status = 'import_done';
+            $batch->error_message = $this->importSummaryMessage($batch);
             $batch->finished_at = now();
             $batch->save();
         } catch (\Throwable $e) {
@@ -84,5 +85,17 @@ class ImportSupportersJob implements ShouldQueue
                 // ignoramos error de limpieza de Redis
             }
         }
+    }
+
+    private function importSummaryMessage(ImportBatch $batch): ?string
+    {
+        $invalidCount = (int) ($batch->counts['invalid'] ?? 0);
+        $validCount = (int) ($batch->counts['valid'] ?? 0);
+
+        if ($invalidCount <= 0) {
+            return null;
+        }
+
+        return "Se importaron {$validCount} simpatizante(s). {$invalidCount} fila(s) duplicada(s) o invalidas fueron omitidas.";
     }
 }

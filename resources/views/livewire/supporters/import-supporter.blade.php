@@ -102,6 +102,25 @@
         @endif
 
         {{-- PASO 3: PREVISUALIZACIÓN Y CONFIRMACIÓN --}}
+        {{-- PASO 2B: IMPORTACION FINAL --}}
+        @if($step === 'importing')
+            <h4>Importando simpatizantes</h4>
+            <div wire:poll.1500ms="refreshBatch" class="container-v">
+                <div class="flex justify-between text-md text-gray-600 mb-1">
+                    <span>Guardando registros...</span>
+                    <span>{{ $progress }}%</span>
+                </div>
+                <div class="h-2 w-full rounded-full bg-gray-200 overflow-hidden">
+                    <div class="h-2 bg-primary transition-all rounded-full" style="width: {{ $progress }}%"></div>
+                </div>
+
+                <div class="flex gap-3 flex-wrap">
+                    <span class="text-valid"><b>{{ $counts['valid'] ?? 0 }}</b> procesados</span>
+                    <span class="text-error"><b>{{ $counts['invalid'] ?? 0 }}</b> rechazados</span>
+                </div>
+            </div>
+        @endif
+
         @if($step === 'preview')
             <div class="container-v bg-white">
                 {{-- Resumen final antes de insertar en BD --}}
@@ -129,10 +148,25 @@
                     </div>
                 </div>
 
+                @if(($counts['invalid'] ?? 0) > 0)
+                    <div class="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                        {{ number_format($counts['invalid']) }} fila(s) duplicada(s) o invalidas no se importaran.
+                        Se importaran solo las {{ number_format($counts['valid'] ?? 0) }} fila(s) validas.
+                    </div>
+                @endif
+
                 {{-- Tabla de errores: Solo muestra los últimos 20 para no saturar el DOM --}}
                 <div class="mt-4">
                     <table class="responsive w-full">
-                        {{-- ... (Cabecera de tabla) ... --}}
+                        <thead>
+                            <tr>
+                                <th>Fila</th>
+                                <th>Documento</th>
+                                <th>Correo</th>
+                                <th>Estado</th>
+                                <th>Mensaje</th>
+                            </tr>
+                        </thead>
                         <tbody>
                             @forelse($previewRows as $r)
                                 @php
@@ -143,6 +177,7 @@
                                 <tr class="border-t {{ $rowClass }}">
                                     <td>{{ $r['row'] }}</td>
                                     <td>{{ $r['nro_documento'] }}</td>
+                                    <td>{{ $r['correo_electronico'] ?? '-' }}</td>
                                     <td class="font-semibold {{ $textClass }}">{{ $isWarning ? 'Advertencia' : 'Error' }}</td>
                                     <td class="{{ $textClass }}">{{ $r['mensaje'] }}</td>
                                 </tr>

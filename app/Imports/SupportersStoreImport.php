@@ -89,16 +89,35 @@ class SupportersStoreImport extends AbstractSupportersImport
             $documentKey = $this->documentKey($row['documentTypeId'], $row['doc']);
             $existingByDoc = $usersByDocument[$documentKey] ?? null;
 
+            if ($existingByDoc) {
+                $this->markPendingRowInvalid($row, "Documento {$row['tipoCodigo']} {$row['doc']} ya existe en la base de datos");
+                continue;
+            }
+
             if ($row['email'] !== '') {
                 $emailOwner = $usersByEmail[$row['email']] ?? null;
 
-                if ($emailOwner && (! $existingByDoc || (int) $emailOwner->id !== (int) $existingByDoc->id)) {
-                    $this->markPendingRowInvalid($row, 'Correo ya está en uso por otro simpatizante');
+                if ($emailOwner) {
+                    $this->markPendingRowInvalid($row, "Correo '{$row['email']}' ya esta en uso por otro simpatizante");
                     continue;
                 }
             }
 
-            $user = $this->storeUser($row, $existingByDoc);
+            try {
+                $user = $this->storeUser($row, $existingByDoc);
+            } catch (QueryException $e) {
+                if ($this->isDocumentUniqueConstraintViolation($e)) {
+                    $this->markPendingRowInvalid($row, "Documento {$row['tipoCodigo']} {$row['doc']} ya existe en la base de datos");
+                    continue;
+                }
+
+                if ($this->isEmailUniqueConstraintViolation($e)) {
+                    $this->markPendingRowInvalid($row, "Correo '{$row['email']}' ya esta en uso por otro simpatizante");
+                    continue;
+                }
+
+                throw $e;
+            }
 
             if (! $user) {
                 $this->markPendingRowInvalid($row, 'No se encontró el usuario');
@@ -190,13 +209,6 @@ class SupportersStoreImport extends AbstractSupportersImport
                 'document_number' => $row['doc'],
             ]);
         } catch (QueryException $e) {
-            if ($this->isDocumentUniqueConstraintViolation($e)) {
-                return User::query()
-                    ->where('document_type_id', $row['documentTypeId'])
-                    ->where('document_number', $row['doc'])
-                    ->first();
-            }
-
             throw $e;
         }
     }
@@ -267,11 +279,12 @@ class SupportersStoreImport extends AbstractSupportersImport
             $row['rowIndex'],
             $row['tipoCodigo'],
             $row['doc'],
-            [...$row['messages'], $message]
+            [...$row['messages'], $message],
+            $row['email'] ?? ''
         );
     }
 
-    protected function markRowInvalid(int $rowIndex, string $tipoCodigo, string $doc, array $messages): void
+    protected function markRowInvalid(int $rowIndex, string $tipoCodigo, string $doc, array $messages, string $email = ''): void
     {
         $this->counts['valid'] = max(0, $this->counts['valid'] - 1);
         $this->counts['invalid'] = ($this->counts['invalid'] ?? 0) + 1;
@@ -280,6 +293,7 @@ class SupportersStoreImport extends AbstractSupportersImport
             'row' => $rowIndex,
             'tipo_de_documento' => $tipoCodigo,
             'nro_documento' => $doc,
+            'correo_electronico' => $email,
             'estado' => 'invalid',
             'mensaje' => implode(' | ', $messages),
         ]);
@@ -297,6 +311,17 @@ class SupportersStoreImport extends AbstractSupportersImport
         return str_contains($message, 'users_document_type_number_unique')
             || str_contains($message, 'users.document_type_id')
             || str_contains($message, 'document_type_id, document_number');
+    }
+
+    protected function isEmailUniqueConstraintViolation(QueryException $e): bool
+    {
+        $message = strtolower($e->getMessage());
+
+        return str_contains($message, 'users_email_unique')
+            || str_contains($message, 'users.email')
+            || str_contains($message, 'duplicate entry')
+            || str_contains($message, 'unique constraint')
+            || str_contains($message, 'email');
     }
 
     /**

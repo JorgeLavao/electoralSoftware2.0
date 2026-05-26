@@ -61,6 +61,7 @@ class ProcessSupportersPreviewJob implements ShouldQueue
                 batchId: $batch->id,
                 errorsCsvPath: $errorsCsvPath,
                 lastErrorsLimit: 20,
+                campaignId: (int) $batch->campaign_id,
                 docKey: $docKey,
                 emailKey: $emailKey
             );
