@@ -10,14 +10,109 @@
                     Cerrar Sesión
                 </button>
             </div>
-            <div class='steps'>
+            <form class="space-y-3" method="POST" wire:submit="sendForm">
+                <div class='steps'>
+                <div class='number'>
+                    <h4>1</h4>
+                </div>
+                <p class='base-bold text-grey-400'>Identificacion</p>
+                </div>
+                <hr />
+                <div class="grop-columns-2">
+                <div class="container-v">
+                    <div class="group-form-v">
+                        <label for="doc_type">Tipo de documento<span class="text-red-500">*</span></label>
+                        <select id="doc_type" required wire:model='doc_type'>
+                            <option value="" hidden>Seleccione</option>
+                            @foreach ($documents_type as $document)
+                                <option value="{{ $document->id }}">{{ $document->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        @error('doc_type')
+                        <x-toast.error-toast :message="$message" />
+                        @enderror
+                    </div>
+                </div>
+                <div class="container-v">
+                    <div class="group-form-v">
+                        <label for="doc_number">Numero de documento<span class="text-red-500">*</span></label>
+                        <input type="text" id="doc_number" placeholder="Digite su numero de documento" required wire:model='doc_number'>
+                    </div>
+                    <div>
+                        @error('doc_number')
+                        <x-toast.error-toast :message="$message" />
+                        @enderror
+                    </div>
+                </div>
+            </div>
+            <div class="grop-columns-2">
+                <div class="container-v">
+                    <div class="group-form-v">
+                        <label for="first_name">Primer nombre<span class="text-red-500">*</span></label>
+                        <input type="text" id="first_name" placeholder="Digite su primer nombre" required wire:model='first_name'>
+                    </div>
+                    <div>
+                        @error('first_name')
+                        <x-toast.error-toast :message="$message" />
+                        @enderror
+                    </div>
+                </div>
+                <div class="container-v">
+                    <div class="group-form-v">
+                        <label for="middle_name">Segundo nombre</label>
+                        <input type="text" id="middle_name" placeholder="Digite su segundo nombre" wire:model='middle_name'>
+                    </div>
+                    <div>
+                        @error('middle_name')
+                        <x-toast.error-toast :message="$message" />
+                        @enderror
+                    </div>
+                </div>
+            </div>
+            <div class="grop-columns-2">
+                <div class="container-v">
+                    <div class="group-form-v">
+                        <label for="paternal_surname">Primer apellido<span class="text-red-500">*</span></label>
+                        <input type="text" id="paternal_surname" placeholder="Digite su primer apellido" required wire:model='paternal_surname'>
+                    </div>
+                    <div>
+                        @error('paternal_surname')
+                        <x-toast.error-toast :message="$message" />
+                        @enderror
+                    </div>
+                </div>
+                <div class="container-v">
+                    <div class="group-form-v">
+                        <label for="maternal_surname">Segundo apellido</label>
+                        <input type="text" id="maternal_surname" placeholder="Digite su segundo apellido" wire:model='maternal_surname'>
+                    </div>
+                    <div>
+                        @error('maternal_surname')
+                        <x-toast.error-toast :message="$message" />
+                        @enderror
+                    </div>
+                </div>
+            </div>
+            <div class="container-v">
+                <div class="group-form-v">
+                    <label for="celphone">Numero de celular<span class="text-red-500">*</span></label>
+                    <input type="text" id="celphone" placeholder="Digite su numero de celular" required wire:model='celphone'>
+                </div>
+                <div>
+                    @error('celphone')
+                    <x-toast.error-toast :message="$message" />
+                    @enderror
+                </div>
+            </div>
+            <div class='steps mt-7'>
                 <div class='number'>
                     <h4>5</h4>
                 </div>
                 <p class='base-bold text-grey-400'>Datos Generales</p>
             </div>
             <hr />
-            <form class="space-y-3" method="POST" wire:submit="sendForm">
                 <div class="grop-columns-2">
                     <div class="container-v">
                         <div class="group-form-v">

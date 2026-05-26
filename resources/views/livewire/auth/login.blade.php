@@ -36,7 +36,7 @@
             </div>
         </div>
         <div class='register-area'>
-            <a href="" class='button btn-tertiary'>
+            <a href="{{ route('auth.google.redirect') }}" class='button btn-tertiary'>
                 Registrarse con
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 16 16">
                     <g fill="none" fill-rule="evenodd" clip-rule="evenodd">
