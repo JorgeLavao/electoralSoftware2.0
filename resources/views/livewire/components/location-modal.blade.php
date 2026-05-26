@@ -19,7 +19,7 @@
         :class="{ 'show': show }" class="modal-container" tabindex="-1" @click="show = false">
         <div class="modal-inner modal-md" @click.stop>
             <button type="button" class="button modal-close" @click="show = false">
-                <x-icons.close/>
+                <x-icons.close />
             </button>
             <div class="modal-inner__data space-y-5">
                 <header class="section-header">
@@ -33,7 +33,7 @@
                 <div class="md:grid md:grid-cols-5 space-y-2 md:space-y-0">
                     <div class="col-span-2">
                         <button type="button" class="btn-secondary w-full md:w-auto" id="btn-actual">
-                            <x-icons.actual-location/>
+                            <x-icons.actual-location />
                             Ubicación actual
                         </button>
                     </div>
@@ -59,19 +59,19 @@
                         </div>
                     </div>
                 </div>
-                <hr/>
+                <hr />
                 <div class="justify-between flex w-full">
                     <button type="button" class="btn-secondary" wire:click='closeModal'>
-                        <x-icons.close/> Cancelar
+                        <x-icons.close /> Cancelar
                     </button>
                     <button type="button" class="btn-primary" wire:click='saveAdrress'>
-                        <x-icons.save/> Guardar
+                        <x-icons.save /> Guardar
                     </button>
                 </div>
             </div>
         </div>
         @push('scripts')
-            <script type="module" src="{{ Vite::asset('resources/js/google-maps.js') }}"></script>
+        @vite('resources/js/google-maps.js')
         @endpush
     </div>
 </div>
