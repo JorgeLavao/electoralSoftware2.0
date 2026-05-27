@@ -77,7 +77,7 @@ function loadGoogleMaps() {
         window.__electoralMapsInit = () => resolve(window.google.maps);
 
         const script = document.createElement('script');
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&libraries=visualization&callback=__electoralMapsInit`;
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&callback=__electoralMapsInit&loading=async`;
         script.async = true;
         script.defer = true;
         script.onerror = () => reject(new Error('Google Maps failed to load'));
@@ -156,28 +156,94 @@ function buildMarkers(map, payload, infoWindow) {
 }
 
 function buildHeatLayer(map, payload) {
-    if (!google.maps.visualization?.HeatmapLayer) {
-        return { setMap() { } };
-    }
-
     const heatPoints = validPoints(payload).map((point) => ({
-        location: new google.maps.LatLng(point.lat, point.lng),
+        lat: point.lat,
+        lng: point.lng,
         weight: Math.max(1, Number(point.voters || 0) + 1),
     }));
 
-    return new google.maps.visualization.HeatmapLayer({
-        data: heatPoints,
-        map,
-        radius: 28,
-        opacity: 0.72,
-        gradient: [
-            'rgba(56, 189, 248, 0)',
-            'rgba(56, 189, 248, 1)',
-            'rgba(34, 197, 94, 1)',
-            'rgba(250, 204, 21, 1)',
-            'rgba(225, 29, 72, 1)',
-        ],
-    });
+    class CanvasHeatmapOverlay extends google.maps.OverlayView {
+        constructor(points) {
+            super();
+            this.points = points;
+            this.canvas = null;
+        }
+
+        onAdd() {
+            this.canvas = document.createElement('canvas');
+            this.canvas.style.position = 'absolute';
+            this.canvas.style.pointerEvents = 'none';
+            this.canvas.style.opacity = '0.72';
+
+            this.getPanes().overlayLayer.appendChild(this.canvas);
+        }
+
+        draw() {
+            if (!this.canvas) return;
+
+            const projection = this.getProjection();
+            const currentMap = this.getMap();
+
+            if (!projection || !currentMap) return;
+
+            const bounds = currentMap.getBounds();
+            if (!bounds) return;
+
+            const ne = projection.fromLatLngToDivPixel(bounds.getNorthEast());
+            const sw = projection.fromLatLngToDivPixel(bounds.getSouthWest());
+
+            if (!ne || !sw) return;
+
+            const width = Math.max(1, ne.x - sw.x);
+            const height = Math.max(1, sw.y - ne.y);
+
+            this.canvas.style.left = `${sw.x}px`;
+            this.canvas.style.top = `${ne.y}px`;
+            this.canvas.width = width;
+            this.canvas.height = height;
+
+            const ctx = this.canvas.getContext('2d');
+            ctx.clearRect(0, 0, width, height);
+
+            const maxWeight = Math.max(1, ...this.points.map((point) => point.weight));
+            const radius = 32;
+
+            this.points.forEach((point) => {
+                const pixel = projection.fromLatLngToDivPixel(
+                    new google.maps.LatLng(point.lat, point.lng)
+                );
+
+                if (!pixel) return;
+
+                const x = pixel.x - sw.x;
+                const y = pixel.y - ne.y;
+                const intensity = Math.min(1, point.weight / maxWeight);
+
+                const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
+                gradient.addColorStop(0, `rgba(225, 29, 72, ${0.45 + intensity * 0.45})`);
+                gradient.addColorStop(0.35, `rgba(250, 204, 21, ${0.3 + intensity * 0.35})`);
+                gradient.addColorStop(0.7, `rgba(34, 197, 94, ${0.18 + intensity * 0.25})`);
+                gradient.addColorStop(1, 'rgba(56, 189, 248, 0)');
+
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(x, y, radius, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        onRemove() {
+            if (this.canvas) {
+                this.canvas.remove();
+                this.canvas = null;
+            }
+        }
+    }
+
+    const overlay = new CanvasHeatmapOverlay(heatPoints);
+    overlay.setMap(map || null);
+
+    return overlay;
 }
 
 function buildDepartmentCircles(map, payload, infoWindow) {
