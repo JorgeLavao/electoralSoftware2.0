@@ -24,7 +24,13 @@
                             <div class="profile-data">
                                 <input type="checkbox" name="profile" id="view-profile" class="hide-input">
                                 <label for="view-profile" class="cursor-pointer">
-                                    <img class="w-8 h-8 rounded-full" src="https://ui-avatars.com/api/background=C4C4C4?name={{ Auth::user()->first_name }}?bold=true">
+                                    @php
+                                        $authUser = Auth::user();
+                                        $avatarUrl = $authUser->profile_photo_path
+                                            ? asset('storage/' . $authUser->profile_photo_path)
+                                            : ($authUser->google_avatar ?: 'https://ui-avatars.com/api/?background=C4C4C4&name=' . urlencode($authUser->full_name ?: $authUser->first_name) . '&bold=true');
+                                    @endphp
+                                    <img class="w-8 h-8 rounded-full object-cover" src="{{ $avatarUrl }}" alt="Foto de perfil">
                                 </label>
                                 <div class="profile-data__display">
                                     <ul>

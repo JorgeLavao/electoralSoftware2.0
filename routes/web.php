@@ -22,8 +22,10 @@ use App\Livewire\Settings\TwoFactor;
 use App\Livewire\Supporters\ImportSupporter;
 use App\Livewire\Supporters\IndexSupporters;
 use App\Models\News;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 use Laravel\Fortify\Features;
 
 Route::get('/', function () {
@@ -80,6 +82,23 @@ Route::middleware(['auth'])->group(function () {
 
         return view('profile.show', compact('user', 'profile', 'department', 'municipality'));
     })->middleware('verified')->name('profile.show');
+
+    Route::patch('/mi-perfil/foto', function (Request $request) {
+        $validated = $request->validate([
+            'profile_photo' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+        ]);
+
+        $user = $request->user();
+
+        if ($user->profile_photo_path) {
+            Storage::disk('public')->delete($user->profile_photo_path);
+        }
+
+        $user->profile_photo_path = $validated['profile_photo']->store('profile-photos', 'public');
+        $user->save();
+
+        return back()->with('profile_photo_status', 'Foto de perfil actualizada correctamente.');
+    })->middleware('verified')->name('profile.photo.update');
 
     Route::get('campanias', IndexCampaign::class)->name('campaign.index');
     Route::get('administracion/usuarios', UserRoles::class)->middleware('verified')->name('admin.users.roles');

@@ -31,6 +31,7 @@ class User extends Authenticatable
     protected $fillable = [
         'google_id',
         'google_avatar',
+        'profile_photo_path',
         'document_type_id',
         'document_number',
         'first_name',

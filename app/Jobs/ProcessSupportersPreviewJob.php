@@ -11,6 +11,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Maatwebsite\Excel\Facades\Excel;
 use PhpOffice\PhpSpreadsheet\IOFactory;
@@ -44,8 +45,25 @@ class ProcessSupportersPreviewJob implements ShouldQueue
 
         try {
             $fullPath = Storage::disk('local')->path($batch->source_path);
+            Log::debug('[supporters-import] Preview job started', [
+                'batch_id' => $batch->id,
+                'campaign_id' => $batch->campaign_id,
+                'user_id' => $batch->user_id,
+                'source_path' => $batch->source_path,
+                'full_path' => $fullPath,
+                'file_exists' => file_exists($fullPath),
+                'file_size_bytes' => file_exists($fullPath) ? filesize($fullPath) : null,
+                'memory_usage_mb' => round(memory_get_usage(true) / 1024 / 1024, 2),
+                'memory_limit' => ini_get('memory_limit'),
+            ]);
+
             $batch->total_rows = $this->estimateTotalRows($fullPath, 'Usuarios');
             $batch->save();
+
+            Log::debug('[supporters-import] Preview total rows estimated', [
+                'batch_id' => $batch->id,
+                'total_rows' => $batch->total_rows,
+            ]);
 
             // CSV de errores
             $errorsCsvPath = 'imports/errors/' . Str::uuid() . '.csv';
@@ -81,7 +99,23 @@ class ProcessSupportersPreviewJob implements ShouldQueue
             }
 
             $batch->save();
+            Log::debug('[supporters-import] Preview job finished', [
+                'batch_id' => $batch->id,
+                'status' => $batch->status,
+                'total_rows' => $batch->total_rows,
+                'processed_rows' => $batch->processed_rows,
+                'counts' => $batch->counts,
+                'memory_peak_mb' => round(memory_get_peak_usage(true) / 1024 / 1024, 2),
+            ]);
         } catch (\Throwable $e) {
+            Log::error('[supporters-import] Preview job failed', [
+                'batch_id' => $batch->id,
+                'source_path' => $batch->source_path,
+                'message' => $e->getMessage(),
+                'exception' => $e,
+                'memory_peak_mb' => round(memory_get_peak_usage(true) / 1024 / 1024, 2),
+            ]);
+
             $batch->status = 'failed';
             $batch->error_message = $e->getMessage();
             $batch->finished_at = now();

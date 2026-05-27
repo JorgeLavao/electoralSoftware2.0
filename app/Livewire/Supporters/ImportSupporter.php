@@ -10,6 +10,7 @@ use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -56,13 +57,33 @@ class ImportSupporter extends Component
         $this->authorize('importSupporters', $this->campaign);
 
         if (! $this->file) {
+            $this->debugImport('updatedFile called without file');
             return;
         }
 
-        $this->validate();
+        $this->debugImport('File selected', $this->fileDebugContext());
+
+        try {
+            $this->validate();
+        } catch (ValidationException $e) {
+            $this->debugImport('File validation failed', [
+                ...$this->fileDebugContext(),
+                'errors' => $e->errors(),
+            ], 'warning');
+
+            throw $e;
+        }
+
+        $this->debugImport('File validation passed', $this->fileDebugContext());
         $this->cleanupBatch();
 
         $path = $this->file->store('imports/source', 'local');
+
+        $this->debugImport('File stored for preview', [
+            ...$this->fileDebugContext(),
+            'stored_path' => $path,
+            'exists' => Storage::disk('local')->exists($path),
+        ]);
 
         $batch = ImportBatch::create([
             'user_id' => Auth::id(),
@@ -78,6 +99,11 @@ class ImportSupporter extends Component
         $this->batchId = $batch->id;
         $this->step = 'processing';
 
+        $this->debugImport('Preview batch created and job dispatched', [
+            'batch_id' => $batch->id,
+            'source_path' => $path,
+        ]);
+
         ProcessSupportersPreviewJob::dispatch($batch->id);
         $this->refreshBatch();
     }
@@ -87,6 +113,7 @@ class ImportSupporter extends Component
         $this->authorize('importSupporters', $this->campaign);
 
         if (! $this->batchId) {
+            $this->debugImport('Import requested without active batch', [], 'warning');
             $this->alertImport('No hay lote de importación activo.');
             return;
         }
@@ -94,14 +121,20 @@ class ImportSupporter extends Component
         $batch = $this->currentBatch();
 
         if (! $batch) {
+            $this->debugImport('Import requested but batch was not found', [
+                'batch_id' => $this->batchId,
+            ], 'warning');
             $this->alertImport('No se encontró el lote de importación.');
             return;
         }
 
         if (($batch->counts['valid'] ?? 0) === 0) {
+            $this->debugImport('Import requested with zero valid rows', $this->batchDebugContext($batch), 'warning');
             $this->alertImport('No hay registros válidos para importar.');
             return;
         }
+
+        $this->debugImport('Import job dispatched', $this->batchDebugContext($batch));
 
         ImportSupportersJob::dispatch($batch->id, $this->campaign->id, (int) Auth::id());
         $this->step = 'importing';
@@ -137,6 +170,12 @@ class ImportSupporter extends Component
         $this->totalRows = $batch->total_rows ? (int) $batch->total_rows : null;
         $this->progress = $batch->progress_percent;
 
+        $this->dispatch('import-debug', [
+            'message' => 'Batch refreshed',
+            'level' => 'debug',
+            'context' => $this->batchDebugContext($batch),
+        ]);
+
         if ($batch->status === 'done') {
             $this->step = 'preview';
         }
@@ -169,6 +208,7 @@ class ImportSupporter extends Component
         }
 
         if ($batch->status === 'failed') {
+            $this->debugImport('Preview batch failed', $this->batchDebugContext($batch), 'error');
             $this->alertImport($batch->error_message ?: 'El archivo no pudo ser procesado.');
             $this->back();
         }
@@ -254,6 +294,11 @@ class ImportSupporter extends Component
 
     public function alertImport(string $message): void
     {
+        $this->debugImport('Import alert shown', [
+            'message' => $message,
+            'status' => $this->status,
+        ], 'warning');
+
         $this->dispatch('alert', [
             'icon' => 'error',
             'title' => 'No se pudo subir el archivo',
@@ -297,6 +342,65 @@ class ImportSupporter extends Component
         }
 
         return "Se importaron {$validCount} simpatizante(s). {$invalidCount} fila(s) duplicada(s) o invalidas fueron omitidas.";
+    }
+
+    private function fileDebugContext(): array
+    {
+        if (! $this->file) {
+            return [
+                'file_present' => false,
+            ];
+        }
+
+        $size = method_exists($this->file, 'getSize') ? $this->file->getSize() : null;
+
+        return [
+            'file_present' => true,
+            'original_name' => method_exists($this->file, 'getClientOriginalName') ? $this->file->getClientOriginalName() : null,
+            'client_extension' => method_exists($this->file, 'getClientOriginalExtension') ? $this->file->getClientOriginalExtension() : null,
+            'mime_type' => method_exists($this->file, 'getMimeType') ? $this->file->getMimeType() : null,
+            'size_bytes' => $size,
+            'size_mb' => $size ? round($size / 1024 / 1024, 2) : null,
+            'max_rule_kb' => 10240,
+            'max_rule_mb' => 10,
+        ];
+    }
+
+    private function batchDebugContext(ImportBatch $batch): array
+    {
+        return [
+            'batch_id' => $batch->id,
+            'campaign_id' => $batch->campaign_id,
+            'user_id' => $batch->user_id,
+            'status' => $batch->status,
+            'total_rows' => $batch->total_rows,
+            'processed_rows' => $batch->processed_rows,
+            'progress' => $batch->progress_percent,
+            'counts' => $batch->counts,
+            'source_path' => $batch->source_path,
+            'source_exists' => $batch->source_path ? Storage::disk('local')->exists($batch->source_path) : false,
+            'errors_csv_path' => $batch->errors_csv_path,
+            'error_message' => $batch->error_message,
+        ];
+    }
+
+    private function debugImport(string $message, array $context = [], string $level = 'debug'): void
+    {
+        $context = [
+            'component' => self::class,
+            'campaign_id' => $this->campaign->id ?? null,
+            'user_id' => Auth::id(),
+            'batch_id' => $this->batchId,
+            ...$context,
+        ];
+
+        Log::log($level, "[supporters-import] {$message}", $context);
+
+        $this->dispatch('import-debug', [
+            'message' => $message,
+            'level' => $level,
+            'context' => $context,
+        ]);
     }
 
     public function render()

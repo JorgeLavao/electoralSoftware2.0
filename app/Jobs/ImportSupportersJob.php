@@ -11,6 +11,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
 
 class ImportSupportersJob implements ShouldQueue
@@ -34,6 +35,14 @@ class ImportSupportersJob implements ShouldQueue
         if (!$batch) return;
 
         if ((int) $batch->campaign_id !== $this->campaignId || (int) $batch->user_id !== $this->referrerId) {
+            Log::warning('[supporters-import] Import job rejected by ownership check', [
+                'batch_id' => $batch->id,
+                'batch_campaign_id' => $batch->campaign_id,
+                'requested_campaign_id' => $this->campaignId,
+                'batch_user_id' => $batch->user_id,
+                'requested_referrer_id' => $this->referrerId,
+            ]);
+
             $batch->status = 'import_failed';
             $batch->error_message = 'El lote de importación no pertenece a la campaña o al usuario solicitante.';
             $batch->finished_at = now();
@@ -53,6 +62,17 @@ class ImportSupportersJob implements ShouldQueue
 
         try {
             $fullPath = Storage::disk('local')->path($batch->source_path);
+            Log::debug('[supporters-import] Import job started', [
+                'batch_id' => $batch->id,
+                'campaign_id' => $this->campaignId,
+                'referrer_id' => $this->referrerId,
+                'source_path' => $batch->source_path,
+                'full_path' => $fullPath,
+                'file_exists' => file_exists($fullPath),
+                'file_size_bytes' => file_exists($fullPath) ? filesize($fullPath) : null,
+                'memory_usage_mb' => round(memory_get_usage(true) / 1024 / 1024, 2),
+                'memory_limit' => ini_get('memory_limit'),
+            ]);
 
             // Limpiar sets de duplicados para ESTA corrida
             Redis::del($docKey, $emailKey);
@@ -73,7 +93,23 @@ class ImportSupportersJob implements ShouldQueue
             $batch->error_message = $this->importSummaryMessage($batch);
             $batch->finished_at = now();
             $batch->save();
+            Log::debug('[supporters-import] Import job finished', [
+                'batch_id' => $batch->id,
+                'status' => $batch->status,
+                'processed_rows' => $batch->processed_rows,
+                'counts' => $batch->counts,
+                'error_message' => $batch->error_message,
+                'memory_peak_mb' => round(memory_get_peak_usage(true) / 1024 / 1024, 2),
+            ]);
         } catch (\Throwable $e) {
+            Log::error('[supporters-import] Import job failed', [
+                'batch_id' => $batch->id,
+                'source_path' => $batch->source_path,
+                'message' => $e->getMessage(),
+                'exception' => $e,
+                'memory_peak_mb' => round(memory_get_peak_usage(true) / 1024 / 1024, 2),
+            ]);
+
             $batch->status = 'import_failed';
             $batch->error_message = $e->getMessage();
             $batch->finished_at = now();

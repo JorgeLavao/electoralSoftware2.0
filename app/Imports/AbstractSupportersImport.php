@@ -3,6 +3,7 @@
 namespace App\Imports;
 
 use App\Models\ImportBatch;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redis;
 use Maatwebsite\Excel\Concerns\OnEachRow;
 use Maatwebsite\Excel\Concerns\SkipsUnknownSheets;
@@ -140,6 +141,16 @@ abstract class AbstractSupportersImport implements
         $batch->counts = $this->counts;
         $batch->last_errors = $this->lastErrors; // para el preview
         $batch->save();
+
+        Log::debug('[supporters-import] Import chunk flushed', [
+            'batch_id' => $this->batchId,
+            'status' => $batch->status,
+            'processed_rows' => $batch->processed_rows,
+            'flushed_rows' => $this->processedSinceFlush,
+            'counts' => $this->counts,
+            'memory_usage_mb' => round(memory_get_usage(true) / 1024 / 1024, 2),
+            'memory_peak_mb' => round(memory_get_peak_usage(true) / 1024 / 1024, 2),
+        ]);
 
         $this->processedSinceFlush = 0;
     }

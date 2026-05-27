@@ -28,10 +28,10 @@
 
             {{-- Zona de Drag & Drop gestionada con Alpine.js y Livewire --}}
             <div x-data="{ isDropping:false, isUploading:false, progress:0 }"
-                x-on:livewire-upload-start="isUploading = true; progress = 0"
-                x-on:livewire-upload-finish="isUploading = false; progress = 100"
-                x-on:livewire-upload-error="isUploading = false"
-                x-on:livewire-upload-progress="progress = $event.detail.progress" class="mt-5">
+                x-on:livewire-upload-start="isUploading = true; progress = 0; console.log('[supporters-import] upload started')"
+                x-on:livewire-upload-finish="isUploading = false; progress = 100; console.log('[supporters-import] upload finished')"
+                x-on:livewire-upload-error="isUploading = false; console.error('[supporters-import] upload failed', $event.detail)"
+                x-on:livewire-upload-progress="progress = $event.detail.progress; console.log('[supporters-import] upload progress', $event.detail.progress)" class="mt-5">
                 
                 {{-- Input oculto pero vinculado al modelo 'file' de Livewire --}}
                 <input type="file" class="hidden" x-ref="fileInput" wire:model="file" accept=".xlsx,.xls,.csv"/>
@@ -45,6 +45,13 @@
                     @drop.prevent="
                         isDropping = false;
                         if ($event.dataTransfer.files.length) {
+                            console.log('[supporters-import] file dropped', {
+                                name: $event.dataTransfer.files[0].name,
+                                sizeBytes: $event.dataTransfer.files[0].size,
+                                sizeMb: Math.round(($event.dataTransfer.files[0].size / 1024 / 1024) * 100) / 100,
+                                type: $event.dataTransfer.files[0].type,
+                                maxRuleMb: 10,
+                            });
                             $refs.fileInput.files = $event.dataTransfer.files;
                             $refs.fileInput.dispatchEvent(new Event('change', { bubbles: true }));
                         }">
@@ -188,6 +195,43 @@
                     </table>
                 </div>
             </div>
-        @endif
+@endif
     </div>
+
+    <script>
+        if (!window.__supportersImportDebugBound) {
+            window.__supportersImportDebugBound = true;
+
+            document.addEventListener('change', (event) => {
+            if (!event.target.matches('input[type="file"][wire\\:model="file"]')) {
+                return;
+            }
+
+            const file = event.target.files?.[0];
+            console.log('[supporters-import] file input changed', file ? {
+                name: file.name,
+                sizeBytes: file.size,
+                sizeMb: Math.round((file.size / 1024 / 1024) * 100) / 100,
+                type: file.type,
+                maxRuleMb: 10,
+            } : { file: null });
+            });
+
+            const bindLivewireImportDebug = () => {
+                if (!window.Livewire || window.__supportersImportLivewireDebugBound) {
+                    return;
+                }
+
+                window.__supportersImportLivewireDebugBound = true;
+                Livewire.on('import-debug', (payload) => {
+                    const data = Array.isArray(payload) ? payload[0] : payload;
+                    const level = data?.level === 'error' ? 'error' : (data?.level === 'warning' ? 'warn' : 'log');
+                    console[level]('[supporters-import]', data?.message, data?.context ?? data);
+                });
+            };
+
+            bindLivewireImportDebug();
+            document.addEventListener('livewire:init', bindLivewireImportDebug);
+        }
+    </script>
 </section>
