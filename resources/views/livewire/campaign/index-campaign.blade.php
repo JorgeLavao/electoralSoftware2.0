@@ -13,7 +13,7 @@
                 <x-icons.add-fill /> Agregar Campaña
             </button>
             @else
-            <button type="button" class="btn-primary" @click="joinModal = true">
+            <button type="button" class="btn-primary" wire:click="resetJoinCampaignForm" @click="joinModal = true">
                 Unirme a Campaña
             </button>
             @endif
@@ -21,10 +21,6 @@
 
         @if (session()->has('success'))
         <x-toast.success-toast :message="session('success')" />
-        @endif
-
-        @if ($errors->has('campaign_code'))
-        <x-toast.error-toast :message="$errors->first('campaign_code')" />
         @endif
 
         <ul class="list-horizontal wrap-primary">
@@ -110,11 +106,22 @@
                     <header class="section-header">
                         <div class="section-header__title">
                             <hgroup>
-                                <h3 class="text-grey-400">Vinculación a Campaña</h3>
+                                <h3 class="text-grey-400">Unirme a Campaña</h3>
                             </hgroup>
                         </div>
                         <hr>
                     </header>
+
+                    @if ($joinCampaignMessage || $errors->has('campaign_code'))
+                        @php
+                            $joinAlertClass = $joinCampaignMessageType === 'error' || $errors->has('campaign_code')
+                                ? 'border-red-200 bg-red-50 text-red-700'
+                                : 'border-blue-200 bg-blue-50 text-blue-700';
+                        @endphp
+                        <div class="rounded-md border px-3 py-2 text-sm font-medium {{ $joinAlertClass }}">
+                            {{ $joinCampaignMessage ?: $errors->first('campaign_code') }}
+                        </div>
+                    @endif
 
                     <div class="group-form-v">
                         <label for="campaign_code_modal">Código de Campaña</label>
@@ -123,9 +130,6 @@
                             type="text"
                             wire:model.defer="campaign_code"
                             placeholder="Digite el código de la campaña">
-                        @error('campaign_code')
-                            <p class="text-sm font-medium text-red-600">{{ $message }}</p>
-                        @enderror
                     </div>
 
                     <p class="text-sm text-gray-500">

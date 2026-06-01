@@ -19,6 +19,10 @@ class IndexCampaign extends Component
 
     public string $campaign_code = '';
 
+    public ?string $joinCampaignMessage = null;
+
+    public string $joinCampaignMessageType = 'info';
+
     public function addCampaign(): void
     {
         $this->authorize('create', Campaign::class);
@@ -34,12 +38,22 @@ class IndexCampaign extends Component
             ->to(EditCampaignModal::class);
     }
 
+    public function resetJoinCampaignForm(): void
+    {
+        $this->campaign_code = '';
+        $this->resetValidation('campaign_code');
+        $this->resetJoinCampaignMessage();
+    }
+
     public function joinCampaign(): void
     {
+        $this->resetJoinCampaignMessage();
+        $this->resetValidation('campaign_code');
+
         $this->validate([
             'campaign_code' => ['required', 'string'],
         ], [
-            'campaign_code.required' => 'Escribe el codigo de la campana.',
+            'campaign_code.required' => 'Escribe el código de la campaña.',
         ]);
 
         /** @var User $user */
@@ -50,7 +64,7 @@ class IndexCampaign extends Component
         $campaign = Campaign::query()->firstWhere('code', $campaignCode);
 
         if (! $campaign) {
-            $this->addError('campaign_code', 'Esa campana no existe.');
+            $this->showJoinCampaignMessage('error', 'Esa campaña no existe. Revisa el código e intenta nuevamente.');
             return;
         }
 
@@ -67,21 +81,19 @@ class IndexCampaign extends Component
             $this->campaign_code = '';
             $this->setCurrentCampaign($user, $campaign);
 
-            session()->flash('success', 'Ya haces parte de esta campana.');
-            $this->dispatch('campaign-joined');
+            $this->showJoinCampaignMessage('info', 'Ya haces parte de esta campaña.');
             return;
         }
 
         if ((int) ($supporterMembership?->pivot?->validate ?? -1) === 0) {
             $this->campaign_code = '';
 
-            session()->flash('success', 'Tu solicitud para esta campana sigue pendiente de aprobacion.');
-            $this->dispatch('campaign-joined');
+            $this->showJoinCampaignMessage('info', 'Tu solicitud para esta campaña sigue pendiente de aprobación.');
             return;
         }
 
         if ((int) ($supporterMembership?->pivot?->validate ?? -1) === 2) {
-            $this->addError('campaign_code', 'Tu solicitud para esta campana fue rechazada.');
+            $this->showJoinCampaignMessage('error', 'Tu solicitud para esta campaña fue rechazada.');
             return;
         }
 
@@ -93,8 +105,14 @@ class IndexCampaign extends Component
 
         $this->campaign_code = '';
 
-        session()->flash('success', 'Solicitud enviada. Un coordinador debe aprobar tu vinculacion a la campana.');
+        session()->flash('success', 'Solicitud enviada. Un coordinador debe aprobar tu vinculación a la campaña.');
         $this->dispatch('campaign-joined');
+    }
+
+    public function updatedCampaignCode(): void
+    {
+        $this->resetJoinCampaignMessage();
+        $this->resetValidation('campaign_code');
     }
 
     public function leaveCampaign(int $campaignId): void
@@ -118,8 +136,8 @@ class IndexCampaign extends Component
                 ->wherePivot('status', true)
                 ->first()
                 ?? $user->supporter_campaigns()
-                    ->where('campaign_user.validate', '!=', 2)
-                    ->first();
+                ->where('campaign_user.validate', '!=', 2)
+                ->first();
 
             $user->update([
                 'current_campaign' => $fallbackCampaign?->code,
@@ -128,7 +146,7 @@ class IndexCampaign extends Component
             session(['current_campaign' => $fallbackCampaign]);
         }
 
-        session()->flash('success', 'Abandonaste la campana correctamente.');
+        session()->flash('success', 'Abandonaste la campaña correctamente.');
     }
 
     public function getIn_campaign(string $campaignCode): void
@@ -151,9 +169,9 @@ class IndexCampaign extends Component
             ->wherePivot('status', true)
             ->exists()
             || $user->supporter_campaigns()
-                ->where('campaigns.id', $campaign->id)
-                ->where('campaign_user.validate', 1)
-                ->exists();
+            ->where('campaigns.id', $campaign->id)
+            ->where('campaign_user.validate', 1)
+            ->exists();
 
         abort_unless($belongsToCampaign, 403);
 
@@ -168,6 +186,18 @@ class IndexCampaign extends Component
         ]);
 
         session(['current_campaign' => $campaign]);
+    }
+
+    protected function showJoinCampaignMessage(string $type, string $message): void
+    {
+        $this->joinCampaignMessageType = $type;
+        $this->joinCampaignMessage = $message;
+    }
+
+    protected function resetJoinCampaignMessage(): void
+    {
+        $this->joinCampaignMessage = null;
+        $this->joinCampaignMessageType = 'info';
     }
 
     public function render()
@@ -211,15 +241,15 @@ class IndexCampaign extends Component
             'availableCampaignIds' => $user->is_super_admin
                 ? []
                 : $user->foreign_campaings()
-                    ->wherePivot('status', true)
-                    ->pluck('campaigns.id')
-                    ->merge(
-                        $user->supporter_campaigns()
-                            ->where('campaign_user.validate', 1)
-                            ->pluck('campaigns.id')
-                    )
-                    ->unique()
-                    ->all(),
+                ->wherePivot('status', true)
+                ->pluck('campaigns.id')
+                ->merge(
+                    $user->supporter_campaigns()
+                        ->where('campaign_user.validate', 1)
+                        ->pluck('campaigns.id')
+                )
+                ->unique()
+                ->all(),
         ]);
     }
 }
