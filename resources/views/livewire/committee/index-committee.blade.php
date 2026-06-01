@@ -125,7 +125,7 @@
                                         {{ $committee->description ?? 'Este comite aun no tiene informacion detallada.' }}
                                     </p>
                                     <p class="text-sm text-slate-500">
-                                        {{ $committee->users->count() }} personas vinculadas al comite.
+                                        {{ $committee->users_count }} personas vinculadas al comite.
                                     </p>
                                 </div>
                             </div>

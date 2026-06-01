@@ -10,6 +10,7 @@ use App\Models\ExportBatch;
 use App\Models\Gender;
 use App\Models\Occupation;
 use App\Models\User;
+use App\Services\CampaignLocationOptions;
 use App\Services\SupporterListQueryService;
 use App\Services\SupporterRowMapper;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -39,7 +40,6 @@ class CreateList extends Component
     public $municipalities = [];
     public $districtsCommunes = [];
     public $neighborhoods = [];
-    public $rawData = [];
     public $campaign_id;
     public $columnOptions = [];
     public $selectedColumns = [];
@@ -111,7 +111,6 @@ class CreateList extends Component
             ->orderBy('name')
             ->get(['id', 'name', 'is_active']);
         $this->roles = Role::query()
-            ->with('permissions')
             ->where('guard_name', 'web')
             ->where('campaign_id', $this->rolesCampaign($campaign)->id)
             ->orderBy('name')
@@ -125,26 +124,7 @@ class CreateList extends Component
             'text' => $user->fullName,
         ]);
 
-        $this->rawData = $campaign->foreign_users()->with('foreing_aditional_info')->get()
-            ->map(function ($user) {
-                $profile = $user->foreing_aditional_info;
-
-                return [
-                    'department' => $profile?->department ? json_decode($profile->department, true) : null,
-                    'municipality' => $profile?->municipality ? json_decode($profile->municipality, true) : null,
-                    'district_commune' => $profile?->district_commune,
-                    'neighborhood' => $profile?->neighborhood_village_name,
-                ];
-            })
-            ->filter(fn($item) => $item['department'])
-            ->values()
-            ->toArray();
-
-        $this->departments = collect($this->rawData)
-            ->pluck('department')
-            ->unique('id')
-            ->values()
-            ->toArray();
+        $this->departments = app(CampaignLocationOptions::class)->departments($campaign);
 
         $this->appliedFilters = [];
     }
@@ -221,22 +201,9 @@ class CreateList extends Component
             $this->neighborhood = null;
 
             if ($value) {
-                $departmentItems = collect($this->rawData)
-                    ->filter(fn($item) => data_get($item, 'department.id') == $value);
-
-                $this->municipalities = $departmentItems
-                    ->pluck('municipality')
-                    ->filter()
-                    ->unique('id')
-                    ->values()
-                    ->toArray();
-
-                $this->districtsCommunes = $departmentItems
-                    ->pluck('district_commune')
-                    ->filter()
-                    ->unique()
-                    ->values()
-                    ->toArray();
+                $locations = app(CampaignLocationOptions::class);
+                $this->municipalities = $locations->municipalities($this->campaign, $value);
+                $this->districtsCommunes = $locations->districts($this->campaign, $value);
             }
         }
 
@@ -247,22 +214,9 @@ class CreateList extends Component
             $this->neighborhood = null;
 
             if ($value) {
-                $municipalityItems = collect($this->rawData)
-                    ->filter(fn($item) => data_get($item, 'municipality.id') == $value && $item['neighborhood'])
-                    ->values();
-
-                $this->neighborhoods = $municipalityItems
-                    ->pluck('neighborhood')
-                    ->unique()
-                    ->values()
-                    ->toArray();
-
-                $this->districtsCommunes = $municipalityItems
-                    ->pluck('district_commune')
-                    ->filter()
-                    ->unique()
-                    ->values()
-                    ->toArray();
+                $locations = app(CampaignLocationOptions::class);
+                $this->neighborhoods = $locations->neighborhoods($this->campaign, $this->department, $value);
+                $this->districtsCommunes = $locations->districts($this->campaign, $this->department, $value);
             }
         }
 
@@ -270,16 +224,8 @@ class CreateList extends Component
             $this->neighborhood = null;
 
             if ($value) {
-                $this->neighborhoods = collect($this->rawData)
-                    ->filter(function ($item) use ($value) {
-                        return $item['district_commune'] === $value
-                            && (! $this->municipality || data_get($item, 'municipality.id') == $this->municipality)
-                            && $item['neighborhood'];
-                    })
-                    ->pluck('neighborhood')
-                    ->unique()
-                    ->values()
-                    ->toArray();
+                $this->neighborhoods = app(CampaignLocationOptions::class)
+                    ->neighborhoods($this->campaign, $this->department, $this->municipality, $value);
             }
         }
     }

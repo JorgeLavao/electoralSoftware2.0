@@ -19,9 +19,6 @@ class SupporterListQueryService
                 'committees' => fn ($committeeQuery) => $committeeQuery
                     ->where('committees.campaign_id', $campaign->id)
                     ->orderBy('name'),
-                'roles' => fn ($roleQuery) => $roleQuery
-                    ->where('roles.campaign_id', $rolesCampaign->id)
-                    ->orderBy('name'),
             ])
             ->select('users.*');
 
