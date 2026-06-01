@@ -80,7 +80,6 @@ class CampaignLocationOptions
             ->where('campaign_user.campaign_id', $campaign->id)
             ->where('campaign_user.validate', '!=', 2)
             ->select($columns)
-            ->distinct()
             ->get();
     }
 
