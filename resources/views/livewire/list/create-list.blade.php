@@ -28,6 +28,15 @@
 
                     <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <div class="group-form-v">
+                            <label for="profile_photo_filter">Foto de perfil</label>
+                            <select id="profile_photo_filter" wire:model="profile_photo_filter">
+                                <option value="">Todas</option>
+                                <option value="with">Con foto</option>
+                                <option value="without">Sin foto</option>
+                            </select>
+                        </div>
+
+                        <div class="group-form-v">
                             <div class="flex justify-between items-center">
                                 <label for="joined_from">Ingresaron desde</label>
                                 <label class="flex items-center gap-2 text-sm">
@@ -570,7 +579,19 @@
                                         @foreach ($visibleColumns as $columnKey)
                                         @if (isset($columnOptions[$columnKey]))
                                         <td class="px-4 py-3 text-slate-700">
-                                            {{ $user[$columnKey] ?? '-' }}
+                                            @if ($columnKey === 'profile_photo')
+                                                <div class="flex items-center gap-2">
+                                                    @if (!empty($user['profile_photo_url']))
+                                                        <img class="h-9 w-9 rounded-full object-cover" src="{{ $user['profile_photo_url'] }}" alt="Foto de {{ $user['full_name'] ?? 'perfil' }}">
+                                                    @else
+                                                        <span class="flex h-9 w-9 items-center justify-center rounded-full bg-slate-200 text-xs font-semibold text-slate-700">
+                                                            {{ $user['profile_initials'] ?? 'US' }}
+                                                        </span>
+                                                    @endif
+                                                </div>
+                                            @else
+                                                {{ $user[$columnKey] ?? '-' }}
+                                            @endif
                                         </td>
                                         @endif
                                         @endforeach

@@ -50,7 +50,7 @@ class IndexCampaign extends Component
         $campaign = Campaign::query()->firstWhere('code', $campaignCode);
 
         if (! $campaign) {
-            $this->addError('campaign_code', 'El codigo ingresado no corresponde a ninguna campana.');
+            $this->addError('campaign_code', 'Esa campana no existe.');
             return;
         }
 

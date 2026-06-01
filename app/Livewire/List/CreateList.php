@@ -83,6 +83,7 @@ class CreateList extends Component
     public $birth_month;
     public $birth_day;
     public $sw_birth = false;
+    public ?string $profile_photo_filter = null;
     public bool $hasSearched = false;
     public bool $showMap = false;
     public int $perPage = 25;
@@ -172,6 +173,7 @@ class CreateList extends Component
             'validation_to',
             'birth_month',
             'birth_day',
+            'profile_photo_filter',
         ]);
 
         $this->sw_approach = false;
@@ -192,6 +194,7 @@ class CreateList extends Component
         $this->sw_joined = false;
         $this->sw_validation = false;
         $this->sw_birth = false;
+        $this->profile_photo_filter = null;
 
         $this->municipalities = [];
         $this->districtsCommunes = [];
@@ -463,6 +466,7 @@ class CreateList extends Component
             'birth_month' => $this->birth_month,
             'birth_day' => $this->birth_day,
             'sw_birth' => $this->sw_birth,
+            'profile_photo_filter' => $this->profile_photo_filter,
         ];
     }
 
@@ -630,6 +634,7 @@ class CreateList extends Component
     {
         return [
             'document_number' => 'Cédula',
+            'profile_photo' => 'Foto de perfil',
             'first_name' => 'Primer Nombre',
             'middle_name' => 'Segundo Nombre',
             'paternal_surname' => 'Primer Apellido',
@@ -676,7 +681,8 @@ class CreateList extends Component
     protected function cleanColumnOptions(): array
     {
         return [
-            'document_number' => 'Cédula',
+            'document_number' => 'Cedula',
+            'profile_photo' => 'Foto de perfil',
             'first_name' => 'Primer Nombre',
             'middle_name' => 'Segundo Nombre',
             'paternal_surname' => 'Primer Apellido',
@@ -700,7 +706,7 @@ class CreateList extends Component
             'committees' => 'Comites',
             'roles' => 'Roles',
             'joined_at' => 'Fecha de ingreso',
-            'validated_at' => 'Fecha de validación',
+            'validated_at' => 'Fecha de validacion',
         ];
     }
 
@@ -804,6 +810,7 @@ class CreateList extends Component
                 $this->validation_to,
                 $this->birth_month,
                 $this->birth_day,
+                $this->profile_photo_filter,
                 empty($this->committee_ids) ? null : 'committee_ids',
                 empty($this->role_ids) ? null : 'role_ids',
                 empty($this->refer_ids) ? null : 'refer_ids',

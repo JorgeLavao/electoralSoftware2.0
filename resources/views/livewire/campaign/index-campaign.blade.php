@@ -1,6 +1,6 @@
 <section
     class="dashboard__main__section"
-    x-data="{ joinModal: false }"
+    x-data="{ joinModal: @js($errors->has('campaign_code')) }"
     x-on:campaign-joined.window="joinModal = false">
     <div class="breadcrumbs">
         Campañas
@@ -123,6 +123,9 @@
                             type="text"
                             wire:model.defer="campaign_code"
                             placeholder="Digite el código de la campaña">
+                        @error('campaign_code')
+                            <p class="text-sm font-medium text-red-600">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     <p class="text-sm text-gray-500">

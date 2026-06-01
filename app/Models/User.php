@@ -13,6 +13,7 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
@@ -181,6 +182,38 @@ class User extends Authenticatable
             ]))
         ));
     }
+
+    public function initials(): string
+    {
+        $parts = collect([
+            $this->first_name,
+            $this->paternal_surname,
+        ])->filter();
+
+        if ($parts->isEmpty()) {
+            $parts = collect(explode(' ', trim((string) $this->fullName)))->filter();
+        }
+
+        return $parts
+            ->take(2)
+            ->map(fn ($part) => mb_strtoupper(mb_substr($part, 0, 1)))
+            ->implode('') ?: 'US';
+    }
+
+    public function hasProfilePhoto(): bool
+    {
+        return filled($this->profile_photo_path) || filled($this->google_avatar);
+    }
+
+    public function profilePhotoUrl(): ?string
+    {
+        if ($this->profile_photo_path) {
+            return Storage::disk('public')->url($this->profile_photo_path);
+        }
+
+        return $this->google_avatar ?: null;
+    }
+
     public function sendPasswordResetNotification($token){
         $this->notify(new CustomResetPassword($token));
     }

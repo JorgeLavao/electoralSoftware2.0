@@ -26,6 +26,7 @@ class SupporterListQueryService
             ->select('users.*');
 
         $this->applySearchFilter($query, $filters);
+        $this->applyProfilePhotoFilter($query, $filters);
         $this->applyProfileFilters($query, $filters);
         $this->applyCampaignPivotFilters($query, $filters);
         $this->applyRelationshipFilters($query, $campaign, $rolesCampaign, $filters);
@@ -44,6 +45,45 @@ class SupporterListQueryService
         ($filters['sw_search'] ?? false)
             ? $query->whereNot(fn ($searchQuery) => $searchQuery->search($term))
             : $query->search($term);
+    }
+
+    private function applyProfilePhotoFilter($query, array $filters): void
+    {
+        $value = $filters['profile_photo_filter'] ?? null;
+
+        if (! in_array($value, ['with', 'without'], true)) {
+            return;
+        }
+
+        $query->where(function ($photoQuery) use ($value) {
+            if ($value === 'with') {
+                $photoQuery
+                    ->where(function ($localQuery) {
+                        $localQuery
+                            ->whereNotNull('users.profile_photo_path')
+                            ->where('users.profile_photo_path', '!=', '');
+                    })
+                    ->orWhere(function ($googleQuery) {
+                        $googleQuery
+                            ->whereNotNull('users.google_avatar')
+                            ->where('users.google_avatar', '!=', '');
+                    });
+
+                return;
+            }
+
+            $photoQuery
+                ->where(function ($localQuery) {
+                    $localQuery
+                        ->whereNull('users.profile_photo_path')
+                        ->orWhere('users.profile_photo_path', '');
+                })
+                ->where(function ($googleQuery) {
+                    $googleQuery
+                        ->whereNull('users.google_avatar')
+                        ->orWhere('users.google_avatar', '');
+                });
+        });
     }
 
     private function applyProfileFilters($query, array $filters): void

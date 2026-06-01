@@ -27,7 +27,7 @@ class SupporterRowMapper
             ->orderBy('roles.name')
             ->get(['model_has_roles.model_id', 'roles.name'])
             ->groupBy('model_id')
-            ->map(fn ($rows) => $rows->pluck('name')->filter()->unique()->implode(', '))
+            ->map(fn($rows) => $rows->pluck('name')->filter()->unique()->implode(', '))
             ->all();
     }
 
@@ -48,6 +48,10 @@ class SupporterRowMapper
         $birthDay = $profile?->birth_day;
 
         return [
+            'id' => $user->id,
+            'profile_photo' => $user->hasProfilePhoto() ? '' : '',
+            'profile_photo_url' => $user->profilePhotoUrl(),
+            'profile_initials' => $user->initials(),
             'document_number' => $user->document_number ?: '-',
             'first_name' => $user->first_name ?: '-',
             'middle_name' => $user->middle_name ?: '-',
@@ -81,7 +85,7 @@ class SupporterRowMapper
     public function onlyColumns(array $row, array $columns): array
     {
         return collect($columns)
-            ->mapWithKeys(fn ($column) => [$column => $row[$column] ?? '-'])
+            ->mapWithKeys(fn($column) => [$column => $row[$column] ?? '-'])
             ->all();
     }
 }

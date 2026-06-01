@@ -75,6 +75,7 @@ class IndexCommittee extends Component
     public $birth_month;
     public $birth_day;
     public $sw_birth = false;
+    public ?string $profile_photo_filter = null;
     public $target_committee_id;
     public array $selected_result_ids = [];
     public array $selectedColumns = [];
@@ -100,7 +101,7 @@ class IndexCommittee extends Component
             ->get(['id', 'name', 'campaign_id']);
 
         $referents = $campaign->foreign_referents()->get();
-        $this->referents = $referents->map(fn ($user) => [
+        $this->referents = $referents->map(fn($user) => [
             'id' => $user->id,
             'text' => $user->fullName,
         ]);
@@ -116,7 +117,7 @@ class IndexCommittee extends Component
                     'neighborhood' => $profile?->neighborhood_village_name,
                 ];
             })
-            ->filter(fn ($item) => $item['department'])
+            ->filter(fn($item) => $item['department'])
             ->values()
             ->toArray();
 
@@ -226,6 +227,7 @@ class IndexCommittee extends Component
             'validation_to',
             'birth_month',
             'birth_day',
+            'profile_photo_filter',
             'target_committee_id',
             'selected_result_ids',
         ]);
@@ -248,6 +250,7 @@ class IndexCommittee extends Component
         $this->sw_joined = false;
         $this->sw_validation = false;
         $this->sw_birth = false;
+        $this->profile_photo_filter = null;
 
         $this->municipalities = [];
         $this->districtsCommunes = [];
@@ -269,7 +272,7 @@ class IndexCommittee extends Component
 
             if ($value) {
                 $departmentItems = collect($this->rawData)
-                    ->filter(fn ($item) => data_get($item, 'department.id') == $value);
+                    ->filter(fn($item) => data_get($item, 'department.id') == $value);
 
                 $this->municipalities = $departmentItems
                     ->pluck('municipality')
@@ -295,7 +298,7 @@ class IndexCommittee extends Component
 
             if ($value) {
                 $municipalityItems = collect($this->rawData)
-                    ->filter(fn ($item) => data_get($item, 'municipality.id') == $value && $item['neighborhood'])
+                    ->filter(fn($item) => data_get($item, 'municipality.id') == $value && $item['neighborhood'])
                     ->values();
 
                 $this->neighborhoods = $municipalityItems
@@ -346,10 +349,10 @@ class IndexCommittee extends Component
         $users = $this->buildFilteredUsersQuery($this->campaign)->get();
         $roleNamesByUser = $this->campaignRoleNamesByUser($this->rolesCampaign($this->campaign), $users);
 
-        $this->results = $users->map(fn ($user) => $this->mapUserRow($user, $roleNamesByUser));
+        $this->results = $users->map(fn($user) => $this->mapUserRow($user, $roleNamesByUser));
         $this->selected_result_ids = $this->results
             ->pluck('id')
-            ->map(fn ($id) => (int) $id)
+            ->map(fn($id) => (int) $id)
             ->all();
         $this->hasSearched = true;
     }
@@ -367,7 +370,7 @@ class IndexCommittee extends Component
         }
 
         $selectedIds = collect($this->selected_result_ids)
-            ->map(fn ($id) => (int) $id)
+            ->map(fn($id) => (int) $id)
             ->filter()
             ->unique()
             ->values()
@@ -385,7 +388,7 @@ class IndexCommittee extends Component
                 $committeeQuery->where('committees.id', $committee->id);
             })
             ->pluck('users.id')
-            ->map(fn ($id) => (int) $id)
+            ->map(fn($id) => (int) $id)
             ->all();
 
         if ($userIds === []) {
@@ -397,7 +400,7 @@ class IndexCommittee extends Component
         DB::transaction(function () use ($committee, $userIds) {
             $committee->users()->syncWithoutDetaching(
                 collect($userIds)
-                    ->mapWithKeys(fn ($userId) => [$userId => ['role' => 'member']])
+                    ->mapWithKeys(fn($userId) => [$userId => ['role' => 'member']])
                     ->all()
             );
         });
@@ -411,7 +414,7 @@ class IndexCommittee extends Component
     {
         $this->selected_result_ids = $this->results
             ->pluck('id')
-            ->map(fn ($id) => (int) $id)
+            ->map(fn($id) => (int) $id)
             ->all();
     }
 
@@ -427,7 +430,7 @@ class IndexCommittee extends Component
         }
 
         $this->selectedColumns = collect($this->selectedColumns)
-            ->filter(fn ($column) => array_key_exists($column, $this->columnOptions))
+            ->filter(fn($column) => array_key_exists($column, $this->columnOptions))
             ->unique()
             ->take(5)
             ->values()
@@ -437,7 +440,7 @@ class IndexCommittee extends Component
     public function updatedCommitteeIds(): void
     {
         $this->committee_ids = collect($this->committee_ids)
-            ->map(fn ($committeeId) => (int) $committeeId)
+            ->map(fn($committeeId) => (int) $committeeId)
             ->filter()
             ->unique()
             ->values()
@@ -447,7 +450,7 @@ class IndexCommittee extends Component
     public function updatedRoleIds(): void
     {
         $this->role_ids = collect($this->role_ids)
-            ->map(fn ($roleId) => (int) $roleId)
+            ->map(fn($roleId) => (int) $roleId)
             ->filter()
             ->unique()
             ->values()
@@ -466,7 +469,7 @@ class IndexCommittee extends Component
 
                     $subQuery->where('name', 'like', $term)
                         ->orWhere('description', 'like', $term)
-                        ->orWhereHas('administrators', fn ($administratorQuery) => $administratorQuery->search($this->search));
+                        ->orWhereHas('administrators', fn($administratorQuery) => $administratorQuery->search($this->search));
                 });
             })
             ->orderByDesc('is_active')
@@ -530,6 +533,7 @@ class IndexCommittee extends Component
             'birth_month' => $this->birth_month,
             'birth_day' => $this->birth_day,
             'sw_birth' => $this->sw_birth,
+            'profile_photo_filter' => $this->profile_photo_filter,
         ];
     }
 
@@ -565,7 +569,7 @@ class IndexCommittee extends Component
             ->orderBy('roles.name')
             ->get(['model_has_roles.model_id', 'roles.name'])
             ->groupBy('model_id')
-            ->map(fn ($rows) => $rows->pluck('name')->filter()->unique()->implode(', '))
+            ->map(fn($rows) => $rows->pluck('name')->filter()->unique()->implode(', '))
             ->all();
     }
 
@@ -579,6 +583,9 @@ class IndexCommittee extends Component
 
         return [
             'id' => $user->id,
+            'profile_photo' => $user->hasProfilePhoto() ? '' : '',
+            'profile_photo_url' => $user->profilePhotoUrl(),
+            'profile_initials' => $user->initials(),
             'document_number' => $user->document_number ?: '-',
             'first_name' => $user->first_name ?: '-',
             'middle_name' => $user->middle_name ?: '-',
@@ -604,6 +611,7 @@ class IndexCommittee extends Component
     {
         return [
             'document_number' => 'Cedula',
+            'profile_photo' => 'Foto de perfil',
             'first_name' => 'Primer Nombre',
             'middle_name' => 'Segundo Nombre',
             'paternal_surname' => 'Primer Apellido',
@@ -627,7 +635,7 @@ class IndexCommittee extends Component
     protected function normalizedSelectedColumns(): array
     {
         return collect($this->selectedColumns)
-            ->filter(fn ($column) => array_key_exists($column, $this->columnOptions))
+            ->filter(fn($column) => array_key_exists($column, $this->columnOptions))
             ->unique()
             ->take(5)
             ->values()
