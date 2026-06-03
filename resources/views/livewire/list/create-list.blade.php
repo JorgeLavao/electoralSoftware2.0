@@ -19,7 +19,7 @@
         <div class="relative">
             <div
                 wire:loading
-                wire:target="applyFilters,showGeolocation,requestExport,selectAllColumns,resetSelectedColumns,refreshExportStatus"
+                wire:target="applyFilters,applyReferralSearch,showGeolocation,requestExport,selectAllColumns,resetSelectedColumns,refreshExportStatus"
                 class="absolute inset-0 z-30 rounded-2xl bg-white/70 backdrop-blur-sm">
             </div>
 
@@ -374,7 +374,7 @@
                         </div>
 
                         @if (collect($roles)->isEmpty())
-                        <p class="text-sm text-slate-500">No hay roles creados en esta campana.</p>
+                        <p class="text-sm text-slate-500">No hay roles creados en esta campaña.</p>
                         @endif
                     </div>
 
@@ -428,8 +428,8 @@
                             </label>
                         </div>
 
-                        <div class="flex flex-col gap-2 sm:flex-row sm:items-start">
-                            <div class="tom-bootstrap min-w-0 flex-1" wire:ignore>
+                        <div class="relative w-full">
+                            <div class="tom-bootstrap w-full pr-14" wire:ignore>
                                 <select
                                     id="referidos-select"
                                     data-search-referidos
@@ -440,7 +440,7 @@
 
                             <button
                                 type="button"
-                                class="btn-secondary inline-flex h-11 w-full items-center justify-center sm:w-11"
+                                class="btn-secondary absolute right-0 top-0 inline-flex h-11 w-11 items-center justify-center"
                                 title="Buscar referidos"
                                 aria-label="Buscar referidos"
                                 @click="
@@ -452,80 +452,54 @@
                             </button>
                         </div>
 
-
-
-                        <p class="text-sm text-slate-500">Escribe al menos 2 caracteres para buscar personas de la campaña.</p>
+                        <p class="text-sm text-slate-500">Escribe al menos 2 caracteres para buscar personas de la campa&ntilde;a.</p>
                     </div>
-                </div>
 
-                <div
-                    class="rounded-2xl border border-slate-200 bg-white p-5"
-                    x-data="{
-                        selectedColumns: @entangle('selectedColumns').live,
-                        maxColumns: 5,
-                        limitMessage: false,
-                        showLimitMessage() {
-                            this.limitMessage = true;
-                            setTimeout(() => this.limitMessage = false, 2500);
-                        },
-                        toggleColumn(column, event) {
-                            if (this.selectedColumns.includes(column)) {
-                                this.selectedColumns = this.selectedColumns.filter((selectedColumn) => selectedColumn !== column);
-                                return;
-                            }
+                    @unless ($showReferralAccordionResults)
+                        <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-5">
+                            <div>
+                                <p class="text-sm text-slate-500">Escoge exactamente que datos se muestran y exportan.</p>
+                            </div>
 
-                            if (this.selectedColumns.length >= this.maxColumns) {
-                                event.target.checked = false;
-                                this.showLimitMessage();
-                                return;
-                            }
+                            <div class="flex gap-3">
+                                <button type="button" class="btn-secondary" wire:click="selectAllColumns">
+                                    Primeras 5
+                                </button>
 
-                            this.selectedColumns = [...this.selectedColumns, column];
-                        }
-                    }">
-                    <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-5">
-                        <div>
-                            <p class="text-sm text-slate-500">Escoge exactamente que datos se muestran y exportan.</p>
+                                <button type="button" class="btn-secondary" wire:click="resetSelectedColumns">
+                                    Limpiar
+                                </button>
+                            </div>
                         </div>
 
-                        <div class="flex gap-3">
-                            <button type="button" class="btn-secondary" wire:click="selectAllColumns">
-                                Primeras 5
-                            </button>
+                        <p class="mb-2 text-sm text-slate-500">
+                            <span x-text="selectedColumns.length"></span>/5
+                        </p>
 
-                            <button type="button" class="btn-secondary" wire:click="resetSelectedColumns">
-                                Limpiar
-                            </button>
+                        <p
+                            x-cloak
+                            x-show="limitMessage"
+                            class="mb-4 text-sm font-medium text-red-600">
+                            Solo puedes seleccionar hasta 5 columnas.
+                        </p>
+
+                        <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
+                            @foreach ($columnOptions as $columnKey => $columnLabel)
+                            <label
+                                class="flex items-center gap-3 rounded-xl border border-slate-200 px-4 py-3 cursor-pointer hover:bg-slate-50"
+                                @click="if (selectedColumns.length >= maxColumns && ! selectedColumns.includes(@js($columnKey))) showLimitMessage()">
+                                <input
+                                    type="checkbox"
+                                    :checked="selectedColumns.includes(@js($columnKey))"
+                                    :disabled="selectedColumns.length >= maxColumns && ! selectedColumns.includes(@js($columnKey))"
+                                    @change="toggleColumn(@js($columnKey), $event)"
+                                    value="{{ $columnKey }}">
+
+                                <span class="text-sm text-slate-700">{{ $columnLabel }}</span>
+                            </label>
+                            @endforeach
                         </div>
-                    </div>
-
-                    <p class="mb-2 text-sm text-slate-500">
-                        <span x-text="selectedColumns.length"></span>/5
-                    </p>
-
-                    <p
-                        x-cloak
-                        x-show="limitMessage"
-                        class="mb-4 text-sm font-medium text-red-600">
-                        Solo puedes seleccionar hasta 5 columnas.
-                    </p>
-
-                    <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
-                        @foreach ($columnOptions as $columnKey => $columnLabel)
-                        <label
-                            class="flex items-center gap-3 rounded-xl border border-slate-200 px-4 py-3 cursor-pointer hover:bg-slate-50"
-                            @click="if (selectedColumns.length >= maxColumns && ! selectedColumns.includes(@js($columnKey))) showLimitMessage()">
-                            <input
-                                type="checkbox"
-                                :checked="selectedColumns.includes(@js($columnKey))"
-                                :disabled="selectedColumns.length >= maxColumns && ! selectedColumns.includes(@js($columnKey))"
-                                @change="toggleColumn(@js($columnKey), $event)"
-                                value="{{ $columnKey }}">
-
-                            <span class="text-sm text-slate-700">{{ $columnLabel }}</span>
-                        </label>
-                        @endforeach
-                    </div>
+                    @endunless
                 </div>
 
                 <div class="rounded-2xl border border-slate-200 bg-white p-5">
@@ -533,7 +507,7 @@
                         <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
 
 
-                            @if ($hasSearched)
+                            @if ($hasSearched && ! $showReferralAccordionResults)
                             <label class="flex w-full items-center justify-between gap-3 rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-600 sm:w-auto">
                                 <span>Ver</span>
                                 <select class="!w-24 !rounded-lg !py-2" wire:model.live="perPage">
@@ -555,7 +529,7 @@
                                 Buscar
                             </button>
 
-                            @if ($hasSearched && $totalResults > 0)
+                            @if ($hasSearched && $totalResults > 0 && ! $showReferralAccordionResults)
                             <button type="button" class="btn-secondary w-full lg:w-auto" wire:click="showGeolocation">
                                 Mirar Geolocalizacion
                             </button>
@@ -610,25 +584,27 @@
 
                         @if ($showReferralAccordionResults)
                         <div class="overflow-auto bg-slate-50 px-3 py-4 sm:px-5 sm:py-5" style="max-height: 72vh;">
-                            <div class="mb-4 flex flex-col gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 lg:flex-row lg:items-center lg:justify-between">
+                            <div class="mb-4 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
                                 <div>
-                                    <span class="block font-semibold text-slate-800">Diagrama Referidos</span>
+                                    <span class="block font-semibold text-slate-800">Referidos</span>
                                 </div>
-                                <div class="flex flex-wrap gap-3">
-                                    <span class="inline-flex items-center gap-2"><i class="h-3 w-3 rounded-full bg-green-600"></i>Lider</span>
-                                    <span class="inline-flex items-center gap-2"><i class="h-3 w-3 rounded-full bg-red-600"></i>Admin</span>
-                                    <span class="inline-flex items-center gap-2"><i class="h-3 w-3 rounded-full bg-cyan-600"></i>Call center</span>
+                                <div class="mt-3 flex flex-wrap gap-3">
+                                    <span class="inline-flex items-center gap-2"><i class="h-3 w-3 rounded-full bg-red-600"></i>Administrador</span>
                                     <span class="inline-flex items-center gap-2"><i class="h-3 w-3 rounded-full bg-slate-500"></i>Simpatizante</span>
+                                    <span class="inline-flex items-center gap-2"><i class="h-3 w-3 rounded-full bg-cyan-600"></i>Call center</span>
+                                    <span class="inline-flex items-center gap-2"><i class="h-3 w-3 rounded-full bg-yellow-600"></i>Coordinador</span>
+                                    <span class="inline-flex items-center gap-2"><i class="h-3 w-3 rounded-full bg-purple-600"></i>Soporte tecnico</span>
+                                    <span class="inline-flex items-center gap-2"><i class="h-3 w-3 rounded-full bg-green-600"></i>Lider</span>
                                 </div>
                             </div>
 
-                            <div class="grid w-full min-w-0 gap-5">
+                            <div class="grid w-full min-w-0 gap-3">
                                 @forelse ($referralAccordionTrees as $tree)
-                                    @include('livewire.list.partials.referral-accordion-node', ['node' => $tree])
+                                @include('livewire.list.partials.referral-accordion-node', ['node' => $tree])
                                 @empty
-                                    <div class="rounded-xl border border-dashed border-slate-300 bg-white px-5 py-8 text-center text-slate-500">
-                                        No se encontraron referidos para mostrar.
-                                    </div>
+                                <div class="rounded-xl border border-dashed border-slate-300 bg-white px-5 py-8 text-center text-slate-500">
+                                    No se encontraron referidos para mostrar.
+                                </div>
                                 @endforelse
                             </div>
                         </div>
