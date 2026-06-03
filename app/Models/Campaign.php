@@ -82,9 +82,4 @@ class Campaign extends Model
         }
     }
 
-    public function foreign_referents(){
-        return User::whereIn('id', function ($q) {
-            $q->select('reffer_by')->from('campaign_user')->where('campaign_id', $this->id)->whereNotNull('reffer_by');
-        })->distinct();
-}
 }

@@ -17,6 +17,7 @@ use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -33,7 +34,6 @@ class CreateList extends Component
     public $genders = [];
     public $age_ranges = [];
     public $occupations = [];
-    public $referents = [];
     public $committees = [];
     public $roles = [];
     public $departments = [];
@@ -97,7 +97,9 @@ class CreateList extends Component
     public array $mapPoints = [];
     public array $mapPayload = [];
     public array $roleColorLegend = [];
-
+    public array $expandedReferralNodeIds = [];
+    public array $referralBranchPages = [];
+    protected int $referralBranchPerPage = 10;
     public function mount(Campaign $campaign): void
     {
         $this->authorize('viewLists', $campaign);
@@ -117,12 +119,6 @@ class CreateList extends Component
             ->get(['id', 'name', 'campaign_id']);
         $this->columnOptions = $this->cleanColumnOptions();
         $this->selectedColumns = [];
-
-        $referents = $campaign->foreign_referents()->get();
-        $this->referents = $referents->map(fn($user) => [
-            'id' => $user->id,
-            'text' => $user->fullName,
-        ]);
 
         $this->departments = app(CampaignLocationOptions::class)->departments($campaign);
 
@@ -228,6 +224,7 @@ class CreateList extends Component
                     ->neighborhoods($this->campaign, $this->department, $this->municipality, $value);
             }
         }
+
     }
 
     public function applyFilters(): void
@@ -248,6 +245,74 @@ class CreateList extends Component
         $this->showMap = false;
         $this->hasSearched = true;
         $this->resetPage();
+    }
+
+    public function applyReferralSearch($referIds = []): void
+    {
+        $this->refer_ids = collect(is_array($referIds) ? $referIds : [$referIds])
+            ->map(fn ($id) => (int) $id)
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        $this->sw_refers = false;
+        $this->expandedReferralNodeIds = [];
+        $this->referralBranchPages = [];
+        $this->applyFilters();
+    }
+
+    public function toggleReferralBranch(int $nodeId): void
+    {
+        if ($nodeId <= 0) {
+            return;
+        }
+
+        $expanded = collect($this->expandedReferralNodeIds)
+            ->map(fn ($id) => (int) $id)
+            ->filter()
+            ->unique();
+
+        if ($expanded->contains($nodeId)) {
+            $this->expandedReferralNodeIds = $expanded
+                ->reject(fn (int $id) => $id === $nodeId)
+                ->values()
+                ->all();
+
+            return;
+        }
+
+        $parentId = DB::table('campaign_user')
+            ->where('campaign_id', $this->campaign_id)
+            ->where('user_id', $nodeId)
+            ->value('reffer_by');
+
+        if ($parentId) {
+            $siblingIds = DB::table('campaign_user')
+                ->where('campaign_id', $this->campaign_id)
+                ->where('reffer_by', $parentId)
+                ->where('user_id', '!=', $nodeId)
+                ->pluck('user_id')
+                ->map(fn ($id) => (int) $id)
+                ->all();
+
+            $expanded = $expanded->reject(fn (int $id) => in_array($id, $siblingIds, true));
+        }
+
+        $this->expandedReferralNodeIds = $expanded
+            ->push($nodeId)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    public function setReferralBranchPage(int $nodeId, int $page): void
+    {
+        if ($nodeId <= 0) {
+            return;
+        }
+
+        $this->referralBranchPages[$nodeId] = max(1, $page);
     }
 
     public function showGeolocation(): void
@@ -319,9 +384,12 @@ class CreateList extends Component
             ->get();
         $rowMapper = app(SupporterRowMapper::class);
         $roleNamesByUser = $rowMapper->roleNamesByUser($this->rolesCampaign($campaign), $users);
+        $referrerNamesByUser = $rowMapper->referrerNamesByUser($campaign, $users);
+        $referralCountsByUser = $rowMapper->referralCountsByUser($campaign, $users);
+        $referrerIdsByUser = $rowMapper->referrerIdsByUser($campaign, $users);
 
-        $rows = $users->map(function (User $user) use ($columns, $roleNamesByUser, $rowMapper) {
-            $row = $rowMapper->map($user, $roleNamesByUser);
+        $rows = $users->map(function (User $user) use ($columns, $roleNamesByUser, $referrerNamesByUser, $referralCountsByUser, $referrerIdsByUser, $rowMapper) {
+            $row = $rowMapper->map($user, $roleNamesByUser, $referrerNamesByUser, $referralCountsByUser, $referrerIdsByUser);
 
             return array_values($rowMapper->onlyColumns($row, $columns));
         });
@@ -374,6 +442,7 @@ class CreateList extends Component
     {
         return [
             'searchTerm' => $this->searchTerm,
+            'campaign_id' => $this->campaign_id,
             'sw_search' => $this->sw_search,
             'approach' => $this->approach,
             'sw_approach' => $this->sw_approach,
@@ -436,9 +505,29 @@ class CreateList extends Component
         return app(SupporterRowMapper::class)->roleNamesByUser($campaign, $users);
     }
 
-    protected function mapUserRow($user, array $roleNamesByUser = []): array
+    public function showReferredUsers(int $userId): void
     {
-        return app(SupporterRowMapper::class)->map($user, $roleNamesByUser);
+        $this->authorize('viewLists', Campaign::findOrFail($this->campaign_id));
+        $this->dispatch('openReferralDetailsModal', userId: $userId, mode: 'referred')
+            ->to(\App\Livewire\Supporters\ReferralDetailsModal::class);
+    }
+
+    public function showReferrerOf(int $userId): void
+    {
+        $this->authorize('viewLists', Campaign::findOrFail($this->campaign_id));
+        $this->dispatch('openReferralDetailsModal', userId: $userId, mode: 'referrer')
+            ->to(\App\Livewire\Supporters\ReferralDetailsModal::class);
+    }
+
+    protected function mapUserRow(
+        $user,
+        array $roleNamesByUser = [],
+        array $referrerNamesByUser = [],
+        array $referralCountsByUser = [],
+        array $referrerIdsByUser = []
+    ): array
+    {
+        return app(SupporterRowMapper::class)->map($user, $roleNamesByUser, $referrerNamesByUser, $referralCountsByUser, $referrerIdsByUser);
     }
 
     protected function mapUsersForMap(Collection $users, array $roleNamesByUser = []): array
@@ -603,6 +692,8 @@ class CreateList extends Component
             'neighborhood_village_name' => 'Barrio',
             'committees' => 'Comites',
             'roles' => 'Roles',
+            'referred_by' => 'Quien lo refirio',
+            'referrals_count' => 'Cantidad referidos',
             'joined_at' => 'Fecha de ingreso',
         ];
     }
@@ -622,6 +713,331 @@ class CreateList extends Component
             ->all();
 
         return $columns;
+    }
+
+    protected function referralSelectedOptions(): array
+    {
+        return User::query()
+            ->whereIn('id', collect($this->refer_ids)->map(fn($id) => (int) $id)->filter()->all())
+            ->orderBy('first_name')
+            ->orderBy('paternal_surname')
+            ->get()
+            ->map(fn(User $user) => [
+                'id' => $user->id,
+                'text' => $user->fullName,
+            ])
+            ->all();
+    }
+
+    protected function showReferralAccordionResults(): bool
+    {
+        if (! $this->hasSearched || empty($this->appliedFilters['refer_ids'] ?? [])) {
+            return false;
+        }
+
+        if ($this->appliedFilters['sw_refers'] ?? false) {
+            return false;
+        }
+
+        $filters = collect($this->appliedFilters)
+            ->except(['campaign_id', 'refer_ids', 'sw_refers']);
+
+        return $filters->every(function ($value, $key) {
+            if (str_starts_with((string) $key, 'sw_')) {
+                return $value === false || $value === null || $value === '';
+            }
+
+            return $value === null || $value === '' || $value === [];
+        });
+    }
+
+    protected function referralAccordionTrees(): array
+    {
+        if (! $this->showReferralAccordionResults()) {
+            return [];
+        }
+
+        $rootIds = collect($this->appliedFilters['refer_ids'] ?? [])
+            ->map(fn ($id) => (int) $id)
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($rootIds->isEmpty()) {
+            return [];
+        }
+
+        $roots = $this->referralRowsByIds($rootIds->all());
+        $rootCounts = $this->referralDirectCounts($rootIds->all());
+        $expandedIds = collect($this->expandedReferralNodeIds)
+            ->map(fn ($id) => (int) $id)
+            ->filter()
+            ->unique()
+            ->all();
+
+        $trees = $roots->map(function (object $root) use ($rootCounts, $expandedIds) {
+            $node = $this->referralNodeFromRow($root, 0, null, null);
+            $node['direct_count'] = $rootCounts[$node['id']] ?? 0;
+            $node['children_page'] = $this->referralBranchPage($node['id']);
+            $node['children_per_page'] = $this->referralBranchPerPage;
+            $node['children'] = $this->referralChildrenForNode(
+                $node['id'],
+                $node['name'],
+                1,
+                $expandedIds,
+                [$node['id'] => true]
+            );
+            $node['descendants_count'] = collect($node['children'])->sum(fn (array $child) => 1 + ($child['descendants_count'] ?? 0));
+
+            return $node;
+        })->values()->all();
+
+        $roleNamesByUser = $this->referralRoleNames($this->referralTreeUserIds($trees));
+
+        return collect($trees)
+            ->map(fn (array $tree) => $this->applyReferralRoleColors($tree, $roleNamesByUser))
+            ->all();
+    }
+
+    protected function referralChildrenForNode(int $parentId, string $parentName, int $level, array $expandedIds, array $visited): array
+    {
+        $page = $this->referralBranchPage($parentId);
+        $children = $this->referralRowsByReferrerPage($parentId, $page, $this->referralBranchPerPage);
+
+        if ($children->isEmpty()) {
+            return [];
+        }
+
+        $childIds = $children
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn (int $id) => ! isset($visited[$id]))
+            ->values()
+            ->all();
+
+        $directCounts = $this->referralDirectCounts($childIds);
+
+        return $children
+            ->map(function (object $child) use ($parentName, $level, $expandedIds, $visited, $directCounts) {
+                $childId = (int) $child->id;
+
+                if (isset($visited[$childId])) {
+                    return null;
+                }
+
+                $node = $this->referralNodeFromRow($child, $level, (int) $child->reffer_by, $parentName);
+                $node['direct_count'] = $directCounts[$childId] ?? 0;
+                $node['children_page'] = $this->referralBranchPage($childId);
+                $node['children_per_page'] = $this->referralBranchPerPage;
+
+                if (in_array($childId, $expandedIds, true)) {
+                    $node['children'] = $this->referralChildrenForNode(
+                        $childId,
+                        $node['name'],
+                        $level + 1,
+                        $expandedIds,
+                        $visited + [$childId => true]
+                    );
+                    $node['descendants_count'] = collect($node['children'])->sum(fn (array $grandChild) => 1 + ($grandChild['descendants_count'] ?? 0));
+                }
+
+                return $node;
+            })
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    protected function referralBranchPage(int $nodeId): int
+    {
+        return max(1, (int) ($this->referralBranchPages[$nodeId] ?? 1));
+    }
+
+    protected function referralRowsByIds(array $ids): Collection
+    {
+        if ($ids === []) {
+            return collect();
+        }
+
+        return DB::table('campaign_user')
+            ->join('users', 'users.id', '=', 'campaign_user.user_id')
+            ->where('campaign_user.campaign_id', $this->campaign_id)
+            ->whereIn('users.id', $ids)
+            ->select([
+                'users.id',
+                'users.document_number',
+                'users.first_name',
+                'users.middle_name',
+                'users.paternal_surname',
+                'users.maternal_surname',
+                'users.celphone',
+                'campaign_user.reffer_by',
+                'campaign_user.created_at',
+            ])
+            ->orderBy('users.first_name')
+            ->orderBy('users.paternal_surname')
+            ->get();
+    }
+
+    protected function referralRowsByReferrerPage(int $referrerId, int $page, int $perPage): Collection
+    {
+        if ($referrerId <= 0) {
+            return collect();
+        }
+
+        return DB::table('campaign_user')
+            ->join('users', 'users.id', '=', 'campaign_user.user_id')
+            ->where('campaign_user.campaign_id', $this->campaign_id)
+            ->where('campaign_user.reffer_by', $referrerId)
+            ->select([
+                'users.id',
+                'users.document_number',
+                'users.first_name',
+                'users.middle_name',
+                'users.paternal_surname',
+                'users.maternal_surname',
+                'users.celphone',
+                'campaign_user.reffer_by',
+                'campaign_user.created_at',
+            ])
+            ->orderBy('users.first_name')
+            ->orderBy('users.paternal_surname')
+            ->offset((max(1, $page) - 1) * $perPage)
+            ->limit($perPage)
+            ->get();
+    }
+
+    protected function referralDirectCounts(array $referrerIds): array
+    {
+        if ($referrerIds === []) {
+            return [];
+        }
+
+        return DB::table('campaign_user')
+            ->where('campaign_id', $this->campaign_id)
+            ->whereIn('reffer_by', $referrerIds)
+            ->select('reffer_by', DB::raw('count(*) as total'))
+            ->groupBy('reffer_by')
+            ->pluck('total', 'reffer_by')
+            ->map(fn ($total) => (int) $total)
+            ->all();
+    }
+
+    protected function referralNodeFromRow(object $row, int $level, ?int $parentId, ?string $parentName): array
+    {
+        $name = trim(implode(' ', array_filter([
+            $row->first_name,
+            $row->middle_name,
+            $row->paternal_surname,
+            $row->maternal_surname,
+        ]))) ?: 'Sin nombre';
+
+        return [
+            'id' => (int) $row->id,
+            'parent_id' => $parentId,
+            'name' => $name,
+            'parent_name' => $parentName,
+            'document' => $row->document_number ?: 'Sin cedula',
+            'phone' => $row->celphone ?: 'Sin celular',
+            'joined_at' => $row->created_at ? \Carbon\Carbon::parse($row->created_at)->format('d/m/Y') : 'Sin fecha',
+            'level' => $level,
+            'level_color' => $this->referralLevelColor($level),
+            'role' => 'Simpatizante',
+            'role_color' => $this->referralRoleColor('Simpatizante'),
+            'direct_count' => 0,
+            'children' => [],
+            'descendants_count' => 0,
+            'truncated' => false,
+        ];
+    }
+
+    protected function referralRoleNames(array $userIds): array
+    {
+        if ($userIds === []) {
+            return [];
+        }
+
+        return DB::table('model_has_roles')
+            ->join('roles', 'roles.id', '=', 'model_has_roles.role_id')
+            ->where('model_has_roles.model_type', User::class)
+            ->where('model_has_roles.campaign_id', $this->rolesCampaign($this->campaign)->id)
+            ->where('roles.campaign_id', $this->rolesCampaign($this->campaign)->id)
+            ->whereIn('model_has_roles.model_id', $userIds)
+            ->orderBy('roles.name')
+            ->get(['model_has_roles.model_id', 'roles.name'])
+            ->groupBy('model_id')
+            ->map(fn ($rows) => $rows->pluck('name')->filter()->unique()->implode(', ') ?: 'Simpatizante')
+            ->all();
+    }
+
+    protected function referralRoleColor(string $role): string
+    {
+        $normalized = strtolower(iconv('UTF-8', 'ASCII//TRANSLIT', $role) ?: $role);
+
+        return match (true) {
+            str_contains($normalized, 'admin') => '#dc2626',
+            str_contains($normalized, 'coord') => '#ca8a04',
+            str_contains($normalized, 'lider') => '#16a34a',
+            str_contains($normalized, 'call') => '#0891b2',
+            str_contains($normalized, 'soporte') || str_contains($normalized, 'support') => '#7c3aed',
+            default => '#64748b',
+        };
+    }
+
+    protected function referralLevelColor(int $level): string
+    {
+        return [
+            '#0f172a',
+            '#2563eb',
+            '#16a34a',
+            '#f59e0b',
+            '#db2777',
+            '#7c3aed',
+        ][min($level, 5)];
+    }
+
+    protected function referralTreeUserIds(array $trees): array
+    {
+        $ids = [];
+
+        foreach ($trees as $tree) {
+            $ids[] = (int) ($tree['id'] ?? 0);
+            $ids = array_merge($ids, $this->referralTreeUserIds($tree['children'] ?? []));
+        }
+
+        return collect($ids)
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    protected function applyReferralRoleColors(array $node, array $roleNamesByUser): array
+    {
+        $role = $roleNamesByUser[$node['id']] ?? 'Simpatizante';
+        $node['role'] = $role;
+        $node['role_color'] = $this->referralRoleColor($role);
+        $node['level_color'] = $this->referralLevelColor((int) ($node['level'] ?? 0));
+        $node['children'] = collect($node['children'] ?? [])
+            ->map(fn (array $child) => $this->applyReferralRoleColors($child, $roleNamesByUser))
+            ->values()
+            ->all();
+
+        return $node;
+    }
+
+    protected function assembleReferralNode(int $nodeId, array $nodes, array $childrenByParent): array
+    {
+        $node = $nodes[$nodeId];
+        $children = collect($childrenByParent[$nodeId] ?? [])
+            ->map(fn (int $childId) => $this->assembleReferralNode($childId, $nodes, $childrenByParent))
+            ->values()
+            ->all();
+
+        $node['children'] = $children;
+        $node['descendants_count'] = collect($children)->sum(fn (array $child) => 1 + ($child['descendants_count'] ?? 0));
+
+        return $node;
     }
 
     protected function cleanColumnOptions(): array
@@ -651,6 +1067,8 @@ class CreateList extends Component
             'neighborhood_village_name' => 'Barrio',
             'committees' => 'Comites',
             'roles' => 'Roles',
+            'referred_by' => 'Quien lo refirio',
+            'referrals_count' => 'Cantidad referidos',
             'joined_at' => 'Fecha de ingreso',
             'validated_at' => 'Fecha de validacion',
         ];
@@ -702,17 +1120,21 @@ class CreateList extends Component
 
     protected function paginatedResults(): LengthAwarePaginator
     {
-        if (! $this->hasSearched || $this->normalizedSelectedColumns() === []) {
+        if ($this->showReferralAccordionResults() || ! $this->hasSearched || $this->normalizedSelectedColumns() === []) {
             return new LengthAwarePaginator(collect(), 0, $this->perPage);
         }
 
         $campaign = Campaign::findOrFail($this->campaign_id);
         $users = $this->buildQuery($campaign, $this->appliedFilters)->paginate($this->perPage);
         $userCollection = $users->getCollection();
-        $roleNamesByUser = app(SupporterRowMapper::class)->roleNamesByUser($this->rolesCampaign($campaign), $userCollection);
+        $rowMapper = app(SupporterRowMapper::class);
+        $roleNamesByUser = $rowMapper->roleNamesByUser($this->rolesCampaign($campaign), $userCollection);
+        $referrerNamesByUser = $rowMapper->referrerNamesByUser($campaign, $userCollection);
+        $referralCountsByUser = $rowMapper->referralCountsByUser($campaign, $userCollection);
+        $referrerIdsByUser = $rowMapper->referrerIdsByUser($campaign, $userCollection);
 
         $users->setCollection(
-            $userCollection->map(fn ($user) => $this->mapUserRow($user, $roleNamesByUser))
+            $userCollection->map(fn ($user) => $this->mapUserRow($user, $roleNamesByUser, $referrerNamesByUser, $referralCountsByUser, $referrerIdsByUser))
         );
 
         return $users;
@@ -733,10 +1155,16 @@ class CreateList extends Component
 
     public function render()
     {
+        $showReferralAccordionResults = $this->showReferralAccordionResults();
+
         return view('livewire.list.create-list', [
-            'results' => $this->paginatedResults(),
+            'results' => $showReferralAccordionResults ? new LengthAwarePaginator(collect(), 0, $this->perPage) : $this->paginatedResults(),
             'visibleColumns' => $this->normalizedSelectedColumns(),
             'selectedColumnsCount' => count($this->normalizedSelectedColumns()),
+            'showReferralAccordionResults' => $showReferralAccordionResults,
+            'referralAccordionTrees' => $showReferralAccordionResults ? $this->referralAccordionTrees() : [],
+            'referralOptions' => $this->referralSelectedOptions(),
+            'referralSearchUrl' => route('campaign.users.search', $this->campaign->code),
             'activeFiltersCount' => collect([
                 $this->searchTerm,
                 $this->approach,

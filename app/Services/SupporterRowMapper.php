@@ -31,7 +31,76 @@ class SupporterRowMapper
             ->all();
     }
 
-    public function map(User $user, array $roleNamesByUser = []): array
+    public function referrerNamesByUser(Campaign $campaign, Collection $users): array
+    {
+        $userIds = $users->pluck('id')->filter()->unique()->values();
+
+        if ($userIds->isEmpty()) {
+            return [];
+        }
+
+        return DB::table('campaign_user')
+            ->join('users as referrers', 'referrers.id', '=', 'campaign_user.reffer_by')
+            ->where('campaign_user.campaign_id', $campaign->id)
+            ->whereIn('campaign_user.user_id', $userIds)
+            ->get([
+                'campaign_user.user_id',
+                'referrers.first_name',
+                'referrers.middle_name',
+                'referrers.paternal_surname',
+                'referrers.maternal_surname',
+            ])
+            ->mapWithKeys(fn ($row) => [
+                $row->user_id => collect([
+                    $row->first_name,
+                    $row->middle_name,
+                    $row->paternal_surname,
+                    $row->maternal_surname,
+                ])->filter()->implode(' '),
+            ])
+            ->all();
+    }
+
+    public function referrerIdsByUser(Campaign $campaign, Collection $users): array
+    {
+        $userIds = $users->pluck('id')->filter()->unique()->values();
+
+        if ($userIds->isEmpty()) {
+            return [];
+        }
+
+        return DB::table('campaign_user')
+            ->where('campaign_id', $campaign->id)
+            ->whereIn('user_id', $userIds)
+            ->whereNotNull('reffer_by')
+            ->pluck('reffer_by', 'user_id')
+            ->all();
+    }
+
+    public function referralCountsByUser(Campaign $campaign, Collection $users): array
+    {
+        $userIds = $users->pluck('id')->filter()->unique()->values();
+
+        if ($userIds->isEmpty()) {
+            return [];
+        }
+
+        return DB::table('campaign_user')
+            ->where('campaign_id', $campaign->id)
+            ->whereIn('reffer_by', $userIds)
+            ->select('reffer_by', DB::raw('count(*) as total'))
+            ->groupBy('reffer_by')
+            ->pluck('total', 'reffer_by')
+            ->all();
+    }
+
+    public function map(
+        User $user,
+        array $roleNamesByUser = [],
+        array $referrerNamesByUser = [],
+        array $referralCountsByUser = [],
+        array $referrerIdsByUser = []
+    ): array
     {
         $profile = $user->foreing_aditional_info;
         $department = $profile?->department ? json_decode($profile->department, true) : null;
@@ -75,6 +144,9 @@ class SupporterRowMapper
             'neighborhood_village_name' => $profile?->neighborhood_village_name ?: '-',
             'committees' => $committeeNames !== '' ? $committeeNames : '-',
             'roles' => $roleNames !== '' ? $roleNames : '-',
+            'referred_by' => $referrerNamesByUser[$user->id] ?? '-',
+            'referred_by_id' => isset($referrerIdsByUser[$user->id]) ? (int) $referrerIdsByUser[$user->id] : null,
+            'referrals_count' => (int) ($referralCountsByUser[$user->id] ?? 0),
             'joined_at' => $joinedAt,
             'validated_at' => (string) $user->pivot->validate === '1' && $user->pivot?->updated_at
                 ? Carbon::parse($user->pivot->updated_at)->format('Y-m-d H:i')

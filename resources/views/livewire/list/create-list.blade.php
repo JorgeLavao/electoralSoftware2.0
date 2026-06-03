@@ -35,7 +35,6 @@
                                 <option value="without">Sin foto</option>
                             </select>
                         </div>
-
                         <div class="group-form-v">
                             <div class="flex justify-between items-center">
                                 <label for="joined_from">Ingresaron desde</label>
@@ -379,28 +378,83 @@
                         @endif
                     </div>
 
-                    <div class="group-form-v">
+                    <div
+                        class="group-form-v"
+                        wire:key="list-referrals"
+                        x-data
+                        x-init="
+                            const select = $el.querySelector('[data-search-referidos]');
+                            if (select?.tomselect) {
+                                select.tomselect.destroy();
+                            }
+
+                            if (select) {
+                                select.tomselect = new TomSelect(select, {
+                                    maxItems: null,
+                                    plugins: ['remove_button'],
+                                    placeholder: 'Selecciona quien refirio...',
+                                    valueField: 'id',
+                                    labelField: 'text',
+                                    searchField: 'text',
+                                    sortField: {
+                                        field: 'text',
+                                        direction: 'asc'
+                                    },
+                                    options: @js($referralOptions),
+                                    items: @js($refer_ids ?? []),
+                                    create: false,
+                                    load: function(query, callback) {
+                                        if (!query.length || query.length < 2) {
+                                            return callback();
+                                        }
+
+                                        axios.get(@js($referralSearchUrl), {
+                                            params: { q: query }
+                                        })
+                                            .then(response => callback(response.data))
+                                            .catch(() => callback());
+                                    },
+                                    onChange(values) {
+                                        $wire.set('refer_ids', values);
+                                    }
+                                });
+                            }
+                        ">
                         <div class="flex items-center justify-between gap-3">
-                            <label for="referidos-select">Referidos por</label>
+                            <label for="referidos-select">Personas referidas por</label>
                             <label class="flex items-center gap-2 text-sm">
                                 <input type="checkbox" wire:model="sw_refers">
                                 Excluir
                             </label>
                         </div>
 
-                        <div class="tom-bootstrap w-full" wire:ignore>
-                            <select
-                                id="referidos-select"
-                                data-search-referidos
-                                multiple
-                                class="form-select clear"
-                                @disabled(collect($referents)->isEmpty())>
-                            </select>
+                        <div class="flex flex-col gap-2 sm:flex-row sm:items-start">
+                            <div class="tom-bootstrap min-w-0 flex-1" wire:ignore>
+                                <select
+                                    id="referidos-select"
+                                    data-search-referidos
+                                    multiple
+                                    class="form-select clear">
+                                </select>
+                            </div>
+
+                            <button
+                                type="button"
+                                class="btn-secondary inline-flex h-11 w-full items-center justify-center sm:w-11"
+                                title="Buscar referidos"
+                                aria-label="Buscar referidos"
+                                @click="
+                                    const referralSelect = $event.currentTarget.closest('.group-form-v').querySelector('[data-search-referidos]');
+                                    const values = referralSelect?.tomselect?.getValue() ?? [];
+                                    $wire.applyReferralSearch(Array.isArray(values) ? values : [values]);
+                                ">
+                                <x-icons.search />
+                            </button>
                         </div>
 
-                        @if (collect($referents)->isEmpty())
-                        <p class="text-sm text-slate-500">No hay referidos disponibles para esta campana.</p>
-                        @endif
+
+
+                        <p class="text-sm text-slate-500">Escribe al menos 2 caracteres para buscar personas de la campaña.</p>
                     </div>
                 </div>
 
@@ -549,12 +603,36 @@
 
                 @if ($hasSearched)
                 <div class="area-2 container-v mt-6">
-                    <div class="rounded-2xl border border-slate-200 bg-white overflow-hidden">
+                    <div class="rounded-2xl border border-slate-200 bg-white">
                         <div class="border-b border-slate-200 px-5 py-4">
                             <h4 class="font-semibold text-slate-900">Resultados</h4>
                         </div>
 
-                        @if (count($visibleColumns) === 0)
+                        @if ($showReferralAccordionResults)
+                        <div class="overflow-auto bg-slate-50 px-3 py-4 sm:px-5 sm:py-5" style="max-height: 72vh;">
+                            <div class="mb-4 flex flex-col gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 lg:flex-row lg:items-center lg:justify-between">
+                                <div>
+                                    <span class="block font-semibold text-slate-800">Diagrama Referidos</span>
+                                </div>
+                                <div class="flex flex-wrap gap-3">
+                                    <span class="inline-flex items-center gap-2"><i class="h-3 w-3 rounded-full bg-green-600"></i>Lider</span>
+                                    <span class="inline-flex items-center gap-2"><i class="h-3 w-3 rounded-full bg-red-600"></i>Admin</span>
+                                    <span class="inline-flex items-center gap-2"><i class="h-3 w-3 rounded-full bg-cyan-600"></i>Call center</span>
+                                    <span class="inline-flex items-center gap-2"><i class="h-3 w-3 rounded-full bg-slate-500"></i>Simpatizante</span>
+                                </div>
+                            </div>
+
+                            <div class="grid w-full min-w-0 gap-5">
+                                @forelse ($referralAccordionTrees as $tree)
+                                    @include('livewire.list.partials.referral-accordion-node', ['node' => $tree])
+                                @empty
+                                    <div class="rounded-xl border border-dashed border-slate-300 bg-white px-5 py-8 text-center text-slate-500">
+                                        No se encontraron referidos para mostrar.
+                                    </div>
+                                @endforelse
+                            </div>
+                        </div>
+                        @elseif (count($visibleColumns) === 0)
                         <div class="px-5 py-8 text-center text-slate-500">
                             Selecciona al menos una columna para ver la tabla o exportar.
                         </div>
@@ -580,17 +658,47 @@
                                         @if (isset($columnOptions[$columnKey]))
                                         <td class="px-4 py-3 text-slate-700">
                                             @if ($columnKey === 'profile_photo')
-                                                <div class="flex items-center gap-2">
-                                                    @if (!empty($user['profile_photo_url']))
-                                                        <img class="h-9 w-9 rounded-full object-cover" src="{{ $user['profile_photo_url'] }}" alt="Foto de {{ $user['full_name'] ?? 'perfil' }}">
-                                                    @else
-                                                        <span class="flex h-9 w-9 items-center justify-center rounded-full bg-slate-200 text-xs font-semibold text-slate-700">
-                                                            {{ $user['profile_initials'] ?? 'US' }}
-                                                        </span>
-                                                    @endif
-                                                </div>
+                                            <div class="flex items-center gap-2">
+                                                @if (!empty($user['profile_photo_url']))
+                                                <img class="h-9 w-9 rounded-full object-cover" src="{{ $user['profile_photo_url'] }}" alt="Foto de {{ $user['full_name'] ?? 'perfil' }}">
+                                                @else
+                                                <span class="flex h-9 w-9 items-center justify-center rounded-full bg-slate-200 text-xs font-semibold text-slate-700">
+                                                    {{ $user['profile_initials'] ?? 'US' }}
+                                                </span>
+                                                @endif
+                                            </div>
+                                            @elseif ($columnKey === 'referrals_count')
+                                            <div class="flex items-center gap-2">
+                                                @if (($user['referrals_count'] ?? 0) > 0)
+                                                <span class="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+                                                    Refirio {{ $user['referrals_count'] }}
+                                                </span>
+                                                <button
+                                                    type="button"
+                                                    class="button btn-secondary !p-2"
+                                                    title="Ver personas referidas"
+                                                    wire:click="showReferredUsers({{ $user['id'] }})">
+                                                    <x-icons.eye :size="16" />
+                                                </button>
+                                                @else
+                                                <span>-</span>
+                                                @endif
+                                            </div>
+                                            @elseif ($columnKey === 'referred_by')
+                                            <div class="flex items-center gap-2">
+                                                <span>{{ $user['referred_by'] ?? '-' }}</span>
+                                                @if (!empty($user['referred_by_id']))
+                                                <button
+                                                    type="button"
+                                                    class="button btn-secondary !p-2"
+                                                    title="Ver quien refirio"
+                                                    wire:click="showReferrerOf({{ $user['id'] }})">
+                                                    <x-icons.eye :size="16" />
+                                                </button>
+                                                @endif
+                                            </div>
                                             @else
-                                                {{ $user[$columnKey] ?? '-' }}
+                                            {{ $user[$columnKey] ?? '-' }}
                                             @endif
                                         </td>
                                         @endif
@@ -643,44 +751,8 @@
                 @endif
             </div>
 
-            @script
-            <script>
-                (function() {
-                    const initReferidos = () => {
-                        const select = $wire.$el.querySelector('[data-search-referidos]');
-                        if (!select) return;
+            <livewire:supporters.referral-details-modal :campaign="$campaign" />
 
-                        if (select.tomselect) {
-                            select.tomselect.destroy();
-                        }
-
-                        select.tomselect = new TomSelect(select, {
-                            maxItems: null,
-                            plugins: ['remove_button'],
-                            placeholder: 'Selecciona los referidos...',
-                            valueField: 'id',
-                            labelField: 'text',
-                            searchField: 'text',
-                            sortField: {
-                                field: 'text',
-                                direction: 'asc'
-                            },
-                            options: @js($referents),
-                            create: false,
-                            onChange(values) {
-                                $wire.set('refer_ids', values);
-                            }
-                        });
-
-                        select.tomselect.setValue(@js($refer_ids));
-                    };
-
-                    initReferidos();
-                    document.addEventListener('livewire:navigated', initReferidos);
-                    document.addEventListener('livewire:load', initReferidos);
-                })();
-            </script>
-            @endscript
         </div>
     </article>
 </section>

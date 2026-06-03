@@ -141,9 +141,18 @@ class SupporterListQueryService
         }
 
         if (! empty($filters['refer_ids'] ?? [])) {
-            ($filters['sw_refers'] ?? false)
-                ? $query->wherePivotNotIn('reffer_by', $filters['refer_ids'])
-                : $query->wherePivotIn('reffer_by', $filters['refer_ids']);
+            $referIds = collect($filters['refer_ids'])
+                ->map(fn ($id) => (int) $id)
+                ->filter()
+                ->unique()
+                ->values()
+                ->all();
+
+            if ($referIds !== []) {
+                ($filters['sw_refers'] ?? false)
+                    ? $query->wherePivotNotIn('reffer_by', $referIds)
+                    : $query->wherePivotIn('reffer_by', $referIds);
+            }
         }
 
         $this->applyJoinedDateFilters($query, $filters);

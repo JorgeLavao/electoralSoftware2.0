@@ -9,18 +9,23 @@ use App\Models\Occupation;
 use App\Models\User;
 use App\Services\CampaignLocationOptions;
 use App\Services\SupporterListQueryService;
+use App\Services\SupporterRowMapper;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
 use Livewire\Component;
+use Livewire\WithPagination;
 use Spatie\Permission\Models\Role;
 
 #[Layout('components.layouts.app')]
 class IndexCommittee extends Component
 {
     use AuthorizesRequests;
+    use WithPagination;
+
+    protected string $paginationTheme = 'tailwind';
 
     public Campaign $campaign;
     public string $search = '';
@@ -28,7 +33,6 @@ class IndexCommittee extends Component
     public $genders = [];
     public $age_ranges = [];
     public $occupations = [];
-    public $referents = [];
     public $committeeOptions = [];
     public $roles = [];
     public $departments = [];
@@ -82,7 +86,10 @@ class IndexCommittee extends Component
     public array $columnOptions = [];
     public bool $showFilters = false;
     public bool $hasSearched = false;
-    public Collection $results;
+    public array $appliedFilters = [];
+    public int $perPage = 25;
+    public array $perPageOptions = [10, 25, 50, 100];
+    public int $totalResults = 0;
 
     public function mount(Campaign $campaign): void
     {
@@ -100,17 +107,11 @@ class IndexCommittee extends Component
             ->orderBy('name')
             ->get(['id', 'name', 'campaign_id']);
 
-        $referents = $campaign->foreign_referents()->get();
-        $this->referents = $referents->map(fn($user) => [
-            'id' => $user->id,
-            'text' => $user->fullName,
-        ]);
-
         $this->departments = app(CampaignLocationOptions::class)->departments($campaign);
 
         $this->columnOptions = $this->cleanColumnOptions();
         $this->selectedColumns = ['document_number', 'full_name', 'celphone', 'committees', 'roles'];
-        $this->results = collect();
+        $this->appliedFilters = [];
     }
 
     public function toggleFilters(): void
@@ -236,7 +237,8 @@ class IndexCommittee extends Component
         $this->municipalities = [];
         $this->districtsCommunes = [];
         $this->neighborhoods = [];
-        $this->results = collect();
+        $this->appliedFilters = [];
+        $this->totalResults = 0;
         $this->hasSearched = false;
         $this->selectedColumns = ['document_number', 'full_name', 'celphone', 'committees', 'roles'];
     }
@@ -279,6 +281,7 @@ class IndexCommittee extends Component
                     ->neighborhoods($this->campaign, $this->department, $this->municipality, $value);
             }
         }
+
     }
 
     public function applyFilters(): void
@@ -293,15 +296,11 @@ class IndexCommittee extends Component
             [$this->validation_from, $this->validation_to] = [$this->validation_to, $this->validation_from];
         }
 
-        $users = $this->buildFilteredUsersQuery($this->campaign)->get();
-        $roleNamesByUser = $this->campaignRoleNamesByUser($this->rolesCampaign($this->campaign), $users);
-
-        $this->results = $users->map(fn($user) => $this->mapUserRow($user, $roleNamesByUser));
-        $this->selected_result_ids = $this->results
-            ->pluck('id')
-            ->map(fn($id) => (int) $id)
-            ->all();
+        $this->appliedFilters = $this->listFilters();
+        $this->totalResults = (clone $this->buildFilteredUsersQuery($this->campaign, $this->appliedFilters))->count();
+        $this->selected_result_ids = [];
         $this->hasSearched = true;
+        $this->resetPage();
     }
 
     public function assignFilteredUsersToCommittee(): void
@@ -329,7 +328,7 @@ class IndexCommittee extends Component
             return;
         }
 
-        $userIds = $this->buildFilteredUsersQuery($this->campaign)
+        $userIds = $this->buildFilteredUsersQuery($this->campaign, $this->appliedFilters ?: $this->listFilters())
             ->whereIn('users.id', $selectedIds)
             ->whereDoesntHave('committees', function ($committeeQuery) use ($committee) {
                 $committeeQuery->where('committees.id', $committee->id);
@@ -359,7 +358,15 @@ class IndexCommittee extends Component
 
     public function selectAllResults(): void
     {
-        $this->selected_result_ids = $this->results
+        if (! $this->hasSearched) {
+            $this->selected_result_ids = [];
+
+            return;
+        }
+
+        $this->selected_result_ids = $this->buildFilteredUsersQuery($this->campaign, $this->appliedFilters)
+            ->forPage($this->getPage(), $this->perPage)
+            ->get()
             ->pluck('id')
             ->map(fn($id) => (int) $id)
             ->all();
@@ -368,6 +375,20 @@ class IndexCommittee extends Component
     public function clearSelectedResults(): void
     {
         $this->selected_result_ids = [];
+    }
+
+    public function showReferredUsers(int $userId): void
+    {
+        $this->authorize('viewSupporters', $this->campaign);
+        $this->dispatch('openReferralDetailsModal', userId: $userId, mode: 'referred')
+            ->to(\App\Livewire\Supporters\ReferralDetailsModal::class);
+    }
+
+    public function showReferrerOf(int $userId): void
+    {
+        $this->authorize('viewSupporters', $this->campaign);
+        $this->dispatch('openReferralDetailsModal', userId: $userId, mode: 'referrer')
+            ->to(\App\Livewire\Supporters\ReferralDetailsModal::class);
     }
 
     public function updatedSelectedColumns(): void
@@ -404,6 +425,16 @@ class IndexCommittee extends Component
             ->all();
     }
 
+    public function updatedPerPage(): void
+    {
+        $this->perPage = in_array((int) $this->perPage, $this->perPageOptions, true)
+            ? (int) $this->perPage
+            : 25;
+
+        $this->resetPage();
+        $this->selected_result_ids = [];
+    }
+
     public function render()
     {
         $this->authorize('viewSupporters', $this->campaign);
@@ -428,23 +459,49 @@ class IndexCommittee extends Component
 
         return view('livewire.committee.index-committee', [
             'committees' => $committees,
+            'results' => $this->paginatedResults(),
             'visibleColumns' => $this->normalizedSelectedColumns(),
+            'referralOptions' => $this->referralSelectedOptions(),
+            'referralSearchUrl' => route('campaign.users.search', $this->campaign->code),
         ]);
     }
 
-    protected function buildFilteredUsersQuery(Campaign $campaign)
+    protected function buildFilteredUsersQuery(Campaign $campaign, ?array $filters = null)
     {
         return app(SupporterListQueryService::class)->build(
             $campaign,
             $this->rolesCampaign($campaign),
-            $this->listFilters()
+            $filters ?? $this->listFilters()
         );
+    }
+
+    protected function paginatedResults()
+    {
+        if (! $this->hasSearched) {
+            return new \Illuminate\Pagination\LengthAwarePaginator(collect(), 0, $this->perPage);
+        }
+
+        $users = $this->buildFilteredUsersQuery($this->campaign, $this->appliedFilters)
+            ->paginate($this->perPage);
+        $userCollection = $users->getCollection();
+        $roleNamesByUser = $this->campaignRoleNamesByUser($this->rolesCampaign($this->campaign), $userCollection);
+        $rowMapper = app(SupporterRowMapper::class);
+        $referrerNamesByUser = $rowMapper->referrerNamesByUser($this->campaign, $userCollection);
+        $referralCountsByUser = $rowMapper->referralCountsByUser($this->campaign, $userCollection);
+        $referrerIdsByUser = $rowMapper->referrerIdsByUser($this->campaign, $userCollection);
+
+        $users->setCollection(
+            $userCollection->map(fn($user) => $this->mapUserRow($user, $roleNamesByUser, $referrerNamesByUser, $referralCountsByUser, $referrerIdsByUser))
+        );
+
+        return $users;
     }
 
     protected function listFilters(): array
     {
         return [
             'searchTerm' => $this->searchTerm,
+            'campaign_id' => $this->campaign->id,
             'sw_search' => $this->sw_search,
             'approach' => $this->approach,
             'sw_approach' => $this->sw_approach,
@@ -523,7 +580,13 @@ class IndexCommittee extends Component
             ->all();
     }
 
-    protected function mapUserRow($user, array $roleNamesByUser = []): array
+    protected function mapUserRow(
+        $user,
+        array $roleNamesByUser = [],
+        array $referrerNamesByUser = [],
+        array $referralCountsByUser = [],
+        array $referrerIdsByUser = []
+    ): array
     {
         $profile = $user->foreing_aditional_info;
         $committeeNames = $user->committees
@@ -554,6 +617,9 @@ class IndexCommittee extends Component
             'neighborhood_village_name' => $profile?->neighborhood_village_name ?: '-',
             'committees' => $committeeNames !== '' ? $committeeNames : '-',
             'roles' => $roleNamesByUser[$user->id] ?? '-',
+            'referred_by' => $referrerNamesByUser[$user->id] ?? '-',
+            'referred_by_id' => isset($referrerIdsByUser[$user->id]) ? (int) $referrerIdsByUser[$user->id] : null,
+            'referrals_count' => (int) ($referralCountsByUser[$user->id] ?? 0),
         ];
     }
 
@@ -579,6 +645,8 @@ class IndexCommittee extends Component
             'neighborhood_village_name' => 'Barrio',
             'committees' => 'Comites',
             'roles' => 'Roles',
+            'referred_by' => 'Quien lo refirio',
+            'referrals_count' => 'Cantidad referidos',
         ];
     }
 
@@ -589,6 +657,20 @@ class IndexCommittee extends Component
             ->unique()
             ->take(5)
             ->values()
+            ->all();
+    }
+
+    protected function referralSelectedOptions(): array
+    {
+        return User::query()
+            ->whereIn('id', collect($this->refer_ids)->map(fn($id) => (int) $id)->filter()->all())
+            ->orderBy('first_name')
+            ->orderBy('paternal_surname')
+            ->get()
+            ->map(fn(User $user) => [
+                'id' => $user->id,
+                'text' => $user->fullName,
+            ])
             ->all();
     }
 }
