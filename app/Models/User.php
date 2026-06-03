@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Notifications\CustomResetPassword;
 use App\Models\Campaign;
+use App\Services\ClientesMas\ClientesMasMailer;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -215,6 +216,13 @@ class User extends Authenticatable
     }
 
     public function sendPasswordResetNotification($token){
+        $mailer = app(ClientesMasMailer::class);
+
+        if ($mailer->enabled()) {
+            $mailer->sendPasswordReset($this, $token);
+            return;
+        }
+
         $this->notify(new CustomResetPassword($token));
     }
 

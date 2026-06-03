@@ -46,5 +46,23 @@ return [
         'libraries' => 'places',
         'region'    => 'CO',
         'language'  => 'es'
+    ],
+
+    'clientes_mas' => [
+        'enabled' => env('CLIENTES_MAS_MAIL_ENABLED', (bool) env('CLIENTES_MAS_API_KEY')),
+        'base_url' => env('CLIENTES_MAS_BASE_URL', 'https://app.clientesmas.com/api/messaging'),
+        'api_key' => env('CLIENTES_MAS_API_KEY'),
+        'email_provider' => env('CLIENTES_MAS_EMAIL_PROVIDER', 'aws_ses'),
+        'timeout' => (int) env('CLIENTES_MAS_TIMEOUT', 15),
+        'retries' => (int) env('CLIENTES_MAS_RETRIES', 2),
+        'retry_sleep' => (int) env('CLIENTES_MAS_RETRY_SLEEP', 500),
+        'from_name' => env('CLIENTES_MAS_FROM_NAME', env('MAIL_FROM_NAME', env('APP_NAME', 'SmartElect'))),
+        'from_address' => env('CLIENTES_MAS_FROM_ADDRESS', env('MAIL_FROM_ADDRESS')),
+        'mox' => [
+            'from_name' => env('CLIENTES_MAS_MOX_FROM_NAME', env('CLIENTES_MAS_FROM_NAME', env('MAIL_FROM_NAME', env('APP_NAME', 'SmartElect')))),
+            'from_address' => env('CLIENTES_MAS_MOX_FROM_ADDRESS', env('CLIENTES_MAS_FROM_ADDRESS', env('MAIL_FROM_ADDRESS'))),
+            'auth_user' => env('CLIENTES_MAS_MOX_AUTH_USER'),
+            'auth_password' => env('CLIENTES_MAS_MOX_AUTH_PASSWORD'),
+        ],
     ]
 ];

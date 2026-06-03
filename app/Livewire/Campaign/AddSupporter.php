@@ -7,6 +7,7 @@ use App\Models\Campaign;
 use App\Models\DocumentType;
 use App\Models\Invitation;
 use App\Models\User;
+use App\Services\ClientesMas\ClientesMasMailer;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\Auth;
@@ -176,6 +177,13 @@ class AddSupporter extends Component
         $invitation->active     = true;
         $invitation->save();
         //send email
+        $mailer = app(ClientesMasMailer::class);
+
+        if ($mailer->enabled()) {
+            $mailer->sendCampaignInvitation($this->campaign, $user, $invitation);
+            return;
+        }
+
         Mail::to($user->email)->send(new InviteToCampaign($this->campaign, $user->first_name, $invitation->token, $invitation->expires_at));
     }
 
