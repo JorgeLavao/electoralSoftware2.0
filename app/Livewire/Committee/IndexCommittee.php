@@ -160,6 +160,11 @@ class IndexCommittee extends Component
         );
     }
 
+    public function updatedSearch(): void
+    {
+        $this->resetPage('committeesPage');
+    }
+
     public function confirmDeleteCommittee(int $committeeId): void
     {
         $this->authorize('manageGroups', $this->campaign);
@@ -183,6 +188,7 @@ class IndexCommittee extends Component
         $committee->delete();
 
         session()->flash('success', 'Comite eliminado correctamente.');
+        $this->resetPage('committeesPage');
     }
 
     public function clearFilters(): void
@@ -455,7 +461,7 @@ class IndexCommittee extends Component
             })
             ->orderByDesc('is_active')
             ->orderBy('name')
-            ->get();
+            ->paginate(3, pageName: 'committeesPage');
 
         return view('livewire.committee.index-committee', [
             'committees' => $committees,

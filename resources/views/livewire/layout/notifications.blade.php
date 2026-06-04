@@ -11,33 +11,52 @@
                         </g>
                     </svg>
                 </span>
-                <span class="bubble">
-                    <span>99</span>
-                </span>
+                @if ($unreadCount > 0)
+                    <span class="bubble">
+                        <span>{{ $unreadCount > 99 ? '99+' : $unreadCount }}</span>
+                    </span>
+                @endif
             </label>
             <div class="notifications-display">
-                <div class="relative bg-gray-200 overflow-hidden rounded-xl shadow-lg">
-                    <div class="flex items-center justify-between w-full px-4 py-2">
-                        <span class="label flex pt-1.5 pb-1 px-2 gap-1 bg-white rounded">
+                <div class="relative overflow-hidden rounded-xl bg-white shadow-lg ring-1 ring-slate-200">
+                    <div class="flex items-center justify-between gap-3 px-4 py-2">
+                        <span class="label flex gap-1 rounded bg-white px-2 pb-1 pt-1.5">
                             Notificaciones
-                            <span class="inline-flex items-center justify-center w-5 h-5 font-semibold text-white bg-primary rounded-full">
-                                0
+                            <span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary font-semibold text-white">
+                                {{ $unreadCount }}
                             </span>
                         </span>
-                        <form action="https://app.miclientela.com/notificaciones/change_status_all" method="POST" class="inline-flex">
-                            <input type="hidden" name="_token" value="MqFaDCAQYD3AtpkiRVsHsTd9v8kHfZnq2JzWvfOQ">
-                            <input type="hidden" name="_method" value="put">
-                            <button type="submit" class="btn-primary" aria-label="Close">
-                                Marcar como leídos
-                            </button>
-                        </form>
+                        <button type="button" class="btn-primary" wire:click="markAllAsRead" @disabled($unreadCount === 0)>
+                            Marcar como leidos
+                        </button>
                     </div>
-                    <div class="w-full bg-white">
-                        <div class="w-full max-w-md p-4">
-                            <p><strong>Sin notificaciones</strong>
-                                No hay notificaciones en este momento
-                            </p>
-                        </div>
+
+                    <div class="max-h-96 w-full overflow-y-auto bg-white">
+                        @forelse ($notifications as $notification)
+                            @php
+                                $data = $notification->data ?? [];
+                                $isUnread = is_null($notification->read_at);
+                            @endphp
+                            <a
+                                href="{{ $data['url'] ?? '#' }}"
+                                wire:click="markAsRead('{{ $notification->id }}')"
+                                class="block border-t border-slate-100 px-4 py-3 transition hover:bg-slate-50 {{ $isUnread ? 'bg-primary/5' : 'bg-white' }}">
+                                <div class="flex items-start gap-3">
+                                    <span class="mt-1 h-2.5 w-2.5 flex-none rounded-full {{ $isUnread ? 'bg-primary' : 'bg-slate-300' }}"></span>
+                                    <div class="min-w-0 flex-1">
+                                        <p class="text-sm font-semibold text-slate-800">{{ $data['title'] ?? 'Notificacion' }}</p>
+                                        <p class="mt-1 text-sm text-slate-600">{{ $data['body'] ?? '' }}</p>
+                                        <p class="mt-1 text-xs text-slate-400">{{ $notification->created_at?->diffForHumans() }}</p>
+                                    </div>
+                                </div>
+                            </a>
+                        @empty
+                            <div class="w-full max-w-md p-4">
+                                <p><strong>Sin notificaciones</strong><br>
+                                    No hay notificaciones en este momento
+                                </p>
+                            </div>
+                        @endforelse
                     </div>
                 </div>
             </div>

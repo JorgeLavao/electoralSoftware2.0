@@ -4,6 +4,7 @@ namespace App\Livewire\Campaign;
 
 use App\Models\Campaign;
 use App\Models\User;
+use App\Services\CampaignNotificationService;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
@@ -102,6 +103,18 @@ class IndexCampaign extends Component
             'approach' => 4,
             'validate' => 0,
         ]);
+
+        app(CampaignNotificationService::class)->notifyCampaignPermission(
+            $campaign,
+            'campaign.supporters.validate',
+            [
+                'title' => 'Nueva solicitud pendiente',
+                'body' => ($user->fullName ?: 'Un simpatizante') . ' solicito unirse a ' . $campaign->name . '.',
+                'icon' => 'info',
+                'url' => route('supporter.index', $campaign->code, absolute: false),
+                'priority' => 'important',
+            ]
+        );
 
         $this->campaign_code = '';
 

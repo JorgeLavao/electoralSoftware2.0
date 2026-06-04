@@ -52,7 +52,7 @@
                 @forelse ($committees as $committee)
                 <details
                     wire:key="committee-accordion-{{ $committee->id }}"
-                    class="group overflow-hidden rounded-[24px] bg-slate-50/80 shadow-[0_12px_30px_-28px_rgba(15,23,42,0.85)] ring-1 ring-slate-200 transition open:bg-white open:ring-primary/20 open:shadow-[0_20px_45px_-32px_rgba(244,63,94,0.45)]">
+                    class="group overflow-hidden rounded-[24px] bg-white shadow-[0_12px_30px_-28px_rgba(15,23,42,0.85)] ring-1 ring-slate-200 transition open:bg-white open:ring-primary/20 open:shadow-[0_20px_45px_-32px_rgba(244,63,94,0.45)]">
                     <summary class="list-none cursor-pointer rounded-[24px] border border-primary p-0 transition hover:border-primary">
                         <div class="container-h p-5 md:p-6">
                             <div class="flex-1">
@@ -132,11 +132,13 @@
                     </div>
                 </details>
                 @empty
-                <div class="rounded-[24px] bg-slate-50 px-6 py-12 text-center text-sm text-slate-500 ring-1 ring-slate-200">
+                <div class="rounded-[24px] bg-white px-6 py-12 text-center text-sm text-slate-500 ring-1 ring-slate-200">
                     No se encontraron comites registrados.
                 </div>
                 @endforelse
             </div>
+
+            <x-pagination :paginator="$committees" :livewire="true" />
         </div>
         @endunless
 

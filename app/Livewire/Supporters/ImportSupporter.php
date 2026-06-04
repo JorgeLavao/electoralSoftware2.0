@@ -185,16 +185,13 @@ class ImportSupporter extends Component
         }
 
         if ($batch->status === 'import_done') {
-            $this->step = 'preview';
-
             if ($this->lastAlertedStatus !== 'import_done') {
                 $this->lastAlertedStatus = 'import_done';
-                $this->dispatch('alert', [
-                    'icon' => 'success',
-                    'title' => 'Importacion finalizada',
-                    'text' => $this->finishedImportMessage($batch),
-                    'timer' => 5000,
-                ]);
+
+                $message = $this->finishedImportMessage($batch);
+                session()->flash('success', $message);
+                $this->cleanupBatch();
+                $this->redirectRoute('supporter.index', $this->campaign->code, navigate: true);
             }
         }
 

@@ -3,6 +3,7 @@
 namespace App\Livewire\Supporters;
 
 use App\Models\Campaign;
+use App\Services\CampaignNotificationService;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
@@ -57,7 +58,23 @@ class IndexSupporters extends Component
         $this->authorize('validateSupporters', $this->campaign);
 
         $campaignCode = $this->campaign->code;
+        $supporter = $this->campaign->foreign_users()->where('users.id', $user_id)->first();
+        $referrerId = $supporter?->pivot?->reffer_by;
         $this->campaign->foreign_users()->updateExistingPivot($user_id, ['validate' => 1]);
+
+        app(CampaignNotificationService::class)->notifyUserIds(
+            array_filter([(int) $user_id, $referrerId ? (int) $referrerId : null]),
+            [
+                'title' => 'Simpatizante aceptado',
+                'body' => ($supporter?->fullName ?: 'El simpatizante') . ' fue aceptado en ' . $this->campaign->name . '.',
+                'icon' => 'success',
+                'url' => route('supporter.index', $campaignCode, absolute: false),
+                'campaign_id' => $this->campaign->id,
+                'campaign_name' => $this->campaign->name,
+                'priority' => 'important',
+            ]
+        );
+
         session()->flash('success', 'Simpatizantes actualizados correctamente');
         $this->redirectIntended(default: route('supporter.index', $campaignCode, absolute: false), navigate: true);
     }
@@ -93,6 +110,17 @@ class IndexSupporters extends Component
 
         $campaignCode = $this->campaign->code;
         $this->campaign->foreign_users()->updateExistingPivot($user_id, ['validate' => 2]);
+
+        app(CampaignNotificationService::class)->notifyUserIds([(int) $user_id], [
+            'title' => 'Solicitud rechazada',
+            'body' => 'Tu solicitud para ' . $this->campaign->name . ' fue rechazada.',
+            'icon' => 'warning',
+            'url' => route('campaign.index', absolute: false),
+            'campaign_id' => $this->campaign->id,
+            'campaign_name' => $this->campaign->name,
+            'priority' => 'important',
+        ]);
+
         session()->flash('success', 'Simpatizantes actualizados correctamente');
         $this->redirectIntended(default: route('supporter.index', $campaignCode, absolute: false), navigate: true);
     }

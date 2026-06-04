@@ -23,7 +23,31 @@
                 class="absolute inset-0 z-30 rounded-2xl bg-white/70 backdrop-blur-sm">
             </div>
 
-            <div class="area-2 container-v space-y-5">
+            <div
+                x-data="{
+                    selectedColumns: @entangle('selectedColumns').live,
+                    maxColumns: 5,
+                    limitMessage: false,
+                    showLimitMessage() {
+                        this.limitMessage = true;
+                        setTimeout(() => this.limitMessage = false, 2500);
+                    },
+                    toggleColumn(column, event) {
+                        if (this.selectedColumns.includes(column)) {
+                            this.selectedColumns = this.selectedColumns.filter((selectedColumn) => selectedColumn !== column);
+                            return;
+                        }
+
+                        if (this.selectedColumns.length >= this.maxColumns) {
+                            event.target.checked = false;
+                            this.showLimitMessage();
+                            return;
+                        }
+
+                        this.selectedColumns = [...this.selectedColumns, column];
+                    }
+                }"
+                class="area-2 container-v space-y-5">
                 <div class="rounded-2xl border border-slate-200 bg-white p-5 space-y-5">
 
                     <div class="grid grid-cols-1 gap-4 md:grid-cols-2">

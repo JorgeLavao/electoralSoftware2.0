@@ -5,6 +5,7 @@ namespace App\Livewire\Campaign;
 use App\Models\Campaign;
 use App\Models\Invitation;
 use App\Models\User;
+use App\Services\CampaignNotificationService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -115,6 +116,19 @@ class AcceptCampaign extends Component
         $this->user = User::findOrFail($this->invitation->user_id);
         $this->error_type = null;
         $this->acepted = true;
+
+        app(CampaignNotificationService::class)->notifyCampaignPermission(
+            $this->campaign,
+            'campaign.supporters.validate',
+            [
+                'title' => 'Invitacion aceptada',
+                'body' => ($this->user->fullName ?: 'Un simpatizante') . ' acepto la invitacion y esta pendiente de validacion.',
+                'icon' => 'info',
+                'url' => route('supporter.index', $this->campaign->code, absolute: false),
+                'priority' => 'important',
+            ],
+            [$this->invitation->reffer_id]
+        );
     }
 
     public function resetPassword(){

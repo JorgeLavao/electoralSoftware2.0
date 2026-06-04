@@ -3,7 +3,9 @@
 namespace App\Jobs;
 
 use App\Imports\SupportersStoreImport;
+use App\Models\Campaign;
 use App\Models\ImportBatch;
+use App\Services\CampaignNotificationService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -93,6 +95,27 @@ class ImportSupportersJob implements ShouldQueue
             $batch->error_message = $this->importSummaryMessage($batch);
             $batch->finished_at = now();
             $batch->save();
+
+            $campaign = Campaign::query()->find($this->campaignId);
+
+            if ($campaign) {
+                $validCount = (int) ($batch->counts['valid'] ?? 0);
+                $invalidCount = (int) ($batch->counts['invalid'] ?? 0);
+
+                app(CampaignNotificationService::class)->notifyCampaignPermission(
+                    $campaign,
+                    'campaign.supporters.validate',
+                    [
+                        'title' => 'Importacion finalizada',
+                        'body' => "Se importaron {$validCount} simpatizante(s) en {$campaign->name}. {$invalidCount} fila(s) fueron omitidas.",
+                        'icon' => 'success',
+                        'url' => route('supporter.index', $campaign->code, absolute: false),
+                        'priority' => 'important',
+                    ],
+                    [$this->referrerId]
+                );
+            }
+
             Log::debug('[supporters-import] Import job finished', [
                 'batch_id' => $batch->id,
                 'status' => $batch->status,
