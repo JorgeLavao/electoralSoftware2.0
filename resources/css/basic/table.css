@@ -40,12 +40,26 @@
         }
 
         table.responsive tbody td {
-            @apply relative flex justify-end items-center gap-1 pt-10 md:pt-2 !w-full text-right;
+            @apply relative flex justify-end items-center gap-3 pt-10 md:pt-2 !w-full text-right;
+            min-width: 0;
+            overflow-wrap: anywhere;
         }
 
         table.responsive tbody td::before {
-          @apply absolute top-2 md:top-auto left-0 pl-4 font-semibold text-sm;
+          @apply absolute top-2 md:top-auto left-0 pr-4 pl-4 font-semibold text-sm text-left;
           content: attr(data-label);
+        }
+
+        table.responsive tbody td > * {
+          min-width: 0;
+        }
+
+        table.responsive tbody td[colspan] {
+          @apply justify-center pt-5 text-center;
+        }
+
+        table.responsive tbody td[colspan]::before {
+          content: none;
         }
 
         table.responsive tbody td .container-v {

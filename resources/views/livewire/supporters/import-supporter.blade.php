@@ -182,11 +182,11 @@
                                     $textClass = $isWarning ? 'text-yellow-700' : 'text-red-700';
                                 @endphp
                                 <tr class="border-t {{ $rowClass }}">
-                                    <td>{{ $r['row'] }}</td>
-                                    <td>{{ $r['nro_documento'] }}</td>
-                                    <td>{{ $r['correo_electronico'] ?? '-' }}</td>
-                                    <td class="font-semibold {{ $textClass }}">{{ $isWarning ? 'Advertencia' : 'Error' }}</td>
-                                    <td class="{{ $textClass }}">{{ $r['mensaje'] }}</td>
+                                    <td data-label="Fila">{{ $r['row'] }}</td>
+                                    <td data-label="Documento">{{ $r['nro_documento'] }}</td>
+                                    <td data-label="Correo">{{ $r['correo_electronico'] ?? '-' }}</td>
+                                    <td data-label="Estado" class="font-semibold {{ $textClass }}">{{ $isWarning ? 'Advertencia' : 'Error' }}</td>
+                                    <td data-label="Mensaje" class="{{ $textClass }}">{{ $r['mensaje'] }}</td>
                                 </tr>
                             @empty
                                 <tr><td colspan="5">No se encontraron errores 🎉</td></tr>

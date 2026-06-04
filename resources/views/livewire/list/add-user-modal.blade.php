@@ -71,7 +71,7 @@
                         <tbody>
                             @forelse ($users as $user)
                             <tr>
-                                <td>
+                                <td data-label="Estatus">
                                     @if ($user->campaign_validate)
                                     <div class="rounded-xl border border-valid px-2 py-1 text-valid">
                                         <x-icons.check-fill />
@@ -82,10 +82,10 @@
                                     </div>
                                     @endif
                                 </td>
-                                <td>{{ $user->document_number }}</td>
-                                <td>{{ $user->fullName }}</td>
-                                <td>{{ $user->celphone }}</td>
-                                <td>
+                                <td data-label="Documento">{{ $user->document_number }}</td>
+                                <td data-label="Nombre">{{ $user->fullName }}</td>
+                                <td data-label="Contacto">{{ $user->celphone }}</td>
+                                <td data-label="Accion">
                                     <button type="button" class="text-primary border-primary" wire:click="addUser({{ $user->id }})">
                                         <x-icons.add-fill /> Agregar
                                     </button>
@@ -115,17 +115,17 @@
                         <tbody>
                             @foreach ($arrayUSers as $user)
                             <tr>
-                                <td>
+                                <td data-label="Estatus">
                                     @if ($user->campaign_validate)
                                     <div class="rounded-xl border border-valid px-2 py-1 text-valid"><x-icons.check-fill /></div>
                                     @else
                                     <div class="rounded-xl border border-invalid px-2 py-1 text-invalid"><x-icons.alert-line /></div>
                                     @endif
                                 </td>
-                                <td>{{ $user->document_number }}</td>
-                                <td>{{ $user->fullName }}</td>
-                                <td>{{ $user->celphone }}</td>
-                                <td>
+                                <td data-label="Documento">{{ $user->document_number }}</td>
+                                <td data-label="Nombre">{{ $user->fullName }}</td>
+                                <td data-label="Contacto">{{ $user->celphone }}</td>
+                                <td data-label="Accion">
                                     <button type="button" class="text-primary border-primary" wire:click="delUser({{ $user->id }})">
                                         <x-icons.trash-outline /> Quitar
                                     </button>

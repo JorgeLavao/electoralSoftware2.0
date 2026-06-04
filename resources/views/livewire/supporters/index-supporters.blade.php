@@ -91,7 +91,7 @@
                     <tbody>
                         @forelse ($users as $user)
                         <tr wire:key="user-row-{{ $user->id }}">
-                            <td class="p-2">
+                            <td class="p-2" data-label="Estado">
                                 @if ($user->pivot->validate == 1)
                                 <div class="flex justify-center rounded-xl border border-valid px-2 py-1 text-valid" title="Aceptado">
                                     <x-icons.check-fill :size="16" />
@@ -106,10 +106,10 @@
                                 </div>
                                 @endif
                             </td>
-                            <td class="p-2 text-center">{{ $user->document_number }}</td>
-                            <td class="p-2">{{ $user->fullName }}</td>
-                            <td class="p-2 text-center">{{ $user->celphone }}</td>
-                            <td class="p-2">
+                            <td class="p-2 text-center" data-label="No. Documento">{{ $user->document_number }}</td>
+                            <td class="p-2" data-label="Nombre">{{ $user->fullName }}</td>
+                            <td class="p-2 text-center" data-label="No. de contacto">{{ $user->celphone }}</td>
+                            <td class="p-2" data-label="Acciones">
                                 <div class="flex justify-center gap-2">
                                     @can('validateSupporters', $campaign)
                                     <button

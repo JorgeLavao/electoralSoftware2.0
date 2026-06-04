@@ -20,7 +20,7 @@
     }
 
     .modal-container .modal-inner {
-        @apply relative top-1/2 left-1/2 w-full max-w-7xl p-6 bg-white rounded-3xl;
+        @apply relative top-1/2 left-1/2 w-full max-w-7xl p-4 md:p-6 bg-white rounded-3xl;
         display: flex;
         flex-direction: column;
         max-height: 90%;
@@ -37,10 +37,11 @@
     }
 
     .modal-container .modal-close {
-        @apply absolute z-10 top-6 right-6 mr-4 py-2.5 bg-primary text-white;
+        @apply absolute z-10 top-3 right-3 md:top-6 md:right-6 md:mr-4 py-2.5 bg-primary text-white;
     }
 
     .modal-container .modal-inner__data {
-        @apply pr-4 h-full overflow-auto;
+        @apply h-full overflow-auto pr-1 md:pr-4;
+        min-width: 0;
     }
 }

@@ -38,11 +38,13 @@
     grid-cols-1
     md:grid-cols-[280px_1fr]
     gap-5
-    overflow-hidden
+    overflow-visible
+    md:overflow-hidden
     bg-light
     rounded-3xl
     shadow-lg
     ;
+    min-width: 0;
 }
 
 /* ----------------------------------------------------------------- */
@@ -174,7 +176,8 @@ div, span {
 /* ----------------------------------------------------------------- */
 
 .dashboard__main__section {
-    @apply p-5 md:p-7 md:pl-0;
+    @apply p-4 xs:p-5 md:p-7 md:pl-0;
+    min-width: 0;
 }
 
 .dashboard__main__section .pagination button {
