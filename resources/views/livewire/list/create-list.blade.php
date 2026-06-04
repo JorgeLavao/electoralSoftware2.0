@@ -637,13 +637,13 @@
                             Selecciona al menos una columna para ver la tabla o exportar.
                         </div>
                         @else
-                        <div class="max-w-full overflow-x-auto">
-                            <table class="min-w-[640px] w-full text-sm whitespace-nowrap">
+                        <div class="max-w-full overflow-x-auto overscroll-x-contain pb-2">
+                            <table class="w-max min-w-full text-sm whitespace-nowrap">
                                 <thead class="bg-slate-50">
                                     <tr>
                                         @foreach ($visibleColumns as $columnKey)
                                         @if (isset($columnOptions[$columnKey]))
-                                        <th class="px-4 py-3 text-left font-semibold text-slate-600">
+                                        <th class="max-w-[220px] px-4 py-3 text-left font-semibold text-slate-600">
                                             {{ $columnOptions[$columnKey] }}
                                         </th>
                                         @endif
@@ -656,7 +656,7 @@
                                     <tr class="border-t border-slate-100 hover:bg-slate-50">
                                         @foreach ($visibleColumns as $columnKey)
                                         @if (isset($columnOptions[$columnKey]))
-                                        <td class="px-4 py-3 text-slate-700">
+                                        <td class="max-w-[220px] truncate px-4 py-3 text-slate-700">
                                             @if ($columnKey === 'profile_photo')
                                             <div class="flex items-center gap-2">
                                                 @if (!empty($user['profile_photo_url']))
@@ -686,7 +686,7 @@
                                             </div>
                                             @elseif ($columnKey === 'referred_by')
                                             <div class="flex items-center gap-2">
-                                                <span>{{ $user['referred_by'] ?? '-' }}</span>
+                                                <span class="truncate">{{ $user['referred_by'] ?? '-' }}</span>
                                                 @if (!empty($user['referred_by_id']))
                                                 <button
                                                     type="button"
