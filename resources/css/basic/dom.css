@@ -89,6 +89,27 @@ label, .label {
     @apply flex items-center py-1 px-4 w-auto text-sm text-sm/4 bg-gray-100 rounded-3xl;
 }
 
+.tom-bootstrap,
+.ts-wrapper,
+.ts-control,
+.ts-dropdown {
+    max-width: 100%;
+    min-width: 0;
+}
+
+.ts-wrapper {
+    width: 100%;
+}
+
+.ts-control {
+    overflow-x: auto;
+}
+
+[data-list-location-map] {
+    max-width: 100%;
+    min-width: 0;
+}
+
 /* ===== Scrollbar CSS ===== */
 /* Firefox */
 * {

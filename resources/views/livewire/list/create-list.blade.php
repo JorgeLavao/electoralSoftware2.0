@@ -47,8 +47,8 @@
                         this.selectedColumns = [...this.selectedColumns, column];
                     }
                 }"
-                class="area-2 container-v space-y-5">
-                <div class="rounded-2xl border border-slate-200 bg-white p-5 space-y-5">
+                class="area-2 container-v min-w-0 space-y-5 overflow-hidden">
+                <div class="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 space-y-5">
 
                     <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <div class="group-form-v">
@@ -526,7 +526,7 @@
                     @endunless
                 </div>
 
-                <div class="rounded-2xl border border-slate-200 bg-white p-5">
+                <div class="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white p-5">
                     <div class="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
                         <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
 
@@ -600,8 +600,8 @@
                 </div>
 
                 @if ($hasSearched)
-                <div class="area-2 container-v mt-6">
-                    <div class="rounded-2xl border border-slate-200 bg-white">
+                <div class="area-2 container-v min-w-0 mt-6 overflow-hidden">
+                    <div class="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white">
                         <div class="border-b border-slate-200 px-5 py-4">
                             <h4 class="font-semibold text-slate-900">Resultados</h4>
                         </div>
@@ -637,8 +637,8 @@
                             Selecciona al menos una columna para ver la tabla o exportar.
                         </div>
                         @else
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full text-sm whitespace-nowrap">
+                        <div class="max-w-full overflow-x-auto">
+                            <table class="min-w-[640px] w-full text-sm whitespace-nowrap">
                                 <thead class="bg-slate-50">
                                     <tr>
                                         @foreach ($visibleColumns as $columnKey)
@@ -723,8 +723,8 @@
                 </div>
 
                 @if ($showMap)
-                <div class="area-2 container-v mt-6">
-                    <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+                <div class="area-2 container-v min-w-0 mt-6 overflow-hidden">
+                    <div class="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white">
                         <div class="flex flex-col gap-3 border-b border-slate-200 px-5 py-4 md:flex-row md:items-center md:justify-between">
                             <div>
                                 <h4 class="font-semibold text-slate-900">Geolocalizacion</h4>
@@ -735,11 +735,13 @@
                         </div>
 
                         @if (count($mapPoints) > 0)
-                        <div
-                            wire:ignore
-                            data-list-location-map
-                            data-payload='@json($mapPayload)'
-                            class="h-[540px] min-h-[420px] w-full bg-slate-100"></div>
+                        <div class="max-w-full overflow-x-auto">
+                            <div
+                                wire:ignore
+                                data-list-location-map
+                                data-payload='@json($mapPayload)'
+                                class="h-[540px] min-h-[420px] min-w-[640px] w-full bg-slate-100 sm:min-w-0"></div>
+                        </div>
                         @else
                         <div class="px-5 py-8 text-center text-slate-500">
                             Los resultados actuales no tienen coordenadas para mostrar en el mapa.

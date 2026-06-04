@@ -16,7 +16,7 @@
             </div>
         @endif
 
-        <div class="rounded-2xl border border-gray-100 bg-white p-4 md:p-5">
+        <div class="min-w-0 overflow-hidden rounded-2xl border border-gray-100 bg-white p-4 md:p-5">
             <div class="flex flex-col gap-3 border-b border-gray-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <h3 class="text-xl font-semibold">Roles</h3>
@@ -27,8 +27,8 @@
                 </button>
             </div>
 
-            <div class="mt-4 overflow-x-auto">
-                <table class="w-full text-left">
+            <div class="mt-4 max-w-full overflow-x-auto">
+                <table class="min-w-[560px] w-full text-left">
                     <thead>
                         <tr class="border-b">
                             <th class="py-3 pr-4">Rol</th>
@@ -74,7 +74,7 @@
         </div>
 
         @if ($selectedRoleId)
-            <div class="rounded-2xl border border-gray-100 bg-white p-4 md:p-5">
+            <div class="min-w-0 overflow-hidden rounded-2xl border border-gray-100 bg-white p-4 md:p-5">
                 <div class="flex flex-col gap-3 border-b border-gray-100 pb-4 md:flex-row md:items-center md:justify-between">
                     <div class="min-w-0">
                         <h3 class="truncate text-xl font-semibold">{{ $editingRoleName }}</h3>
@@ -88,9 +88,9 @@
                     </div>
                 </div>
 
-                <div class="mt-5 grid gap-5 lg:grid-cols-[minmax(260px,360px)_1fr]">
-                    <div class="grid gap-4 content-start">
-                        <div class="grid gap-3">
+                <div class="mt-5 grid min-w-0 gap-5 lg:grid-cols-[minmax(260px,360px)_1fr]">
+                    <div class="grid min-w-0 gap-4 content-start">
+                        <div class="grid min-w-0 gap-3">
                             <div class="flex items-center justify-between">
                                 <h3 class="text-base font-semibold">Usuarios</h3>
                                 <span class="text-sm text-gray-400">{{ count($roleUserIds) }}</span>
@@ -108,7 +108,7 @@
                             @if ($roleUserResults->isNotEmpty())
                                 <div class="grid gap-2">
                                     @foreach ($roleUserResults as $user)
-                                        <label wire:key="role-user-result-{{ $selectedRoleId }}-{{ $user->id }}" class="flex items-start gap-3 rounded-xl border {{ in_array((string) $user->id, $roleUserIds, true) ? 'border-primary' : 'border-gray-100' }} p-3">
+                                        <label wire:key="role-user-result-{{ $selectedRoleId }}-{{ $user->id }}" class="flex min-w-0 items-start gap-3 rounded-xl border {{ in_array((string) $user->id, $roleUserIds, true) ? 'border-primary' : 'border-gray-100' }} p-3">
                                             <input type="checkbox" value="{{ $user->id }}" wire:model.live="roleUserIds" @checked(in_array((string) $user->id, $roleUserIds, true))>
                                             <span class="min-w-0">
                                                 <span class="block truncate text-sm font-semibold">{{ $user->fullName ?: $user->email }}</span>
@@ -124,7 +124,7 @@
                             @if ($selectedRoleUsers->isNotEmpty())
                                 <div class="grid gap-2">
                                     @foreach ($selectedRoleUsers as $user)
-                                        <label wire:key="selected-role-user-{{ $selectedRoleId }}-{{ $user->id }}" class="flex items-start gap-3 rounded-xl border border-primary p-3">
+                                        <label wire:key="selected-role-user-{{ $selectedRoleId }}-{{ $user->id }}" class="flex min-w-0 items-start gap-3 rounded-xl border border-primary p-3">
                                             <input type="checkbox" value="{{ $user->id }}" wire:model.live="roleUserIds" @checked(in_array((string) $user->id, $roleUserIds, true))>
                                             <span class="min-w-0">
                                                 <span class="block truncate text-sm font-semibold">{{ $user->fullName ?: $user->email }}</span>
@@ -137,20 +137,20 @@
                         </div>
                     </div>
 
-                    <div class="grid gap-3 content-start">
+                    <div class="grid min-w-0 gap-3 content-start">
                         <div class="flex items-center justify-between">
                             <h3 class="text-base font-semibold">Permisos</h3>
                             <span class="text-sm text-gray-400">{{ count($rolePermissionIds) }}</span>
                         </div>
 
-                        <div class="grid gap-2">
+                        <div class="grid min-w-0 gap-2">
                             @foreach ($permissionGroups as $group)
                                 @php
                                     $ids = $group['permissions']->pluck('id')->map(fn ($id) => (string) $id)->all();
                                     $allSelected = count(array_diff($ids, $rolePermissionIds)) === 0;
                                 @endphp
 
-                                <details class="rounded-xl border border-gray-100 bg-white p-3">
+                                <details class="min-w-0 rounded-xl border border-gray-100 bg-white p-3">
                                     <summary class="flex cursor-pointer list-none items-center justify-between gap-3">
                                         <span class="truncate text-sm font-semibold">{{ $group['group_label'] }}</span>
                                         <label class="flex items-center gap-2 text-xs text-gray-400" onclick="event.stopPropagation()">
@@ -159,9 +159,9 @@
                                         </label>
                                     </summary>
 
-                                    <div class="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                                    <div class="mt-3 grid min-w-0 gap-2 sm:grid-cols-2 xl:grid-cols-3">
                                         @foreach ($group['permissions'] as $permission)
-                                            <label class="flex items-center gap-2 rounded-lg border border-gray-100 p-2">
+                                            <label class="flex min-w-0 items-center gap-2 rounded-lg border border-gray-100 p-2">
                                                 <input type="checkbox" value="{{ $permission->id }}" wire:model.live="rolePermissionIds">
                                                 <span class="truncate text-sm">{{ $permission->description ?: $permission->name }}</span>
                                             </label>

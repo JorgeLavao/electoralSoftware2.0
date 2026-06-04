@@ -23,9 +23,19 @@
         @apply relative top-1/2 left-1/2 w-full max-w-7xl p-4 md:p-6 bg-white rounded-3xl;
         display: flex;
         flex-direction: column;
-        max-height: 90%;
+        max-height: calc(100dvh - 2rem);
         overflow: hidden;
         transform: translate(-50%, -50%);
+        min-width: 0;
+    }
+
+    .modal-container .modal-inner > form {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 auto;
+        max-height: 100%;
+        min-height: 0;
+        overflow: hidden;
     }
 
     .modal-container .modal-inner.modal-md {
@@ -42,6 +52,7 @@
 
     .modal-container .modal-inner__data {
         @apply h-full overflow-auto pr-1 md:pr-4;
+        flex: 1 1 auto;
         min-width: 0;
     }
 }

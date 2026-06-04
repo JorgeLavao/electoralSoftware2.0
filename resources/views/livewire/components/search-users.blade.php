@@ -1,11 +1,11 @@
-<div class="container-v">
-    <div class="space-y-6">
+<div class="container-v min-w-0">
+    <div class="min-w-0 space-y-6">
         <label>
             {{ $label }}
             <span class="text-red-500">*</span>
         </label>
 
-        <div class="tom-bootstrap mt-0.5" wire:ignore>
+        <div class="tom-bootstrap mt-0.5 min-w-0" wire:ignore>
             <select data-search-users multiple class="form-select clear"></select>
         </div>
     </div>

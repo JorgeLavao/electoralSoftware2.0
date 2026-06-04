@@ -17,7 +17,7 @@
                 </div>
             </div>
 
-            <div class="mb-5 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+            <div class="mb-5 min-w-0 overflow-hidden rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
                 <h4 class="mb-4 text-base font-bold text-gray-900">Filtros</h4>
                 <div class="grid gap-3 md:grid-cols-3 xl:grid-cols-6">
                     <div class="group-form-v">
@@ -76,20 +76,22 @@
                 </div>
             </div>
 
-            <div class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
-                <div class="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+            <div class="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
+                <div class="min-w-0 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
                     
 
-                    <div
-                        wire:ignore
-                        data-list-location-map
-                        data-payload='@json($mapPayload)'
-                        class="h-[540px] min-h-[420px] w-full bg-gray-100"
-                    ></div>
+                    <div class="max-w-full overflow-x-auto">
+                        <div
+                            wire:ignore
+                            data-list-location-map
+                            data-payload='@json($mapPayload)'
+                            class="h-[540px] min-h-[420px] min-w-[640px] w-full bg-gray-100 sm:min-w-0"
+                        ></div>
+                    </div>
                 </div>
 
-                <aside class="grid gap-5">
-                    <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+                <aside class="grid min-w-0 gap-5">
+                    <div class="min-w-0 overflow-hidden rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
                         <h3 class="mb-3 text-sm font-bold text-gray-900">Departamentos</h3>
                         <div class="grid gap-3">
                             @forelse ($departmentStats as $departmentItem)
@@ -108,7 +110,7 @@
                         </div>
                     </div>
 
-                    <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+                    <div class="min-w-0 overflow-hidden rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
                         <h3 class="mb-3 text-sm font-bold text-gray-900">Municipios</h3>
                         <div class="grid gap-3">
                             @forelse ($municipalityStats as $municipalityItem)
