@@ -601,7 +601,7 @@
 
                 @if ($hasSearched)
                 <div class="area-2 container-v min-w-0 mt-6 overflow-hidden">
-                    <div class="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+                    <div class="list-results-panel rounded-2xl border border-slate-200 bg-white">
                         <div class="border-b border-slate-200 px-5 py-4">
                             <h4 class="font-semibold text-slate-900">Resultados</h4>
                         </div>
@@ -637,13 +637,13 @@
                             Selecciona al menos una columna para ver la tabla o exportar.
                         </div>
                         @else
-                        <div class="max-w-full overflow-x-auto overscroll-x-contain pb-2">
-                            <table class="w-max min-w-full text-sm whitespace-nowrap">
+                        <div class="list-results-scroll pb-2">
+                            <table class="list-results-table text-sm whitespace-nowrap">
                                 <thead class="bg-slate-50">
                                     <tr>
                                         @foreach ($visibleColumns as $columnKey)
                                         @if (isset($columnOptions[$columnKey]))
-                                        <th class="max-w-[220px] px-4 py-3 text-left font-semibold text-slate-600">
+                                        <th class="px-4 py-3 text-left font-semibold text-slate-600">
                                             {{ $columnOptions[$columnKey] }}
                                         </th>
                                         @endif
@@ -656,7 +656,7 @@
                                     <tr class="border-t border-slate-100 hover:bg-slate-50">
                                         @foreach ($visibleColumns as $columnKey)
                                         @if (isset($columnOptions[$columnKey]))
-                                        <td class="max-w-[220px] truncate px-4 py-3 text-slate-700">
+                                        <td class="px-4 py-3 text-slate-700">
                                             @if ($columnKey === 'profile_photo')
                                             <div class="flex items-center gap-2">
                                                 @if (!empty($user['profile_photo_url']))
@@ -715,7 +715,7 @@
                             </table>
                         </div>
 
-                        <div class="border-t border-slate-200 px-5 py-4">
+                        <div class="list-results-pagination border-t border-slate-200 px-5 py-4">
                             <x-pagination :paginator="$results" :livewire="true" />
                         </div>
                         @endif

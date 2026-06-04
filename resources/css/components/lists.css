@@ -6,4 +6,52 @@
     .list-horizontal {
         @apply lg:grid-cols-3;
     }
+
+    .list-results-panel {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        overflow: hidden;
+        contain: inline-size;
+    }
+
+    .list-results-scroll {
+        display: block;
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        overflow-x: auto;
+        overflow-y: hidden;
+        overscroll-behavior-x: contain;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .list-results-table {
+        width: max-content;
+        min-width: 100%;
+        max-width: none;
+        table-layout: auto;
+    }
+
+    .list-results-table th,
+    .list-results-table td {
+        max-width: 220px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .list-results-table td > *,
+    .list-results-table th > * {
+        min-width: 0;
+    }
+
+    .list-results-pagination {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+    }
 }
