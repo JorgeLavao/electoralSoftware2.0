@@ -59,6 +59,7 @@ class QueuedFilteredUsersExport implements FromQuery, WithHeadings, WithMapping,
     {
         return [
             'document_number' => 'Cédula',
+            'profile_photo' => 'Foto de perfil',
             'first_name' => 'Primer Nombre',
             'middle_name' => 'Segundo Nombre',
             'paternal_surname' => 'Primer Apellido',
@@ -81,6 +82,8 @@ class QueuedFilteredUsersExport implements FromQuery, WithHeadings, WithMapping,
             'neighborhood_village_name' => 'Barrio',
             'committees' => 'Comites',
             'roles' => 'Roles',
+            'referred_by' => 'Quien lo refirio',
+            'referrals_count' => 'Cantidad referidos',
             'joined_at' => 'Fecha de ingreso',
             'validated_at' => 'Fecha de validación',
         ];

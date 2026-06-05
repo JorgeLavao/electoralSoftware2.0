@@ -732,7 +732,7 @@
 
                     <x-pagination :paginator="$results" :livewire="true" />
 
-                    @can('manageGroups', $campaign)
+                    @can('manageCommittees', $campaign)
                     <div class="grid grid-cols-1 gap-3 border-t border-slate-100 pt-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
                         <div class="group-form-v">
                             <label for="target_committee_id">Agregar seleccion a comite</label>

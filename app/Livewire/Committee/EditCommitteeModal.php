@@ -59,7 +59,7 @@ class EditCommitteeModal extends Component
     #[On('openEditCommitteeModal')]
     public function openModal(int $committee): void
     {
-        $this->authorize('manageGroups', $this->campaign);
+        $this->authorize('manageCommittees', $this->campaign);
 
         $committeeModel = $this->campaign->committees()
             ->with('users')
@@ -118,7 +118,7 @@ class EditCommitteeModal extends Component
 
     public function updateCommittee(): void
     {
-        $this->authorize('manageGroups', $this->campaign);
+        $this->authorize('manageCommittees', $this->campaign);
         abort_unless($this->committee?->campaign_id === $this->campaign->id, 404);
 
         $this->validate();
@@ -171,7 +171,7 @@ class EditCommitteeModal extends Component
 
     public function addMember(int $userId): void
     {
-        $this->authorize('manageGroups', $this->campaign);
+        $this->authorize('manageCommittees', $this->campaign);
 
         if (! $this->eligibleUsersQuery()->where('users.id', $userId)->exists()) {
             return;
@@ -186,7 +186,7 @@ class EditCommitteeModal extends Component
 
     public function removeMember(int $userId): void
     {
-        $this->authorize('manageGroups', $this->campaign);
+        $this->authorize('manageCommittees', $this->campaign);
 
         $this->member_ids = array_values(array_filter(
             $this->member_ids,

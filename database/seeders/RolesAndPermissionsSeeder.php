@@ -78,6 +78,30 @@ class RolesAndPermissionsSeeder extends Seeder
 
         $campaignPermissions = [
             [
+                'name' => 'campaign.news.view',
+                'group_key' => 'campaign.news',
+                'group_label' => 'Noticias de campana',
+                'description' => 'Ver noticias',
+            ],
+            [
+                'name' => 'campaign.news.create',
+                'group_key' => 'campaign.news',
+                'group_label' => 'Noticias de campana',
+                'description' => 'Crear noticias',
+            ],
+            [
+                'name' => 'campaign.news.update',
+                'group_key' => 'campaign.news',
+                'group_label' => 'Noticias de campana',
+                'description' => 'Editar noticias',
+            ],
+            [
+                'name' => 'campaign.news.delete',
+                'group_key' => 'campaign.news',
+                'group_label' => 'Noticias de campana',
+                'description' => 'Eliminar noticias',
+            ],
+            [
                 'name' => 'campaign.supporters.view',
                 'group_key' => 'campaign.supporters',
                 'group_label' => 'Simpatizantes de campaña',
@@ -136,6 +160,30 @@ class RolesAndPermissionsSeeder extends Seeder
                 'group_key' => 'campaign.lists',
                 'group_label' => 'Listados de campaña',
                 'description' => 'Exportar listados',
+            ],
+            [
+                'name' => 'campaign.groups.view',
+                'group_key' => 'campaign.groups',
+                'group_label' => 'Grupos de campana',
+                'description' => 'Ver grupos',
+            ],
+            [
+                'name' => 'campaign.groups.manage',
+                'group_key' => 'campaign.groups',
+                'group_label' => 'Grupos de campana',
+                'description' => 'Gestionar grupos',
+            ],
+            [
+                'name' => 'campaign.committees.view',
+                'group_key' => 'campaign.committees',
+                'group_label' => 'Comites de campana',
+                'description' => 'Ver comites',
+            ],
+            [
+                'name' => 'campaign.committees.manage',
+                'group_key' => 'campaign.committees',
+                'group_label' => 'Comites de campana',
+                'description' => 'Gestionar comites',
             ],
             [
                 'name' => 'campaign.members.remove',

@@ -15,6 +15,7 @@ class ExportBatch extends Model
         'campaign_id',
         'type',
         'scope',
+        'format',
         'status',
         'filters',
         'columns',

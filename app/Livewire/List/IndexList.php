@@ -7,6 +7,7 @@ use App\Models\CampaignList;
 use Carbon\Carbon;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
 use Livewire\Component;
@@ -61,12 +62,12 @@ class IndexList extends Component
             'text' => 'Se eliminará el listado permanentemente',
             'confirmButtonText' => 'Sí, Eliminar',
             'cancelButtonText' => 'Cancelar',
-            'action' => 'deleteConfirm',
+            'action' => 'delete-list-confirm',
             'params' => [$id],
         ]);
     }
 
-    #[On('deleteConfirm')]
+    #[On('delete-list-confirm')]
     public function deleteList(int $id): void
     {
         $this->authorize('deleteLists', $this->campaign);
@@ -99,13 +100,15 @@ class IndexList extends Component
             ->get();
     }
 
-    public function exportList($listId)
+    public function exportList($listId, string $format = 'xlsx')
     {
         $this->authorize('exportLists', $this->campaign);
+        validator(['format' => $format], ['format' => [Rule::in(['xlsx', 'pdf'])]])->validate();
 
         return redirect()->route('list.export', [
             'campaign' => $this->campaign->code,
             'list' => $listId,
+            'format' => $format,
         ]);
     }
 

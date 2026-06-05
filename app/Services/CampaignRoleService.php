@@ -9,9 +9,12 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 
 class CampaignRoleService
 {
+    private const SUPPORTER_ROLE = 'Simpatizante';
+
     public function findManageableRole(int $roleId, Campaign $campaign): Role
     {
         return Role::query()
@@ -76,6 +79,67 @@ class CampaignRoleService
                 'campaign_id' => $campaign->id,
             ], []);
         }
+    }
+
+    public function supporterRole(Campaign $campaign): Role
+    {
+        $role = Role::query()->firstOrCreate(
+            [
+                'name' => self::SUPPORTER_ROLE,
+                'guard_name' => 'web',
+                'campaign_id' => $campaign->id,
+            ]
+        );
+
+        $permissionIds = Permission::query()
+            ->where('guard_name', 'web')
+            ->whereIn('name', [
+                'campaign.supporters.view',
+                'campaign.votation-point.view',
+            ])
+            ->pluck('id');
+
+        foreach ($permissionIds as $permissionId) {
+            DB::table(config('permission.table_names.role_has_permissions', 'role_has_permissions'))->updateOrInsert([
+                'role_id' => $role->id,
+                'permission_id' => $permissionId,
+            ]);
+        }
+
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+        return $role;
+    }
+
+    public function assignSupporterRoleToUsers(Campaign $campaign, array $userIds): void
+    {
+        $userIds = collect($userIds)
+            ->map(fn ($id) => (int) $id)
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($userIds === []) {
+            return;
+        }
+
+        $role = $this->supporterRole($campaign);
+        $table = config('permission.table_names.model_has_roles', 'model_has_roles');
+        $rows = collect($userIds)
+            ->map(fn (int $userId) => [
+                'role_id' => $role->id,
+                'model_type' => User::class,
+                'model_id' => $userId,
+                'campaign_id' => $campaign->id,
+            ])
+            ->all();
+
+        foreach (array_chunk($rows, 1000) as $chunk) {
+            DB::table($table)->insertOrIgnore($chunk);
+        }
+
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
     }
 
     public function roleUsersCount(Role $role, ?Campaign $campaign = null): int

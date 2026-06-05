@@ -20,35 +20,29 @@
             </div>
             @endcan
 
-            <br>
-
-            <div class="area-2 container-v">
-                <h4>Buscar</h4>
-                <div class="grop-columns-3 container-v">
-                    <div class="group-form-v">
+            <div class="mx-auto mb-6 w-full max-w-5xl rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+                <h4 class="mb-4 font-semibold text-slate-900">Buscar</h4>
+                <div class="grid grid-cols-1 gap-4 md:grid-cols-[minmax(220px,1.3fr)_minmax(160px,0.8fr)_minmax(160px,0.8fr)_auto] md:items-end">
+                    <div class="group-form-v min-w-0">
                         <label for="name">Por Nombre</label>
-                        <input type="text" id="name" wire:model="searchName" placeholder="Digite el Nombre a Buscar">
+                        <input type="text" id="name" wire:model.live.debounce.400ms="searchName" placeholder="Digite el nombre a buscar">
                     </div>
 
-                    <div class="group-form-v">
+                    <div class="group-form-v min-w-0">
                         <label for="start_date">Desde</label>
-                        <input type="text" id="start_date" wire:model="start_date" placeholder="Seleccione la fecha de inicio">
+                        <input type="date" id="start_date" wire:model.live="start_date">
                     </div>
 
-                    <div class="group-form-v">
+                    <div class="group-form-v min-w-0">
                         <label for="end_date">Hasta</label>
-                        <input type="text" id="end_date" wire:model="end_date" placeholder="Seleccione la fecha de finalización">
+                        <input type="date" id="end_date" wire:model.live="end_date">
                     </div>
-                </div>
 
-                <div class="flex justify-end">
-                    <button type="button" class="text-primary border-primary" wire:click="$refresh">
+                    <button type="button" class="btn-primary flex w-full items-center justify-center gap-2 whitespace-nowrap md:w-auto" wire:click="$refresh">
                         <x-icons.search /> Buscar
                     </button>
                 </div>
             </div>
-
-            <br>
 
             <ul class="list-vertical wrap-primary">
                 @forelse ($lists as $list)
@@ -78,8 +72,13 @@
                                     <ul class="py-2 text-sm">
                                         @can('exportLists', $campaign)
                                         <li>
-                                            <button type="button" class="w-full px-3 py-2 text-left hover:bg-gray-100" wire:click.stop="exportList({{ $list->id }})">
+                                            <button type="button" class="w-full px-3 py-2 text-left hover:bg-gray-100" wire:click.stop="exportList({{ $list->id }}, 'xlsx')">
                                                 Excel
+                                            </button>
+                                        </li>
+                                        <li>
+                                            <button type="button" class="w-full px-3 py-2 text-left hover:bg-gray-100" wire:click.stop="exportList({{ $list->id }}, 'pdf')">
+                                                PDF
                                             </button>
                                         </li>
                                         @endcan

@@ -526,13 +526,11 @@
                     @endunless
                 </div>
 
-                <div class="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white p-5">
-                    <div class="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
-                        <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
-
-
+                <div class="min-w-0 overflow-visible rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+                    <div class="grid gap-4 xl:grid-cols-[auto_1fr] xl:items-center">
+                        <div class="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center">
                             @if ($hasSearched && ! $showReferralAccordionResults)
-                            <label class="flex w-full items-center justify-between gap-3 rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-600 sm:w-auto">
+                            <label class="flex w-full items-center justify-between gap-3 rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-600 sm:w-auto sm:min-w-[230px]">
                                 <span>Ver</span>
                                 <select class="!w-24 !rounded-lg !py-2" wire:model.live="perPage">
                                     @foreach ($perPageOptions as $option)
@@ -544,23 +542,53 @@
                             @endif
                         </div>
 
-                        <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:flex lg:flex-wrap lg:justify-end">
-                            <button type="button" class="btn-secondary w-full lg:w-auto" wire:click="clearFilters">
+                        <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:flex lg:flex-nowrap lg:justify-end">
+                            <button type="button" class="btn-secondary w-full whitespace-nowrap lg:w-auto" wire:click="clearFilters">
                                 Limpiar filtros
                             </button>
 
-                            <button type="button" class="btn-secondary w-full lg:w-auto" wire:click="applyFilters">
+                            <button type="button" class="btn-secondary w-full whitespace-nowrap lg:w-auto" wire:click="applyFilters">
                                 Buscar
                             </button>
 
                             @if ($hasSearched && $totalResults > 0 && ! $showReferralAccordionResults)
-                            <button type="button" class="btn-secondary w-full lg:w-auto" wire:click="showGeolocation">
+                            <button type="button" class="btn-secondary w-full whitespace-nowrap lg:w-auto" wire:click="showGeolocation">
                                 Mirar Geolocalizacion
                             </button>
 
-                            <button type="button" class="btn-primary w-full lg:w-auto" wire:click="requestExport('current_page')">
-                                Exportar
-                            </button>
+                            <div x-data="{ open: false }" class="relative w-full sm:col-span-2 lg:w-auto">
+                                <button
+                                    type="button"
+                                    class="btn-primary flex w-full items-center justify-center gap-2 whitespace-nowrap lg:w-auto"
+                                    @click="open = !open"
+                                    @keydown.escape.window="open = false"
+                                    aria-haspopup="menu"
+                                    :aria-expanded="open">
+                                    <x-icons.file-download-line /> Exportar
+                                </button>
+
+                                <div
+                                    x-cloak
+                                    x-show="open"
+                                    x-transition
+                                    @click.outside="open = false"
+                                    class="absolute right-0 z-40 mt-2 w-full min-w-[180px] overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg lg:w-44">
+                                    <button
+                                        type="button"
+                                        class="block w-full px-4 py-3 text-left text-sm hover:bg-slate-50"
+                                        wire:click="requestExport('current_page', 'xlsx')"
+                                        @click="open = false">
+                                        Excel
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="block w-full px-4 py-3 text-left text-sm hover:bg-slate-50"
+                                        wire:click="requestExport('current_page', 'pdf')"
+                                        @click="open = false">
+                                        PDF
+                                    </button>
+                                </div>
+                            </div>
                             @endif
                         </div>
                     </div>
@@ -638,8 +666,8 @@
                         </div>
                         @else
                         <div class="list-results-scroll pb-2">
-                            <table class="list-results-table text-sm whitespace-nowrap">
-                                <thead class="bg-slate-50">
+                            <table class="list-results-table {{ count($visibleColumns) <= 6 ? 'list-results-table--fit' : '' }} text-sm whitespace-nowrap">
+                                <thead>
                                     <tr>
                                         @foreach ($visibleColumns as $columnKey)
                                         @if (isset($columnOptions[$columnKey]))

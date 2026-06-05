@@ -11,6 +11,7 @@ use App\Models\Gender;
 use App\Models\Occupation;
 use App\Models\User;
 use App\Services\CampaignLocationOptions;
+use App\Services\SimpleTablePdf;
 use App\Services\SupporterListQueryService;
 use App\Services\SupporterRowMapper;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -331,7 +332,7 @@ class CreateList extends Component
         $this->dispatch('electoral-map-updated', payload: $this->mapPayload);
     }
 
-    public function requestExport(string $scope)
+    public function requestExport(string $scope, string $format = 'xlsx')
     {
         $campaign = Campaign::findOrFail($this->campaign_id);
         $this->authorize('exportLists', $campaign);
@@ -346,12 +347,13 @@ class CreateList extends Component
             return;
         }
 
-        if (! in_array($scope, [ExportBatch::SCOPE_CURRENT_PAGE, ExportBatch::SCOPE_ALL_FILTERED], true)) {
+        if (! in_array($scope, [ExportBatch::SCOPE_CURRENT_PAGE, ExportBatch::SCOPE_ALL_FILTERED], true)
+            || ! in_array($format, ['xlsx', 'pdf'], true)) {
             abort(422);
         }
 
         if ($scope === ExportBatch::SCOPE_CURRENT_PAGE) {
-            return $this->downloadCurrentPage($campaign);
+            return $this->downloadCurrentPage($campaign, $format);
         }
 
         $batch = ExportBatch::query()->create([
@@ -359,6 +361,7 @@ class CreateList extends Component
             'campaign_id' => $campaign->id,
             'type' => 'filtered_users',
             'scope' => $scope,
+            'format' => $format,
             'status' => 'queued',
             'filters' => $this->appliedFilters,
             'columns' => $this->normalizedSelectedColumns(),
@@ -376,7 +379,7 @@ class CreateList extends Component
         session()->flash('success', 'Exportación en cola. Te avisaremos cuando el archivo esté listo.');
     }
 
-    protected function downloadCurrentPage(Campaign $campaign)
+    protected function downloadCurrentPage(Campaign $campaign, string $format = 'xlsx')
     {
         $columns = $this->normalizedSelectedColumns();
         $users = $this->buildQuery($campaign, $this->appliedFilters)
@@ -397,6 +400,22 @@ class CreateList extends Component
         $headings = collect($columns)
             ->map(fn ($column) => $this->columnOptions[$column] ?? $column)
             ->all();
+
+        if ($format === 'pdf') {
+            $pdf = app(SimpleTablePdf::class)->output(
+                'Listado filtrado - ' . $campaign->name,
+                $headings,
+                $rows->all()
+            );
+
+            $filename = 'listado-pagina-' . now()->format('Y-m-d-His') . '.pdf';
+
+            return response()->streamDownload(
+                fn () => print($pdf),
+                $filename,
+                ['Content-Type' => 'application/pdf']
+            );
+        }
 
         return Excel::download(
             new FilteredUsersExport($rows, $headings),

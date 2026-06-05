@@ -59,7 +59,7 @@
                                                 </td>
                                                 <td class="px-3 py-4">{{ $member->celphone ?: 'Sin registro' }}</td>
                                                 <td class="px-3 py-4 text-right">
-                                                    @can('manageGroups', $campaign)
+                                                    @can('manageCommittees', $campaign)
                                                         <button
                                                             type="button"
                                                             class="button btn-secondary text-red-500"

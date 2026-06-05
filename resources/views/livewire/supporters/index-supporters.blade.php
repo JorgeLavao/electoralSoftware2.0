@@ -24,6 +24,14 @@
                 <x-icons.add-fill /> Agregar
             </a>
             @endcan
+
+            @can('validateSupporters', $campaign)
+                @if ($this->campaign->foreign_users()->wherePivot('validate', 0)->count() > 0)
+                <button type="button" class="button btn-primary" wire:click="acceptAllPending">
+                    <x-icons.check-fill /> Aceptar a todos
+                </button>
+                @endif
+            @endcan
         </div>
 
         <div class="container-v area-2">

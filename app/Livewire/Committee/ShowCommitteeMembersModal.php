@@ -31,7 +31,7 @@ class ShowCommitteeMembersModal extends Component
     #[On('openCommitteeMembersModal')]
     public function openModal(int $committee): void
     {
-        $this->authorize('viewSupporters', $this->campaign);
+        $this->authorize('viewCommittees', $this->campaign);
 
         $this->committee = $this->campaign->committees()
             ->findOrFail($committee);
@@ -59,7 +59,7 @@ class ShowCommitteeMembersModal extends Component
 
     public function confirmRemoveMember(int $userId): void
     {
-        $this->authorize('manageGroups', $this->campaign);
+        $this->authorize('manageCommittees', $this->campaign);
         abort_unless($this->committee?->campaign_id === $this->campaign->id, 404);
 
         $member = $this->committee->users()->findOrFail($userId);
@@ -78,7 +78,7 @@ class ShowCommitteeMembersModal extends Component
     #[On('removeCommitteeMemberConfirm')]
     public function removeMember(int $userId): void
     {
-        $this->authorize('manageGroups', $this->campaign);
+            $this->authorize('manageCommittees', $this->campaign);
         abort_unless($this->committee?->campaign_id === $this->campaign->id, 404);
 
         $member = $this->committee->users()->findOrFail($userId);

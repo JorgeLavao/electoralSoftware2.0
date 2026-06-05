@@ -144,7 +144,7 @@
                                             Grupos de la Campaña
                                         </a>
                                     </li> -->
-                                    @can('viewSupporters', session('current_campaign'))
+                                    @can('viewCommittees', session('current_campaign'))
                                     <li>
                                         <a href="{{ route('campaign.committees', session('current_campaign')->code) }}"
                                             class="{{ request()->routeIs('campaign.committees') ? 'item__active' : '' }}">
@@ -176,6 +176,11 @@
                         </div>
                     </div>
                 </aside>
+                @if (session()->has('error'))
+                    <div class="fixed right-4 top-4 z-50 max-w-sm">
+                        <x-toast.error-toast :message="session('error')" />
+                    </div>
+                @endif
                 {{ $slot }}
             </main>
         </div>

@@ -5,12 +5,15 @@ namespace App\Jobs;
 use App\Exports\QueuedFilteredUsersExport;
 use App\Models\Campaign;
 use App\Models\ExportBatch;
+use App\Services\SimpleTablePdf;
 use App\Services\SupporterListQueryService;
+use App\Services\SupporterRowMapper;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
 
 class ExportFilteredUsersJob implements ShouldQueue
@@ -48,11 +51,35 @@ class ExportFilteredUsersJob implements ShouldQueue
                 $perPage = max(1, (int) $batch->per_page);
                 $offset = ($page - 1) * $perPage;
                 $totalRows = max(0, min($perPage, $totalRows - $offset));
+                $query->forPage($page, $perPage);
             }
 
-            $path = 'exports/filtered-users-' . $batch->id . '-' . now()->format('Ymd_His') . '.xlsx';
+            $extension = $batch->format === 'pdf' ? 'pdf' : 'xlsx';
+            $path = 'exports/filtered-users-' . $batch->id . '-' . now()->format('Ymd_His') . '.' . $extension;
 
-            Excel::store(new QueuedFilteredUsersExport($batch->id), $path, 'local');
+            if ($batch->format === 'pdf') {
+                $users = $query->get();
+                $rowMapper = app(SupporterRowMapper::class);
+                $roleNamesByUser = $rowMapper->roleNamesByUser($campaign, $users);
+                $referrerNamesByUser = $rowMapper->referrerNamesByUser($campaign, $users);
+                $referralCountsByUser = $rowMapper->referralCountsByUser($campaign, $users);
+                $referrerIdsByUser = $rowMapper->referrerIdsByUser($campaign, $users);
+                $headings = (new QueuedFilteredUsersExport($batch->id))->headings();
+
+                $rows = $users->map(function ($user) use ($batch, $rowMapper, $roleNamesByUser, $referrerNamesByUser, $referralCountsByUser, $referrerIdsByUser) {
+                    $row = $rowMapper->map($user, $roleNamesByUser, $referrerNamesByUser, $referralCountsByUser, $referrerIdsByUser);
+
+                    return array_values($rowMapper->onlyColumns($row, $batch->columns ?? []));
+                });
+
+                Storage::disk('local')->put($path, app(SimpleTablePdf::class)->output(
+                    'Listado filtrado - ' . $campaign->name,
+                    $headings,
+                    $rows->all()
+                ));
+            } else {
+                Excel::store(new QueuedFilteredUsersExport($batch->id), $path, 'local');
+            }
 
             $batch->forceFill([
                 'status' => 'done',

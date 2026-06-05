@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Exports\DownloadExportController;
+use App\Http\Controllers\Exports\ListExportController;
 use App\Http\Controllers\Users\SearchCampaignUsersController;
 use App\Http\Controllers\Users\SearchUserController;
 use App\Livewire\Admin\UserRoles;
@@ -128,6 +129,7 @@ Route::middleware(['auth', 'complete-info'])->group(function () {
     Route::get('campanias/{campaign:code}/listados/', CreateList::class)->name('list.index');
     Route::get('campanias/{campaign:code}/listados/crear', CreateList::class)->name('list.create');
     Route::get('campanias/{campaign:code}/listados/{list}/editar', EditList::class)->name('list.edit');
+    Route::get('campanias/{campaign:code}/listados/{list}/exportar', ListExportController::class)->name('list.export');
 
     Route::get('settings/two-factor', TwoFactor::class)
         ->middleware(

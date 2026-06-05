@@ -2,7 +2,9 @@
 
 namespace App\Livewire\Supporters;
 
+use App\Jobs\AcceptPendingSupportersJob;
 use App\Models\Campaign;
+use App\Services\CampaignRoleService;
 use App\Services\CampaignNotificationService;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Livewire\Attributes\Layout;
@@ -24,6 +26,13 @@ class IndexSupporters extends Component
     public $filter = null;
     public int $perPage = 25;
     public array $perPageOptions = [10, 25, 50, 100];
+
+    protected CampaignRoleService $campaignRoles;
+
+    public function boot(CampaignRoleService $campaignRoles): void
+    {
+        $this->campaignRoles = $campaignRoles;
+    }
 
     public function mount(Campaign $campaign): void
     {
@@ -61,6 +70,7 @@ class IndexSupporters extends Component
         $supporter = $this->campaign->foreign_users()->where('users.id', $user_id)->first();
         $referrerId = $supporter?->pivot?->reffer_by;
         $this->campaign->foreign_users()->updateExistingPivot($user_id, ['validate' => 1]);
+        $this->campaignRoles->assignSupporterRoleToUsers($this->campaign, [(int) $user_id]);
 
         app(CampaignNotificationService::class)->notifyUserIds(
             array_filter([(int) $user_id, $referrerId ? (int) $referrerId : null]),
@@ -79,6 +89,24 @@ class IndexSupporters extends Component
         $this->redirectIntended(default: route('supporter.index', $campaignCode, absolute: false), navigate: true);
     }
 
+    public function acceptAllPending(): void
+    {
+        $this->authorize('validateSupporters', $this->campaign);
+
+        $pendingCount = $this->campaign->foreign_users()
+            ->wherePivot('validate', 0)
+            ->count();
+
+        if ($pendingCount === 0) {
+            session()->flash('success', 'No hay simpatizantes pendientes por aceptar.');
+            return;
+        }
+
+        AcceptPendingSupportersJob::dispatch($this->campaign->id, (int) auth()->id());
+        session()->flash('success', "Aceptacion masiva en cola para {$pendingCount} simpatizante(s). Puedes seguir usando el sistema.");
+        $this->redirectIntended(default: route('supporter.index', $this->campaign->code, absolute: false), navigate: true);
+    }
+
     public function delUser($user_id): void
     {
         $this->authorize('removeSupporters', $this->campaign);
@@ -88,12 +116,12 @@ class IndexSupporters extends Component
             'text' => 'Se eliminará el simpatizante de la campaña permanentemente',
             'confirmButtonText' => 'Sí, Eliminar',
             'cancelButtonText' => 'Cancelar',
-            'action' => 'deleteConfirm',
+            'action' => 'delete-supporter-confirm',
             'params' => [$user_id],
         ]);
     }
 
-    #[On('deleteConfirm')]
+    #[On('delete-supporter-confirm')]
     public function deleteUser(int $id): void
     {
         $this->authorize('removeSupporters', $this->campaign);

@@ -93,7 +93,7 @@ class IndexCommittee extends Component
 
     public function mount(Campaign $campaign): void
     {
-        $this->authorize('viewSupporters', $campaign);
+        $this->authorize('viewCommittees', $campaign);
         $this->campaign = $campaign;
         $this->genders = Gender::where('status', 1)->get();
         $this->age_ranges = AgeRange::where('status', 1)->get();
@@ -126,25 +126,25 @@ class IndexCommittee extends Component
 
     public function addCommittee(): void
     {
-        $this->authorize('manageGroups', $this->campaign);
+        $this->authorize('manageCommittees', $this->campaign);
         $this->dispatch('openCommitteeModal')->to(AddCommitteeModal::class);
     }
 
     public function editCommittee(int $committeeId): void
     {
-        $this->authorize('manageGroups', $this->campaign);
+        $this->authorize('manageCommittees', $this->campaign);
         $this->dispatch('openEditCommitteeModal', committee: $committeeId)->to(EditCommitteeModal::class);
     }
 
     public function showCommitteeMembers(int $committeeId): void
     {
-        $this->authorize('viewSupporters', $this->campaign);
+        $this->authorize('viewCommittees', $this->campaign);
         $this->dispatch('openCommitteeMembersModal', committee: $committeeId)->to(ShowCommitteeMembersModal::class);
     }
 
     public function toggleCommitteeStatus(int $committeeId): void
     {
-        $this->authorize('manageGroups', $this->campaign);
+        $this->authorize('manageCommittees', $this->campaign);
 
         $committee = $this->campaign->committees()->findOrFail($committeeId);
 
@@ -167,7 +167,7 @@ class IndexCommittee extends Component
 
     public function confirmDeleteCommittee(int $committeeId): void
     {
-        $this->authorize('manageGroups', $this->campaign);
+        $this->authorize('manageCommittees', $this->campaign);
 
         $this->dispatch('alert-confirm', [
             'title' => 'Estas seguro?',
@@ -182,7 +182,7 @@ class IndexCommittee extends Component
     #[On('deleteConfirm')]
     public function deleteCommittee(int $committeeId): void
     {
-        $this->authorize('manageGroups', $this->campaign);
+        $this->authorize('manageCommittees', $this->campaign);
 
         $committee = $this->campaign->committees()->findOrFail($committeeId);
         $committee->delete();
@@ -292,7 +292,7 @@ class IndexCommittee extends Component
 
     public function applyFilters(): void
     {
-        $this->authorize('viewSupporters', $this->campaign);
+        $this->authorize('viewCommittees', $this->campaign);
 
         if ($this->joined_from && $this->joined_to && $this->joined_from > $this->joined_to) {
             [$this->joined_from, $this->joined_to] = [$this->joined_to, $this->joined_from];
@@ -311,7 +311,7 @@ class IndexCommittee extends Component
 
     public function assignFilteredUsersToCommittee(): void
     {
-        $this->authorize('manageGroups', $this->campaign);
+        $this->authorize('manageCommittees', $this->campaign);
 
         $committee = $this->campaign->committees()->find($this->target_committee_id);
 
@@ -385,14 +385,14 @@ class IndexCommittee extends Component
 
     public function showReferredUsers(int $userId): void
     {
-        $this->authorize('viewSupporters', $this->campaign);
+        $this->authorize('viewCommittees', $this->campaign);
         $this->dispatch('openReferralDetailsModal', userId: $userId, mode: 'referred')
             ->to(\App\Livewire\Supporters\ReferralDetailsModal::class);
     }
 
     public function showReferrerOf(int $userId): void
     {
-        $this->authorize('viewSupporters', $this->campaign);
+        $this->authorize('viewCommittees', $this->campaign);
         $this->dispatch('openReferralDetailsModal', userId: $userId, mode: 'referrer')
             ->to(\App\Livewire\Supporters\ReferralDetailsModal::class);
     }
@@ -443,7 +443,7 @@ class IndexCommittee extends Component
 
     public function render()
     {
-        $this->authorize('viewSupporters', $this->campaign);
+        $this->authorize('viewCommittees', $this->campaign);
 
         $committees = $this->campaign->committees()
             ->with([

@@ -58,7 +58,7 @@ class AddCommitteeModal extends Component
     #[On('openCommitteeModal')]
     public function openModal(): void
     {
-        $this->authorize('manageGroups', $this->campaign);
+        $this->authorize('manageCommittees', $this->campaign);
         $this->showModal = true;
     }
 
@@ -104,7 +104,7 @@ class AddCommitteeModal extends Component
 
     public function saveCommittee(): void
     {
-        $this->authorize('manageGroups', $this->campaign);
+        $this->authorize('manageCommittees', $this->campaign);
 
         $this->validate();
 
@@ -158,7 +158,7 @@ class AddCommitteeModal extends Component
 
     public function addMember(int $userId): void
     {
-        $this->authorize('manageGroups', $this->campaign);
+        $this->authorize('manageCommittees', $this->campaign);
 
         if (! $this->eligibleUsersQuery()->where('users.id', $userId)->exists()) {
             return;
@@ -173,7 +173,7 @@ class AddCommitteeModal extends Component
 
     public function removeMember(int $userId): void
     {
-        $this->authorize('manageGroups', $this->campaign);
+        $this->authorize('manageCommittees', $this->campaign);
 
         $this->member_ids = array_values(array_filter(
             $this->member_ids,

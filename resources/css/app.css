@@ -52,6 +52,10 @@
     --breakpoint-xs: 480px;
 }
 
+[x-cloak] {
+    display: none !important;
+}
+
 @import './basic/dom.css';
 @import './basic/form.css';
 @import './basic/table.css';

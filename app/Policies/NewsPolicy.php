@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Models\Campaign;
 use App\Models\News;
 use App\Models\User;
 
@@ -19,11 +20,15 @@ class NewsPolicy
 
     public function create(User $user): bool
     {
+        $campaign = session('current_campaign');
+        $campaignId = $campaign instanceof Campaign
+            ? $campaign->id
+            : (is_object($campaign) && isset($campaign->id) ? (int) $campaign->id : $campaign);
+
         return $user->hasPlatformPermission('platform.news.create')
             || (
-                $user->effectiveRole() === User::ROLE_CAMPAIGN_MANAGER
-                && session('current_campaign')
-                && $user->belongsToCampaign(session('current_campaign'))
+                $campaignId
+                && $user->hasCampaignPermission('campaign.news.create', $campaignId)
             );
     }
 
@@ -31,10 +36,9 @@ class NewsPolicy
     {
         return $user->hasPlatformPermission('platform.news.update')
             || (
-                $user->effectiveRole() === User::ROLE_CAMPAIGN_MANAGER
-                && $news->campaign_id
+                $news->campaign_id
                 && (int) $news->user_id === (int) $user->id
-                && $user->belongsToCampaign((int) $news->campaign_id)
+                && $user->hasCampaignPermission('campaign.news.update', (int) $news->campaign_id)
             );
     }
 
@@ -42,10 +46,9 @@ class NewsPolicy
     {
         return $user->hasPlatformPermission('platform.news.delete')
             || (
-                $user->effectiveRole() === User::ROLE_CAMPAIGN_MANAGER
-                && $news->campaign_id
+                $news->campaign_id
                 && (int) $news->user_id === (int) $user->id
-                && $user->belongsToCampaign((int) $news->campaign_id)
+                && $user->hasCampaignPermission('campaign.news.delete', (int) $news->campaign_id)
             );
     }
 }

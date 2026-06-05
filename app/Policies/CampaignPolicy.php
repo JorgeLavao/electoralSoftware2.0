@@ -90,12 +90,20 @@ class CampaignPolicy
 
     public function viewGroups(User $user, Campaign $campaign): bool
     {
-        return $this->viewSupporters($user, $campaign);
+        return $this->view($user, $campaign)
+            && (
+                $user->hasCampaignPermission('campaign.groups.view', $campaign)
+                || $user->hasCampaignPermission('campaign.supporters.view', $campaign)
+            );
     }
 
     public function manageGroups(User $user, Campaign $campaign): bool
     {
-        return $this->referSupporters($user, $campaign);
+        return $this->view($user, $campaign)
+            && (
+                $user->hasCampaignPermission('campaign.groups.manage', $campaign)
+                || $user->hasCampaignPermission('campaign.supporters.refer', $campaign)
+            );
     }
 
     public function hideGroups(User $user, Campaign $campaign): bool
@@ -106,6 +114,24 @@ class CampaignPolicy
     public function manageGroupMembers(User $user, Campaign $campaign): bool
     {
         return $this->manageGroups($user, $campaign);
+    }
+
+    public function viewCommittees(User $user, Campaign $campaign): bool
+    {
+        return $this->view($user, $campaign)
+            && (
+                $user->hasCampaignPermission('campaign.committees.view', $campaign)
+                || $user->hasCampaignPermission('campaign.supporters.view', $campaign)
+            );
+    }
+
+    public function manageCommittees(User $user, Campaign $campaign): bool
+    {
+        return $this->view($user, $campaign)
+            && (
+                $user->hasCampaignPermission('campaign.committees.manage', $campaign)
+                || $user->hasCampaignPermission('campaign.supporters.refer', $campaign)
+            );
     }
 
     public function removeCampaignMembers(User $user, Campaign $campaign): bool
