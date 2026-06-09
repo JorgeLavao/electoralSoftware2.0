@@ -81,6 +81,45 @@ class CampaignRoleService
         }
     }
 
+    public function syncRoleUserChanges(Campaign $campaign, Role $role, array $addUserIds, array $removeUserIds): void
+    {
+        $table = config('permission.table_names.model_has_roles', 'model_has_roles');
+
+        $removeUserIds = collect($removeUserIds)
+            ->map(fn ($id) => (int) $id)
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($removeUserIds !== []) {
+            DB::table($table)
+                ->where('role_id', $role->id)
+                ->where('model_type', User::class)
+                ->where('campaign_id', $campaign->id)
+                ->whereIn('model_id', $removeUserIds)
+                ->delete();
+        }
+
+        $rows = collect($addUserIds)
+            ->map(fn ($id) => (int) $id)
+            ->filter()
+            ->unique()
+            ->reject(fn (int $userId) => in_array($userId, $removeUserIds, true))
+            ->map(fn (int $userId) => [
+                'role_id' => $role->id,
+                'model_type' => User::class,
+                'model_id' => $userId,
+                'campaign_id' => $campaign->id,
+            ])
+            ->values()
+            ->all();
+
+        foreach (array_chunk($rows, 1000) as $chunk) {
+            DB::table($table)->insertOrIgnore($chunk);
+        }
+    }
+
     public function supporterRole(Campaign $campaign): Role
     {
         $role = Role::query()->firstOrCreate(
@@ -195,14 +234,31 @@ class CampaignRoleService
 
     public function rolesForCampaign(?Campaign $campaign): Collection
     {
-        return Role::query()
+        $roles = Role::query()
             ->with('permissions')
             ->where('guard_name', 'web')
             ->when($campaign, fn ($query) => $query->where('campaign_id', $campaign->id), fn ($query) => $query->whereRaw('1 = 0'))
             ->orderBy('name')
-            ->get()
-            ->map(function (Role $role) use ($campaign) {
-                $role->users_count = $this->roleUsersCount($role, $campaign);
+            ->get();
+
+        if (! $campaign || $roles->isEmpty()) {
+            return $roles->map(function (Role $role) {
+                $role->users_count = 0;
+                return $role;
+            });
+        }
+
+        $counts = DB::table(config('permission.table_names.model_has_roles', 'model_has_roles'))
+            ->whereIn('role_id', $roles->pluck('id')->all())
+            ->where('campaign_id', $campaign->id)
+            ->where('model_type', User::class)
+            ->select('role_id', DB::raw('count(*) as users_count'))
+            ->groupBy('role_id')
+            ->pluck('users_count', 'role_id');
+
+        return $roles
+            ->map(function (Role $role) use ($counts) {
+                $role->users_count = (int) ($counts[$role->id] ?? 0);
                 return $role;
             });
     }

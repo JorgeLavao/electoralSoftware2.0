@@ -40,7 +40,10 @@ class UserRoles extends Component
     public array $rolePermissionIds = [];
     public string $roleUserSearch = '';
     public array $roleUserIds = [];
+    public array $roleRemovedUserIds = [];
     public array $roleUserResultIds = [];
+    public int $selectedRoleUsersPerPage = 5;
+    public int $selectedRoleUsersCount = 0;
 
     public string $supporterSearch = '';
     public ?int $selectedSupporterId = null;
@@ -82,10 +85,15 @@ class UserRoles extends Component
     public function updatedRoleUserIds(): void
     {
         $this->roleUserIds = $this->normalizeUserIds($this->roleUserIds);
+        $this->roleRemovedUserIds = collect($this->roleRemovedUserIds)
+            ->reject(fn ($id) => in_array((string) $id, $this->roleUserIds, true))
+            ->values()
+            ->all();
         $this->roleUserResultIds = collect($this->roleUserResultIds)
             ->reject(fn ($id) => in_array((string) $id, $this->roleUserIds, true))
             ->values()
             ->all();
+        $this->resetPage('selectedRoleUsersPage');
     }
 
     public function openRoleModal(): void
@@ -215,20 +223,17 @@ class UserRoles extends Component
     {
         $this->authorizeAccess();
         $role = $this->findManageableRole($roleId);
+        $campaign = $this->requireCampaign();
 
         $this->selectedRoleId = $role->id;
         $this->editingRoleName = $role->name;
         $this->rolePermissionIds = $role->permissions()->pluck('permissions.id')->map(fn ($id) => (string) $id)->all();
         $this->roleUserSearch = '';
+        $this->roleUserIds = [];
+        $this->roleRemovedUserIds = [];
         $this->roleUserResultIds = [];
-        $this->roleUserIds = DB::table(config('permission.table_names.model_has_roles', 'model_has_roles'))
-            ->where('role_id', $role->id)
-            ->where('model_type', User::class)
-            ->when($this->currentCampaign(), fn ($query, Campaign $campaign) => $query->where('campaign_id', $campaign->id))
-            ->pluck('model_id')
-            ->map(fn ($id) => (string) $id)
-            ->all();
-        $this->roleUserIds = $this->normalizeUserIds($this->roleUserIds);
+        $this->selectedRoleUsersCount = $this->roleUsersCount($role, $campaign);
+        $this->resetPage('selectedRoleUsersPage');
     }
 
     public function saveRole(): void
@@ -237,11 +242,13 @@ class UserRoles extends Component
         $role = $this->findManageableRole((int) $this->selectedRoleId);
         $campaign = $this->requireCampaign();
         $permissionIds = $this->validCampaignPermissionIds($this->rolePermissionIds);
-        $userIds = $this->validCampaignUserIds($campaign, $this->roleUserIds);
+        $addUserIds = $this->validCampaignUserIds($campaign, $this->roleUserIds);
+        $removeUserIds = $this->validCampaignUserIds($campaign, $this->roleRemovedUserIds);
 
         $rules = [
             'rolePermissionIds' => ['array'],
             'roleUserIds' => ['array'],
+            'roleRemovedUserIds' => ['array'],
         ];
 
         $rules['editingRoleName'] = [
@@ -256,15 +263,53 @@ class UserRoles extends Component
 
         $this->validate($rules);
 
-        DB::transaction(function () use ($role, $permissionIds) {
+        DB::transaction(function () use ($campaign, $role, $permissionIds, $addUserIds, $removeUserIds) {
             $role->forceFill(['name' => trim($this->editingRoleName)])->save();
             $role->syncPermissions($permissionIds);
+            $this->syncRoleUserChanges($campaign, $role, $addUserIds, $removeUserIds);
         });
 
-        $this->syncRoleUsers($campaign, $role, $userIds);
-
+        $this->roleUserIds = [];
+        $this->roleRemovedUserIds = [];
+        $this->roleUserResultIds = [];
+        $this->roleUserSearch = '';
+        $this->selectedRoleUsersCount = $this->roleUsersCount($role, $campaign);
+        $this->resetPage('selectedRoleUsersPage');
         app(PermissionRegistrar::class)->forgetCachedPermissions();
         session()->flash('success', 'Rol actualizado correctamente.');
+    }
+
+    public function toggleRoleUser(int $userId, bool $checked): void
+    {
+        $userId = (string) $userId;
+
+        if ($checked) {
+            $this->roleUserIds = collect($this->roleUserIds)
+                ->push($userId)
+                ->unique()
+                ->values()
+                ->all();
+            $this->roleRemovedUserIds = collect($this->roleRemovedUserIds)
+                ->reject(fn ($id) => (string) $id === $userId)
+                ->values()
+                ->all();
+            $this->roleUserResultIds = collect($this->roleUserResultIds)
+                ->reject(fn ($id) => (string) $id === $userId)
+                ->values()
+                ->all();
+        } else {
+            $this->roleUserIds = collect($this->roleUserIds)
+                ->reject(fn ($id) => (string) $id === $userId)
+                ->values()
+                ->all();
+            $this->roleRemovedUserIds = collect($this->roleRemovedUserIds)
+                ->push($userId)
+                ->unique()
+                ->values()
+                ->all();
+        }
+
+        $this->resetPage('selectedRoleUsersPage');
     }
 
     public function toggleRoleModule(string $groupKey, bool $checked): void
@@ -321,6 +366,9 @@ class UserRoles extends Component
         $this->editingRoleName = '';
         $this->rolePermissionIds = [];
         $this->roleUserIds = [];
+        $this->roleRemovedUserIds = [];
+        $this->roleUserResultIds = [];
+        $this->selectedRoleUsersCount = 0;
         app(PermissionRegistrar::class)->forgetCachedPermissions();
         session()->flash('success', 'Rol eliminado correctamente.');
     }
@@ -606,6 +654,7 @@ class UserRoles extends Component
             ->unique()
             ->values()
             ->all();
+        $assignedRoleUserIds = $this->assignedRoleUserIdsQuery((int) $this->selectedRoleId, $campaign);
 
         $this->roleUserResultIds = $this->campaignUsersQuery($campaign)
             ->where(function ($query) use ($term) {
@@ -613,6 +662,7 @@ class UserRoles extends Component
                     ->orWhere('email', 'like', '%'.$term.'%');
             })
             ->when($selectedRoleUserIds, fn ($query) => $query->whereNotIn('users.id', $selectedRoleUserIds))
+            ->whereNotIn('users.id', $assignedRoleUserIds)
             ->limit(10)
             ->pluck('users.id')
             ->map(fn ($id) => (string) $id)
@@ -632,6 +682,20 @@ class UserRoles extends Component
     protected function syncRoleUsers(Campaign $campaign, Role $role, array $userIds): void
     {
         app(CampaignRoleService::class)->syncRoleUsers($campaign, $role, $userIds);
+    }
+
+    protected function syncRoleUserChanges(Campaign $campaign, Role $role, array $addUserIds, array $removeUserIds): void
+    {
+        app(CampaignRoleService::class)->syncRoleUserChanges($campaign, $role, $addUserIds, $removeUserIds);
+    }
+
+    protected function assignedRoleUserIdsQuery(int $roleId, Campaign $campaign)
+    {
+        return DB::table(config('permission.table_names.model_has_roles', 'model_has_roles'))
+            ->select('model_id')
+            ->where('role_id', $roleId)
+            ->where('model_type', User::class)
+            ->where('campaign_id', $campaign->id);
     }
 
     protected function roleUsersCount(Role $role, ?Campaign $campaign = null): int
@@ -772,13 +836,36 @@ class UserRoles extends Component
                 ->get();
         }
 
-        $selectedRoleUsers = collect();
+        $selectedRoleUsersCount = $this->selectedRoleUsersCount;
+        $selectedRoleUsers = User::query()->whereRaw('1 = 0')->paginate($this->selectedRoleUsersPerPage, ['*'], 'selectedRoleUsersPage');
 
-        if ($this->roleUserIds) {
+        if ($currentCampaign && $this->selectedRoleId) {
+            $addedRoleUserIds = collect($this->roleUserIds)
+                ->map(fn ($id) => (int) $id)
+                ->filter()
+                ->unique()
+                ->values()
+                ->all();
+            $removedRoleUserIds = collect($this->roleRemovedUserIds)
+                ->map(fn ($id) => (int) $id)
+                ->filter()
+                ->unique()
+                ->values()
+                ->all();
+
             $selectedRoleUsers = User::query()
-                ->whereIn('id', collect($this->roleUserIds)->map(fn ($id) => (int) $id)->unique()->all())
+                ->where(function ($query) use ($currentCampaign, $addedRoleUserIds) {
+                    $query->whereIn('users.id', $this->assignedRoleUserIdsQuery((int) $this->selectedRoleId, $currentCampaign));
+
+                    if ($addedRoleUserIds !== []) {
+                        $query->orWhereIn('users.id', $addedRoleUserIds);
+                    }
+                })
+                ->when($removedRoleUserIds, fn ($query) => $query->whereNotIn('users.id', $removedRoleUserIds))
                 ->orderBy('first_name')
-                ->get();
+                ->paginate($this->selectedRoleUsersPerPage, ['*'], 'selectedRoleUsersPage');
+
+            $selectedRoleUsersCount = $selectedRoleUsers->total();
         }
 
         $stats = [
@@ -790,7 +877,7 @@ class UserRoles extends Component
         ];
 
         return view('livewire.admin.user-roles', [
-            'users' => $usersQuery->latest()->paginate(10),
+            'users' => $usersQuery->latest()->paginate(5),
             'roleOptions' => User::ROLE_LABELS,
             'stats' => $stats,
             'currentCampaign' => $currentCampaign,
@@ -800,6 +887,7 @@ class UserRoles extends Component
             'selectedSupporter' => $this->selectedSupporterId ? User::query()->find($this->selectedSupporterId) : null,
             'roleUserResults' => $roleUserResults,
             'selectedRoleUsers' => $selectedRoleUsers,
+            'selectedRoleUsersCount' => $selectedRoleUsersCount,
         ]);
     }
 }

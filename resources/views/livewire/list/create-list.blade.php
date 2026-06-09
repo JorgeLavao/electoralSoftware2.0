@@ -665,7 +665,75 @@
                             Selecciona al menos una columna para ver la tabla o exportar.
                         </div>
                         @else
-                        <div class="list-results-scroll pb-2">
+                        <div class="list-results-mobile grid gap-3 bg-slate-50 px-3 py-3 md:hidden">
+                            @forelse ($results as $user)
+                            <article class="min-w-0 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                                <div class="grid min-w-0 gap-3">
+                                    @foreach ($visibleColumns as $columnKey)
+                                    @if (isset($columnOptions[$columnKey]))
+                                    <div class="grid min-w-0 gap-1 border-b border-slate-100 pb-3 last:border-b-0 last:pb-0">
+                                        <span class="text-[11px] font-semibold uppercase text-slate-400">{{ $columnOptions[$columnKey] }}</span>
+
+                                        <div class="min-w-0 text-sm font-medium text-slate-700">
+                                            @if ($columnKey === 'profile_photo')
+                                            <div class="flex items-center gap-3">
+                                                @if (!empty($user['profile_photo_url']))
+                                                <img class="h-10 w-10 shrink-0 rounded-full object-cover" src="{{ $user['profile_photo_url'] }}" alt="Foto de {{ $user['full_name'] ?? 'perfil' }}">
+                                                @else
+                                                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs font-semibold text-slate-700">
+                                                    {{ $user['profile_initials'] ?? 'US' }}
+                                                </span>
+                                                @endif
+
+                                                <span class="min-w-0 truncate">{{ $user['full_name'] ?? '-' }}</span>
+                                            </div>
+                                            @elseif ($columnKey === 'referrals_count')
+                                            <div class="flex min-w-0 flex-wrap items-center gap-2">
+                                                @if (($user['referrals_count'] ?? 0) > 0)
+                                                <span class="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+                                                    Refirio {{ $user['referrals_count'] }}
+                                                </span>
+                                                <button
+                                                    type="button"
+                                                    class="button btn-secondary !p-2"
+                                                    title="Ver personas referidas"
+                                                    wire:click="showReferredUsers({{ $user['id'] }})">
+                                                    <x-icons.eye :size="16" />
+                                                </button>
+                                                @else
+                                                <span>-</span>
+                                                @endif
+                                            </div>
+                                            @elseif ($columnKey === 'referred_by')
+                                            <div class="flex min-w-0 flex-wrap items-center gap-2">
+                                                <span class="min-w-0 truncate">{{ $user['referred_by'] ?? '-' }}</span>
+                                                @if (!empty($user['referred_by_id']))
+                                                <button
+                                                    type="button"
+                                                    class="button btn-secondary !p-2"
+                                                    title="Ver quien refirio"
+                                                    wire:click="showReferrerOf({{ $user['id'] }})">
+                                                    <x-icons.eye :size="16" />
+                                                </button>
+                                                @endif
+                                            </div>
+                                            @else
+                                            <span class="block min-w-0 break-words">{{ $user[$columnKey] ?? '-' }}</span>
+                                            @endif
+                                        </div>
+                                    </div>
+                                    @endif
+                                    @endforeach
+                                </div>
+                            </article>
+                            @empty
+                            <div class="rounded-xl border border-dashed border-slate-300 bg-white px-5 py-8 text-center text-slate-500">
+                                No se encontraron resultados.
+                            </div>
+                            @endforelse
+                        </div>
+
+                        <div class="list-results-scroll hidden pb-2 md:block">
                             <table class="list-results-table {{ count($visibleColumns) <= 6 ? 'list-results-table--fit' : '' }} text-sm whitespace-nowrap">
                                 <thead>
                                     <tr>
