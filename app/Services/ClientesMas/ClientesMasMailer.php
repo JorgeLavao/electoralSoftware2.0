@@ -36,6 +36,7 @@ class ClientesMasMailer
             'external_id' => (string) Str::uuid(),
             'metadata' => [
                 'purpose' => 'invitation',
+                'from_name' => 'SmartElect',
                 'campaign_id' => $campaign->id,
                 'invitation_id' => $invitation->id,
                 'user_id' => $user->id,
@@ -59,12 +60,13 @@ class ClientesMasMailer
 
         return $this->client->sendUtilityEmail([
             'recipient' => $user->getEmailForPasswordReset(),
-            'subject' => 'Recuperar contrasena',
+            'subject' => 'Recuperar Contraseña',
             'body' => $this->plainText($html),
             'html_body' => $html,
             'external_id' => (string) Str::uuid(),
             'metadata' => [
                 'purpose' => 'password_reset',
+                'from_name' => 'SmartElect',
                 'user_id' => $user->id,
                 'source' => 'password-reset',
                 'app_external_id' => 'password-reset-'.$user->id.'-'.sha1($token),
