@@ -50,7 +50,7 @@ return [
 
     'clientes_mas' => [
         'enabled' => env('CLIENTES_MAS_MAIL_ENABLED', (bool) env('CLIENTES_MAS_API_KEY')),
-        'base_url' => env('CLIENTES_MAS_BASE_URL', 'https://app.clientesmas.com/api/messaging'),
+        'base_url' => env('CLIENTES_MAS_BASE_URL', 'https://app.clientesmas.com'),
         'api_key' => env('CLIENTES_MAS_API_KEY'),
         'email_provider' => env('CLIENTES_MAS_EMAIL_PROVIDER', 'aws_ses'),
         'timeout' => (int) env('CLIENTES_MAS_TIMEOUT', 15),

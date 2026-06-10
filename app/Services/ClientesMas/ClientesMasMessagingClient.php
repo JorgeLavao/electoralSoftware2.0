@@ -14,6 +14,64 @@ class ClientesMasMessagingClient
 {
     public const PROVIDER_MOX = 'mox';
     public const PROVIDER_AWS_SES = 'aws_ses';
+    private const PROVIDER_ALIASES = [
+        'mox' => self::PROVIDER_MOX,
+        'aws' => self::PROVIDER_AWS_SES,
+        'aws_ses' => self::PROVIDER_AWS_SES,
+        'ses' => self::PROVIDER_AWS_SES,
+    ];
+
+    public function sendUtilityEmail(array $payload): array
+    {
+        $payload = $this->emailPayload($payload);
+        $this->validateSingleEmailPayload($payload, requireSubject: true);
+
+        return $this->post('/utility/email', $payload, 'send utility email');
+    }
+
+    public function sendBulkUtilityEmails(array $payload): array
+    {
+        $payload = $this->emailPayload($payload);
+
+        if (empty($payload['recipients']) || ! is_array($payload['recipients'])) {
+            throw new InvalidArgumentException('Clientes Mas utility bulk email requires recipients.');
+        }
+
+        if (count($payload['recipients']) > 10000) {
+            throw new InvalidArgumentException('Clientes Mas utility bulk email only allows up to 10000 recipients.');
+        }
+
+        $hasGlobalContent = filled($payload['subject'] ?? null)
+            && (filled($payload['body'] ?? null) || filled($payload['html_body'] ?? null));
+
+        foreach ($payload['recipients'] as $recipient) {
+            if (! is_array($recipient) || blank($recipient['email'] ?? null)) {
+                throw new InvalidArgumentException('Clientes Mas utility bulk email requires an email for every recipient.');
+            }
+
+            if (! $hasGlobalContent && (
+                blank($recipient['subject'] ?? null)
+                || (blank($recipient['body'] ?? null) && blank($recipient['html_body'] ?? null))
+            )) {
+                throw new InvalidArgumentException('Clientes Mas utility bulk email requires global content or content for every recipient.');
+            }
+        }
+
+        return $this->post('/utility/email/bulk', $payload, 'send bulk utility emails');
+    }
+
+    public function sendMessage(array $payload): array
+    {
+        $payload = ($payload['channel'] ?? null) === 'email'
+            ? $this->emailPayload($payload)
+            : $payload;
+
+        if (($payload['channel'] ?? null) === 'email') {
+            $this->validateSingleEmailPayload($payload, requireSubject: false);
+        }
+
+        return $this->post('/messages', $payload, 'send message');
+    }
 
     public function sendEmail(
         string $recipient,
@@ -24,10 +82,7 @@ class ClientesMasMessagingClient
         ?string $externalId = null,
         ?string $provider = null
     ): array {
-        $provider = $this->normalizeProvider($provider);
-        $metadata = $this->metadataForProvider($provider, $metadata);
-
-        $payload = array_filter([
+        return $this->sendMessage([
             'channel' => 'email',
             'provider' => $provider,
             'recipient' => $recipient,
@@ -36,40 +91,41 @@ class ClientesMasMessagingClient
             'html_body' => $htmlBody,
             'external_id' => $externalId ?: (string) Str::uuid(),
             'metadata' => $metadata,
-        ], fn ($value) => $value !== null);
+        ]);
+    }
 
-        if ($provider === self::PROVIDER_MOX) {
-            $payload['provider_credentials'] = [
-                self::PROVIDER_MOX => $this->moxCredentials(),
+    public function createCampaign(array|string $payload, array $metadata = [], ?string $provider = null): array
+    {
+        if (is_string($payload)) {
+            $provider = $this->normalizeProvider($provider);
+            $payload = [
+                'name' => $payload,
+                'channel' => 'email',
+                'metadata' => array_merge([
+                    'source' => 'smartelect',
+                    'provider' => $provider,
+                ], $metadata),
             ];
         }
 
-        return $this->post('/messages', $payload, 'send individual email');
-    }
-
-    public function createCampaign(string $name, array $metadata = [], ?string $provider = null): array
-    {
-        $provider = $this->normalizeProvider($provider);
-
-        return $this->post('/campaigns', [
-            'name' => $name,
-            'channel' => 'email',
-            'metadata' => array_merge([
-                'source' => 'smartelect',
-                'provider' => $provider,
-            ], $metadata),
-        ], 'create email campaign');
+        return $this->post('/campaigns', $payload, 'create campaign');
     }
 
     public function createBatch(int|string $campaignId, array $metadata = []): array
     {
-        return $this->post("/campaigns/{$campaignId}/batches", [
-            'metadata' => $metadata,
-        ], 'create email batch');
+        $payload = array_key_exists('metadata', $metadata) ? $metadata : ['metadata' => $metadata];
+
+        return $this->post("/campaigns/{$campaignId}/batches", $payload, 'create batch');
     }
 
-    public function importBatchMessages(int|string $batchId, array $messages, ?string $provider = null): array
+    public function importBatchMessages(int|string $batchId, array $payload, ?string $provider = null): array
     {
+        $messages = $payload['messages'] ?? $payload;
+
+        if (empty($messages) || ! is_array($messages)) {
+            throw new InvalidArgumentException('Clientes Mas batch import requires messages.');
+        }
+
         if (count($messages) > 1000) {
             throw new InvalidArgumentException('Clientes Mas only allows up to 1000 messages per import.');
         }
@@ -85,10 +141,14 @@ class ClientesMasMessagingClient
         ], 'import email batch messages');
     }
 
-    public function dispatchBatch(int|string $batchId, int $chunkSize = 1000, ?string $provider = null): array
+    public function dispatchBatch(int|string $batchId, array|int $payload = 1000, ?string $provider = null): array
     {
+        if (is_array($payload)) {
+            return $this->post("/batches/{$batchId}/dispatch", $payload, 'dispatch batch');
+        }
+
         $provider = $this->normalizeProvider($provider);
-        $payload = ['chunk_size' => $chunkSize];
+        $payload = ['chunk_size' => $payload];
 
         if ($provider === self::PROVIDER_MOX) {
             $payload['provider_credentials'] = [
@@ -101,12 +161,27 @@ class ClientesMasMessagingClient
 
     public function message(int|string $messageId): array
     {
-        return $this->get("/messages/{$messageId}", 'get message');
+        return $this->getMessageStatus($messageId);
     }
 
     public function messageEvents(int|string $messageId): array
     {
+        return $this->getMessageEvents($messageId);
+    }
+
+    public function getMessageStatus(int|string $messageId): array
+    {
+        return $this->get("/messages/{$messageId}", 'get message status');
+    }
+
+    public function getMessageEvents(int|string $messageId): array
+    {
         return $this->get("/messages/{$messageId}/events", 'get message events');
+    }
+
+    public function getBatchStatus(int|string $batchId): array
+    {
+        return $this->get("/batches/{$batchId}", 'get batch status');
     }
 
     public function campaignMetrics(int|string $campaignId): array
@@ -151,8 +226,6 @@ class ClientesMasMessagingClient
 
     private function batchMessagePayload(array $message, string $provider): array
     {
-        $metadata = $this->metadataForProvider($provider, $message['metadata'] ?? []);
-
         return array_filter([
             'external_id' => $message['external_id'] ?? (string) Str::uuid(),
             'channel' => 'email',
@@ -161,10 +234,51 @@ class ClientesMasMessagingClient
             'subject' => $message['subject'] ?? null,
             'body' => $message['body'] ?? null,
             'html_body' => $message['html_body'] ?? null,
-            'recipient_type' => 'email',
             'recipient_metadata' => $message['recipient_metadata'] ?? [],
-            'metadata' => $metadata,
+            'metadata' => $this->metadataForProvider($provider, $message['metadata'] ?? []),
         ], fn ($value) => $value !== null);
+    }
+
+    private function emailPayload(array $payload): array
+    {
+        $provider = $this->normalizeProvider($payload['provider'] ?? null);
+        $payload['provider'] = $provider;
+        $payload['metadata'] = $this->metadataForProvider($provider, $payload['metadata'] ?? []);
+
+        if ($provider === self::PROVIDER_MOX && ! isset($payload['provider_credentials'])) {
+            $payload['provider_credentials'] = [
+                self::PROVIDER_MOX => $this->moxCredentials(),
+            ];
+        }
+
+        if ($provider !== self::PROVIDER_MOX) {
+            unset($payload['provider_credentials']);
+        }
+
+        return array_filter($payload, fn ($value) => $value !== null);
+    }
+
+    private function validateSingleEmailPayload(array $payload, bool $requireSubject): void
+    {
+        if (blank($payload['provider'] ?? null)) {
+            throw new InvalidArgumentException('Clientes Mas email requires provider.');
+        }
+
+        if (blank($payload['recipient'] ?? null)) {
+            throw new InvalidArgumentException('Clientes Mas email requires recipient.');
+        }
+
+        if ($requireSubject && blank($payload['subject'] ?? null)) {
+            throw new InvalidArgumentException('Clientes Mas email requires subject.');
+        }
+
+        if (blank($payload['body'] ?? null) && blank($payload['html_body'] ?? null)) {
+            throw new InvalidArgumentException('Clientes Mas email requires body or html_body.');
+        }
+
+        if (($payload['provider'] ?? null) === self::PROVIDER_MOX && blank(data_get($payload, 'provider_credentials.mox'))) {
+            throw new InvalidArgumentException('Clientes Mas MOX email requires provider_credentials.mox.');
+        }
     }
 
     private function get(string $path, string $action): array
@@ -250,12 +364,13 @@ class ClientesMasMessagingClient
     private function normalizeProvider(?string $provider): string
     {
         $provider = $provider ?: config('services.clientes_mas.email_provider', self::PROVIDER_AWS_SES);
+        $provider = strtolower($provider);
 
-        if (! in_array($provider, [self::PROVIDER_MOX, self::PROVIDER_AWS_SES], true)) {
+        if (! isset(self::PROVIDER_ALIASES[$provider])) {
             throw new InvalidArgumentException("Unsupported Clientes Mas email provider [{$provider}].");
         }
 
-        return $provider;
+        return self::PROVIDER_ALIASES[$provider];
     }
 
     private function metadataForProvider(string $provider, array $metadata): array
@@ -289,6 +404,12 @@ class ClientesMasMessagingClient
 
     private function url(string $path): string
     {
-        return rtrim((string) config('services.clientes_mas.base_url'), '/').'/'.ltrim($path, '/');
+        $baseUrl = rtrim((string) config('services.clientes_mas.base_url'), '/');
+
+        if (! str_ends_with($baseUrl, '/api/messaging')) {
+            $baseUrl .= '/api/messaging';
+        }
+
+        return $baseUrl.'/'.ltrim($path, '/');
     }
 }

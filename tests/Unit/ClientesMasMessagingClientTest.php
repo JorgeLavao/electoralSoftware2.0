@@ -8,10 +8,10 @@ use Tests\TestCase;
 
 class ClientesMasMessagingClientTest extends TestCase
 {
-    public function test_it_sends_individual_email_with_aws_ses_payload(): void
+    public function test_it_sends_utility_email_with_aws_ses_payload(): void
     {
         Http::fake([
-            'app.clientesmas.com/api/messaging/messages' => Http::response(['id' => 123], 200),
+            'app.clientesmas.com/api/messaging/utility/email' => Http::response(['id' => 123], 201),
         ]);
 
         config([
@@ -20,14 +20,13 @@ class ClientesMasMessagingClientTest extends TestCase
             'services.clientes_mas.from_name' => 'SmartElect',
         ]);
 
-        $response = app(ClientesMasMessagingClient::class)->sendEmail(
-            recipient: 'cliente@example.com',
-            subject: 'Asunto',
-            body: 'Texto',
-            htmlBody: '<p>Texto</p>',
-            metadata: ['cliente_id' => 1],
-            externalId: 'cliente-001'
-        );
+        $response = app(ClientesMasMessagingClient::class)->sendUtilityEmail([
+            'recipient' => 'cliente@example.com',
+            'subject' => 'Asunto',
+            'body' => 'Texto',
+            'html_body' => '<p>Texto</p>',
+            'metadata' => ['cliente_id' => 1],
+        ]);
 
         $this->assertSame(['id' => 123], $response);
 
@@ -35,7 +34,6 @@ class ClientesMasMessagingClientTest extends TestCase
             $payload = $request->data();
 
             return $request->hasHeader('X-Api-Key', 'test-key')
-                && $payload['channel'] === 'email'
                 && $payload['provider'] === 'aws_ses'
                 && $payload['recipient'] === 'cliente@example.com'
                 && $payload['metadata']['from_name'] === 'SmartElect'
@@ -43,10 +41,10 @@ class ClientesMasMessagingClientTest extends TestCase
         });
     }
 
-    public function test_it_sends_mox_credentials_for_individual_email(): void
+    public function test_it_sends_mox_credentials_for_utility_email(): void
     {
         Http::fake([
-            'app.clientesmas.com/api/messaging/messages' => Http::response(['id' => 456], 200),
+            'app.clientesmas.com/api/messaging/utility/email' => Http::response(['id' => 456], 201),
         ]);
 
         config([
@@ -60,13 +58,12 @@ class ClientesMasMessagingClientTest extends TestCase
             ],
         ]);
 
-        app(ClientesMasMessagingClient::class)->sendEmail(
-            recipient: 'cliente@example.com',
-            subject: 'Asunto',
-            body: 'Texto',
-            htmlBody: '<p>Texto</p>',
-            externalId: 'cliente-001'
-        );
+        app(ClientesMasMessagingClient::class)->sendUtilityEmail([
+            'recipient' => 'cliente@example.com',
+            'subject' => 'Asunto',
+            'body' => 'Texto',
+            'html_body' => '<p>Texto</p>',
+        ]);
 
         Http::assertSent(function ($request) {
             $credentials = $request->data()['provider_credentials']['mox'] ?? [];
@@ -76,6 +73,38 @@ class ClientesMasMessagingClientTest extends TestCase
                 && $credentials['from_address'] === 'correo@example.com'
                 && $credentials['auth_user'] === 'correo@example.com'
                 && $credentials['auth_password'] === 'secret';
+        });
+    }
+
+    public function test_it_sends_bulk_utility_email_payload(): void
+    {
+        Http::fake([
+            'app.clientesmas.com/api/messaging/utility/email/bulk' => Http::response(['batch_id' => 55], 201),
+        ]);
+
+        config([
+            'services.clientes_mas.api_key' => 'test-key',
+            'services.clientes_mas.email_provider' => 'ses',
+        ]);
+
+        $response = app(ClientesMasMessagingClient::class)->sendBulkUtilityEmails([
+            'subject' => 'Invitacion',
+            'html_body' => '<p>Hola</p>',
+            'metadata' => ['purpose' => 'invitation'],
+            'recipients' => [
+                ['email' => 'persona1@example.com'],
+                ['email' => 'persona2@example.com'],
+            ],
+        ]);
+
+        $this->assertSame(['batch_id' => 55], $response);
+
+        Http::assertSent(function ($request) {
+            $payload = $request->data();
+
+            return $payload['provider'] === 'aws_ses'
+                && $payload['metadata']['purpose'] === 'invitation'
+                && count($payload['recipients']) === 2;
         });
     }
 
@@ -105,7 +134,6 @@ class ClientesMasMessagingClientTest extends TestCase
             $message = $request->data()['messages'][0] ?? [];
 
             return $message['provider'] === 'aws_ses'
-                && $message['recipient_type'] === 'email'
                 && $message['metadata']['from_name'] === 'SmartElect';
         });
     }

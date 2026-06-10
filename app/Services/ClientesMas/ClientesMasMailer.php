@@ -5,6 +5,7 @@ namespace App\Services\ClientesMas;
 use App\Models\Campaign;
 use App\Models\Invitation;
 use App\Models\User;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\View;
 
 class ClientesMasMailer
@@ -27,19 +28,21 @@ class ClientesMasMailer
             'expires_at' => $invitation->expires_at,
         ])->render();
 
-        return $this->client->sendEmail(
-            recipient: $user->email,
-            subject: 'Unete a nuestro equipo de campana - '.$campaign->candidate_name,
-            body: $this->plainText($html),
-            htmlBody: $html,
-            metadata: [
+        return $this->client->sendUtilityEmail([
+            'recipient' => $user->email,
+            'subject' => 'Unete a nuestro equipo de campana - '.$campaign->candidate_name,
+            'body' => $this->plainText($html),
+            'html_body' => $html,
+            'external_id' => (string) Str::uuid(),
+            'metadata' => [
+                'purpose' => 'invitation',
                 'campaign_id' => $campaign->id,
                 'invitation_id' => $invitation->id,
                 'user_id' => $user->id,
                 'source' => 'campaign-invitation',
+                'app_external_id' => 'campaign-invitation-'.$invitation->id,
             ],
-            externalId: 'campaign-invitation-'.$invitation->id
-        );
+        ]);
     }
 
     public function sendPasswordReset(User $user, string $token): array
@@ -54,17 +57,19 @@ class ClientesMasMailer
             'user' => $user,
         ])->render();
 
-        return $this->client->sendEmail(
-            recipient: $user->getEmailForPasswordReset(),
-            subject: 'Recuperar contrasena',
-            body: $this->plainText($html),
-            htmlBody: $html,
-            metadata: [
+        return $this->client->sendUtilityEmail([
+            'recipient' => $user->getEmailForPasswordReset(),
+            'subject' => 'Recuperar contrasena',
+            'body' => $this->plainText($html),
+            'html_body' => $html,
+            'external_id' => (string) Str::uuid(),
+            'metadata' => [
+                'purpose' => 'password_reset',
                 'user_id' => $user->id,
                 'source' => 'password-reset',
+                'app_external_id' => 'password-reset-'.$user->id.'-'.sha1($token),
             ],
-            externalId: 'password-reset-'.$user->id.'-'.sha1($token)
-        );
+        ]);
     }
 
     private function plainText(string $html): string
