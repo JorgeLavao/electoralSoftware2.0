@@ -348,7 +348,7 @@
                         </div>
 
                         @if (collect($committees)->isEmpty())
-                        <p class="text-sm text-slate-500">No hay comites creados en esta campana.</p>
+                        <p class="text-sm text-slate-500">No hay comités creados en esta campaña.</p>
                         @endif
                     </div>
 

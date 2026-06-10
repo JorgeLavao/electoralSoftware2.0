@@ -10,14 +10,14 @@ class SearchUsers extends Component
     public array $userIds = [];
     public array $userOptions  = [];
     public bool $allowRemoval = true;
-    public string $label = 'Administrador/Coordinador de la campana';
+    public string $label = 'Administrador/Coordinador de la campaña';
     public string $searchUrl = '/api/buscar-usuarios';
     public string $placeholder = 'Busca y selecciona usuarios...';
     public ?int $maxItems = null;
     public int $minSearchLength = 1;
 
     public function mount(
-        string $label = 'Administrador/Coordinador de la campana',
+        string $label = 'Administrador/Coordinador de la campaña',
         string $searchUrl = '/api/buscar-usuarios',
         string $placeholder = 'Busca y selecciona usuarios...',
         ?int $maxItems = null,

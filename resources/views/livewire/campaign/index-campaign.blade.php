@@ -67,8 +67,8 @@
 
                     <button type="button"
                         class="btn-secundary"
-                        title="Abandonar campana"
-                        aria-label="Abandonar campana"
+                        title="Abandonar campaña"
+                        aria-label="Abandonar campaña"
                         wire:click='leaveCampaign({{ $campaign->id }})'>
                         <x-icons.log-out />
                     </button>

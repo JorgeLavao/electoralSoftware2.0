@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Auth;
 
+use App\Models\User;
 use Illuminate\Support\Facades\Password;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -10,6 +11,7 @@ use Livewire\Component;
 class ForgotPassword extends Component
 {
     public string $email = '';
+
     /**
      * Send a password reset link to the provided email address.
      */
@@ -18,8 +20,19 @@ class ForgotPassword extends Component
         $this->validate([
             'email' => ['required', 'string', 'email'],
         ]);
-        Password::sendResetLink($this->only('email'));
 
-        session()->flash('status', 'Por seguridad, solo enviaremos el enlace si el correo está asociado a una cuenta.');
+        $email = mb_strtolower(trim($this->email));
+        $user = User::query()
+            ->whereRaw('LOWER(email) = ?', [$email])
+            ->first();
+
+        if (! $user) {
+            $this->addError('email', 'El correo electrónico no hace parte de nuestra base de información.');
+            return;
+        }
+
+        Password::sendResetLink(['email' => $user->email]);
+
+        session()->flash('status', 'Ya se envió el correo de recuperación. Revisa tu bandeja de entrada o spam.');
     }
 }

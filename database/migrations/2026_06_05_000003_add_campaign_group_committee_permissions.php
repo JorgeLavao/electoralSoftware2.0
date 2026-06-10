@@ -10,25 +10,25 @@ return new class extends Migration
         [
             'name' => 'campaign.groups.view',
             'group_key' => 'campaign.groups',
-            'group_label' => 'Grupos de campana',
+            'group_label' => 'Grupos de campaña',
             'description' => 'Ver grupos',
         ],
         [
             'name' => 'campaign.groups.manage',
             'group_key' => 'campaign.groups',
-            'group_label' => 'Grupos de campana',
+            'group_label' => 'Grupos de campaña',
             'description' => 'Gestionar grupos',
         ],
         [
             'name' => 'campaign.committees.view',
             'group_key' => 'campaign.committees',
-            'group_label' => 'Comites de campana',
+            'group_label' => 'Comités de campaña',
             'description' => 'Ver comites',
         ],
         [
             'name' => 'campaign.committees.manage',
             'group_key' => 'campaign.committees',
-            'group_label' => 'Comites de campana',
+            'group_label' => 'Comités de campaña',
             'description' => 'Gestionar comites',
         ],
     ];

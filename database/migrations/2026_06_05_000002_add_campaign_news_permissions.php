@@ -11,25 +11,25 @@ return new class extends Migration
         [
             'name' => 'campaign.news.view',
             'group_key' => 'campaign.news',
-            'group_label' => 'Noticias de campana',
+            'group_label' => 'Noticias de campaña',
             'description' => 'Ver noticias',
         ],
         [
             'name' => 'campaign.news.create',
             'group_key' => 'campaign.news',
-            'group_label' => 'Noticias de campana',
+            'group_label' => 'Noticias de campaña',
             'description' => 'Crear noticias',
         ],
         [
             'name' => 'campaign.news.update',
             'group_key' => 'campaign.news',
-            'group_label' => 'Noticias de campana',
+            'group_label' => 'Noticias de campaña',
             'description' => 'Editar noticias',
         ],
         [
             'name' => 'campaign.news.delete',
             'group_key' => 'campaign.news',
-            'group_label' => 'Noticias de campana',
+            'group_label' => 'Noticias de campaña',
             'description' => 'Eliminar noticias',
         ],
     ];

@@ -316,7 +316,7 @@ class IndexCommittee extends Component
         $committee = $this->campaign->committees()->find($this->target_committee_id);
 
         if (! $committee) {
-            session()->flash('error', 'Selecciona un comite valido de esta campana.');
+            session()->flash('error', 'Selecciona un comité válido de esta campaña.');
 
             return;
         }

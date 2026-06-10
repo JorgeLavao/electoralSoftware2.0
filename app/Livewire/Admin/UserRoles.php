@@ -477,7 +477,7 @@ class UserRoles extends Component
         $campaign = $this->currentCampaign();
 
         if ($role !== User::ROLE_ADMIN && ! $campaign) {
-            $this->addError('role', 'Selecciona una campana activa antes de asignar este rol.');
+            $this->addError('role', 'Selecciona una campaña activa antes de asignar este rol.');
             return;
         }
 
@@ -589,7 +589,7 @@ class UserRoles extends Component
     {
         $campaign = $this->currentCampaign();
 
-        abort_unless($campaign, 422, 'Selecciona una campana activa.');
+        abort_unless($campaign, 422, 'Selecciona una campaña activa.');
 
         return $campaign;
     }
@@ -618,7 +618,7 @@ class UserRoles extends Component
     protected function findManageableRole(int $roleId): Role
     {
         $campaign = $this->currentCampaign();
-        abort_unless($campaign, 422, 'Selecciona una campana activa.');
+        abort_unless($campaign, 422, 'Selecciona una campaña activa.');
 
         return app(CampaignRoleService::class)->findManageableRole($roleId, $campaign);
     }

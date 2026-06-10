@@ -54,7 +54,7 @@
                         <div class="container-v area-2">
                             <div class="container-v">
                                 <h4>Personas del Comite</h4>
-                                <p>Busca personas de la campana y agrega o quita las necesarias del comite.</p>
+                                <p>Busca personas de la campaña y agrega o quita las necesarias del comité.</p>
                             </div>
 
                             <div class="grop-columns-2">
@@ -76,7 +76,7 @@
 
                                         @if (strlen(trim($available_search)) < 2)
                                             <div class="item item__secondary justify-center text-gray-400">
-                                                Escribe al menos 2 caracteres para buscar personas de la campana.
+                                                Escribe al menos 2 caracteres para buscar personas de la campaña.
                                             </div>
                                         @else
                                             @forelse ($availableUsers as $person)

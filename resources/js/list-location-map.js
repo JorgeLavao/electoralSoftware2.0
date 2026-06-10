@@ -101,7 +101,7 @@ function popupTemplate(point) {
                 <div><dt>Departamento</dt><dd>${escapeHtml(point.department)}</dd></div>
                 <div><dt>Municipio</dt><dd>${escapeHtml(point.municipality)}</dd></div>
                 <div><dt>Telefono</dt><dd>${escapeHtml(point.phone)}</dd></div>
-                <div><dt>Campana</dt><dd>${escapeHtml(point.campaign)}</dd></div>
+                <div><dt>Campaña</dt><dd>${escapeHtml(point.campaign)}</dd></div>
                 <div><dt>Ultima actividad</dt><dd>${escapeHtml(point.lastActivity)}</dd></div>
             </dl>
         </div>

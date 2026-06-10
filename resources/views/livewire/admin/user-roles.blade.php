@@ -12,7 +12,7 @@
 
         @if (! $currentCampaign)
             <div class="rounded-2xl border border-primary bg-white p-4">
-                <h2 class="text-lg font-semibold">Selecciona una campana</h2>
+                <h2 class="text-lg font-semibold">Selecciona una campaña</h2>
             </div>
         @endif
 
@@ -145,7 +145,7 @@
                             <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                 <div class="min-w-0">
                                     <h3 class="text-base font-semibold text-slate-900">Permisos del rol</h3>
-                                    <p class="text-sm text-slate-500">Activa los accesos que tendra este rol dentro de la campana.</p>
+                                    <p class="text-sm text-slate-500">Activa los accesos que tendrá este rol dentro de la campaña.</p>
                                 </div>
                                 <span class="inline-flex w-fit items-center rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
                                     {{ count($rolePermissionIds) }} seleccionados

@@ -30,7 +30,7 @@ class ClientesMasMailer
 
         return $this->client->sendUtilityEmail([
             'recipient' => $user->email,
-            'subject' => 'Unete a nuestro equipo de campana - '.$campaign->candidate_name,
+            'subject' => 'Únete a nuestro equipo de campaña - '.$campaign->candidate_name,
             'body' => $this->plainText($html),
             'html_body' => $html,
             'external_id' => (string) Str::uuid(),
