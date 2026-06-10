@@ -76,6 +76,63 @@ class ClientesMasMessagingClientTest extends TestCase
         });
     }
 
+    public function test_it_falls_back_to_messages_when_utility_email_route_is_missing(): void
+    {
+        Http::fake([
+            'app.clientesmas.com/api/messaging/utility/email' => Http::response(['message' => 'Not found'], 404),
+            'app.clientesmas.com/api/messaging/messages' => Http::response(['id' => 789], 201),
+        ]);
+
+        config([
+            'services.clientes_mas.api_key' => 'test-key',
+            'services.clientes_mas.email_provider' => 'aws_ses',
+            'services.clientes_mas.from_name' => 'SmartElect',
+        ]);
+
+        $response = app(ClientesMasMessagingClient::class)->sendUtilityEmail([
+            'recipient' => 'cliente@example.com',
+            'subject' => 'Asunto',
+            'html_body' => '<p>Texto</p>',
+            'metadata' => ['purpose' => 'password_reset'],
+        ]);
+
+        $this->assertSame(['id' => 789], $response);
+
+        Http::assertSent(function ($request) {
+            return $request->url() === 'https://app.clientesmas.com/api/messaging/messages'
+                && $request->data()['channel'] === 'email'
+                && $request->data()['metadata']['purpose'] === 'password_reset';
+        });
+    }
+
+    public function test_it_falls_back_to_messages_when_utility_email_has_server_error(): void
+    {
+        Http::fake([
+            'app.clientesmas.com/api/messaging/utility/email' => Http::response(['message' => 'Server error'], 500),
+            'app.clientesmas.com/api/messaging/messages' => Http::response(['id' => 790], 201),
+        ]);
+
+        config([
+            'services.clientes_mas.api_key' => 'test-key',
+            'services.clientes_mas.email_provider' => 'aws_ses',
+            'services.clientes_mas.from_name' => 'SmartElect',
+        ]);
+
+        $response = app(ClientesMasMessagingClient::class)->sendUtilityEmail([
+            'recipient' => 'cliente@example.com',
+            'subject' => 'Asunto',
+            'html_body' => '<p>Texto</p>',
+            'metadata' => ['purpose' => 'password_reset'],
+        ]);
+
+        $this->assertSame(['id' => 790], $response);
+
+        Http::assertSent(function ($request) {
+            return $request->url() === 'https://app.clientesmas.com/api/messaging/messages'
+                && $request->data()['channel'] === 'email';
+        });
+    }
+
     public function test_it_sends_bulk_utility_email_payload(): void
     {
         Http::fake([

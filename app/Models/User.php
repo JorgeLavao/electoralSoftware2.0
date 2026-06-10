@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Notifications\CustomResetPassword;
 use App\Models\Campaign;
+use App\Services\ClientesMas\ClientesMasMessagingException;
 use App\Services\ClientesMas\ClientesMasMailer;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -14,6 +15,7 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 use Spatie\Permission\Models\Role;
@@ -219,7 +221,18 @@ class User extends Authenticatable
         $mailer = app(ClientesMasMailer::class);
 
         if ($mailer->enabled()) {
-            $mailer->sendPasswordReset($this, $token);
+            try {
+                $mailer->sendPasswordReset($this, $token);
+                return;
+            } catch (ClientesMasMessagingException $exception) {
+                Log::warning('Clientes Mas password reset email failed; falling back to Laravel mail.', [
+                    'user_id' => $this->id,
+                    'status' => $exception->status,
+                    'context' => $exception->context,
+                ]);
+            }
+
+            $this->notify(new CustomResetPassword($token));
             return;
         }
 

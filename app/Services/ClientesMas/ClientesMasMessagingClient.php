@@ -26,7 +26,23 @@ class ClientesMasMessagingClient
         $payload = $this->emailPayload($payload);
         $this->validateSingleEmailPayload($payload, requireSubject: true);
 
-        return $this->post('/utility/email', $payload, 'send utility email');
+        try {
+            return $this->post('/utility/email', $payload, 'send utility email');
+        } catch (ClientesMasMessagingException $exception) {
+            if (! $this->shouldFallbackToMessageEndpoint($exception)) {
+                throw $exception;
+            }
+
+            Log::warning('Clientes Mas utility email endpoint failed; falling back to messages endpoint.', [
+                'status' => $exception->status,
+                'recipient' => $payload['recipient'] ?? null,
+                'purpose' => data_get($payload, 'metadata.purpose'),
+            ]);
+
+            return $this->sendMessage(array_merge($payload, [
+                'channel' => 'email',
+            ]));
+        }
     }
 
     public function sendBulkUtilityEmails(array $payload): array
@@ -279,6 +295,11 @@ class ClientesMasMessagingClient
         if (($payload['provider'] ?? null) === self::PROVIDER_MOX && blank(data_get($payload, 'provider_credentials.mox'))) {
             throw new InvalidArgumentException('Clientes Mas MOX email requires provider_credentials.mox.');
         }
+    }
+
+    private function shouldFallbackToMessageEndpoint(ClientesMasMessagingException $exception): bool
+    {
+        return $exception->status === 404 || ($exception->status !== null && $exception->status >= 500);
     }
 
     private function get(string $path, string $action): array

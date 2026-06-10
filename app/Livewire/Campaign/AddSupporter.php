@@ -7,6 +7,7 @@ use App\Models\Campaign;
 use App\Models\DocumentType;
 use App\Models\Invitation;
 use App\Models\User;
+use App\Services\ClientesMas\ClientesMasMessagingException;
 use App\Services\ClientesMas\ClientesMasMailer;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -180,11 +181,30 @@ class AddSupporter extends Component
         $mailer = app(ClientesMasMailer::class);
 
         if ($mailer->enabled()) {
-            $mailer->sendCampaignInvitation($this->campaign, $user, $invitation);
-            return;
+            try {
+                $mailer->sendCampaignInvitation($this->campaign, $user, $invitation);
+                return;
+            } catch (ClientesMasMessagingException $exception) {
+                Log::warning('Clientes Mas campaign invitation email failed; falling back to Laravel mail.', [
+                    'campaign_id' => $this->campaign->id,
+                    'invitation_id' => $invitation->id,
+                    'user_id' => $user->id,
+                    'status' => $exception->status,
+                    'context' => $exception->context,
+                ]);
+            }
         }
 
-        Mail::to($user->email)->send(new InviteToCampaign($this->campaign, $user->first_name, $invitation->token, $invitation->expires_at));
+        try {
+            Mail::to($user->email)->send(new InviteToCampaign($this->campaign, $user->first_name, $invitation->token, $invitation->expires_at));
+        } catch (\Throwable $exception) {
+            Log::error('Campaign invitation fallback mail failed', [
+                'campaign_id' => $this->campaign->id,
+                'invitation_id' => $invitation->id,
+                'user_id' => $user->id,
+                'exception' => $exception,
+            ]);
+        }
     }
 
     private function isDocumentUniqueConstraintViolation(QueryException $e): bool
