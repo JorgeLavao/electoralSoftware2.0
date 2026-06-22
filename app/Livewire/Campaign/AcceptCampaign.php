@@ -9,7 +9,7 @@ use App\Services\CampaignNotificationService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Password;
+use Illuminate\Validation\Rules\Password as PasswordRule;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -21,6 +21,8 @@ class AcceptCampaign extends Component
     public $user;
     public $invitation;
     public $acepted = false;
+    public string $password = '';
+    public string $password_confirmation = '';
 
     public function mount(Invitation $invitation){
         $this->invitation = $invitation;
@@ -30,6 +32,7 @@ class AcceptCampaign extends Component
             $invitation->save();
         }
         $this->user = User::findOrFail($invitation->user_id);
+        $this->campaign = Campaign::findOrFail($invitation->campaign_id);
         //errors
         if (Auth::check()){
             if(Auth::id() !== $invitation->user_id){
@@ -38,18 +41,26 @@ class AcceptCampaign extends Component
             }
         }
         if($invitation->accepted_at){
+            if (! $this->user->password) {
+                $this->acepted = true;
+                return;
+            }
+
             $this->error_type = 'used';
             return;
         }
         if($this->user->belongsToCampaign((int) $invitation->campaign_id)){
+            if (! $this->user->password) {
+                $this->acepted = true;
+                return;
+            }
+
             $this->error_type = 'already_member';
             return;
         }
         if(!$invitation->active){
             $this->error_type = 'expired';
         }
-        //search campaign
-        $this->campaign = Campaign::findOrFail($invitation->campaign_id);
     }
 
     public function acceptInvitation(): void
@@ -131,8 +142,34 @@ class AcceptCampaign extends Component
         );
     }
 
-    public function resetPassword(){
-        Password::sendResetLink(['email' => $this->user->email]);
-        session()->flash('status', 'Se ha enviado un correo para configurar tu contraseña.');
+    public function setPasswordAndLogin(): void
+    {
+        $this->validate([
+            'password' => ['required', 'string', 'confirmed', PasswordRule::defaults()],
+        ]);
+
+        $user = User::query()->findOrFail($this->invitation->user_id);
+
+        if ($user->password) {
+            $this->addError('password', 'Este usuario ya tiene una contrasena configurada.');
+            return;
+        }
+
+        $campaign = Campaign::query()->findOrFail($this->invitation->campaign_id);
+
+        abort_unless($user->belongsToCampaign($campaign), 403);
+
+        $user->forceFill([
+            'password' => $this->password,
+            'current_campaign' => $campaign->code,
+        ])->save();
+
+        Auth::login($user);
+        if (request()->hasSession()) {
+            request()->session()->regenerate();
+        }
+        session(['current_campaign' => $campaign]);
+
+        $this->redirectRoute('dashboard', navigate: true);
     }
 }

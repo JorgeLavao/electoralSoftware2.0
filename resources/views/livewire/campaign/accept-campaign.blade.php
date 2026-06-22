@@ -97,9 +97,38 @@
 
                     {{-- Si el usuario es nuevo y no tiene contraseña, se le invita a crear una --}}
                     @if (!$user->password)
-                        <button type="button" class="btn-secundary w-full" wire:click='resetPassword' wire:loading.attr="disabled">
-                            Establecer mi Contraseña
-                        </button>
+                        <form wire:submit="setPasswordAndLogin" class="space-y-4 text-left">
+                            <div class="group-form">
+                                <label for="password">Nueva contrasena</label>
+                                <x-password-input
+                                    id="password"
+                                    placeholder="Digite la nueva contrasena"
+                                    wire:model.defer="password"
+                                    autocomplete="new-password"
+                                    required
+                                />
+                            </div>
+                            <div class="group-form">
+                                <label for="password_confirmation">Confirme contrasena</label>
+                                <x-password-input
+                                    id="password_confirmation"
+                                    placeholder="Repita la contrasena"
+                                    wire:model="password_confirmation"
+                                    autocomplete="new-password"
+                                    required
+                                />
+                            </div>
+                            @error('password')
+                                <div>
+                                    <x-toast.error-toast :message="$message"/>
+                                </div>
+                            @enderror
+                            <button type="submit" class="btn-primary all-w" wire:loading.attr="disabled">
+                                Guardar contrasena e ir al panel
+                            </button>
+                        </form>
+                    @else
+                        <a href="{{ route('dashboard') }}" class="btn-primary all-w">Ir al Panel</a>
                     @endif
                 </div>
 
