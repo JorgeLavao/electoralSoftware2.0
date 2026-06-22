@@ -137,17 +137,8 @@ class ImportSupporter extends Component
         $this->debugImport('Import job dispatched', $this->batchDebugContext($batch));
 
         ImportSupportersJob::dispatch($batch->id, $this->campaign->id, (int) Auth::id());
-        $this->step = 'importing';
-        $this->status = 'importing';
-        $this->progress = 0;
-        $this->processedRows = 0;
-
-        $this->dispatch('alert', [
-            'icon' => 'success',
-            'title' => 'Importacion en progreso',
-            'text' => $this->queuedImportMessage($batch),
-            'timer' => 3000,
-        ]);
+        session()->flash('success', $this->queuedImportMessage($batch));
+        $this->redirectRoute('supporter.index', $this->campaign->code, navigate: true);
     }
 
     public function refreshBatch(): void

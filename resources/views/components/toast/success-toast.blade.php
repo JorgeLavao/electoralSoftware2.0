@@ -1,4 +1,4 @@
-<div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 60000)" x-transition wire:ignore.self
+<div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 60000)" x-transition wire:ignore.self data-toast
     class="bg-white rounded-lg shadow-md p-2 border border-green-200 mt-2">
     <div class="flex items-center justify-between">
         <div class="flex items-center">
@@ -9,7 +9,7 @@
             </div>
             <span class="text-gray-700 text-sm">{{ $message }}</span>
         </div>
-        <button type="button" @click.prevent.stop="show = false" class="text-gray-400 hover:text-gray-600 ml-2"
+        <button type="button" @click.prevent.stop="show = false; $el.closest('[data-toast]')?.remove()" class="text-gray-400 hover:text-gray-600 ml-2"
             aria-label="Cerrar notificación">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>

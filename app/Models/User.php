@@ -167,11 +167,16 @@ class User extends Authenticatable
         if(empty($search)){
             return $query;
         }
-        return $query->where(function ($q) use ($search) {
+
+        $term = mb_strtolower(trim((string) $search));
+
+        return $query->where(function ($q) use ($term) {
             $q->whereRaw(
-                "TRIM(CONCAT_WS(' ', first_name, middle_name, paternal_surname, maternal_surname)) LIKE ?",
-                ["%{$search}%"]
-            )->orWhere('document_number', 'like', "%{$search}%");
+                "LOWER(TRIM(CONCAT_WS(' ', first_name, middle_name, paternal_surname, maternal_surname))) LIKE ?",
+                ["%{$term}%"]
+            )
+            ->orWhereRaw('LOWER(document_number) LIKE ?', ["%{$term}%"])
+            ->orWhereRaw('LOWER(email) LIKE ?', ["%{$term}%"]);
         });
     }
 

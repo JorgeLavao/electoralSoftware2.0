@@ -8,6 +8,7 @@ use App\Models\Invitation;
 use App\Models\User;
 use App\Services\ClientesMas\ClientesMasMailer;
 use App\Services\ClientesMas\ClientesMasMessagingException;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
@@ -28,6 +29,22 @@ class CampaignInvitationService
             'token' => Str::uuid()->toString(),
             'active' => true,
         ]);
+
+        DB::table('campaign_user')->updateOrInsert(
+            [
+                'campaign_id' => $campaign->id,
+                'user_id' => $user->id,
+            ],
+            [
+                'reffer_by' => $referrerId,
+                'approach' => 4,
+                'validate' => 0,
+                'updated_at' => now(),
+                'created_at' => now(),
+            ]
+        );
+
+        app(CampaignRoleService::class)->assignSupporterRoleToUsers($campaign, [$user->id]);
 
         $this->sendEmail($campaign, $user, $invitation);
 

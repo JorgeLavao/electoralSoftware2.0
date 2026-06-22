@@ -13,7 +13,18 @@ use Spatie\Permission\PermissionRegistrar;
 
 class CampaignRoleService
 {
-    private const SUPPORTER_ROLE = 'Simpatizante';
+    private const COORDINATOR_ROLE = 'Coordinador de Campaña';
+    private const SUPPORTER_ROLE = 'Simpatizantes';
+    private const LEADER_ROLE = 'Lider';
+    private const CALL_CENTER_ROLE = 'Call Center';
+    private const TECH_SUPPORT_ROLE = 'Soporte Tecnico';
+
+    private const LEGACY_ROLE_NAMES = [
+        'Coordinador Campaña' => self::COORDINATOR_ROLE,
+        'Simpatizante' => self::SUPPORTER_ROLE,
+        'Líder' => self::LEADER_ROLE,
+        'Soporte Técnico' => self::TECH_SUPPORT_ROLE,
+    ];
 
     public function findManageableRole(int $roleId, Campaign $campaign): Role
     {
@@ -122,6 +133,8 @@ class CampaignRoleService
 
     public function supporterRole(Campaign $campaign): Role
     {
+        $this->ensureStandardRoles($campaign);
+
         $role = Role::query()->firstOrCreate(
             [
                 'name' => self::SUPPORTER_ROLE,
@@ -148,6 +161,24 @@ class CampaignRoleService
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         return $role;
+    }
+
+    public function ensureStandardRoles(Campaign $campaign): void
+    {
+        $this->renameLegacyRoles($campaign);
+
+        foreach ($this->standardRolePermissions() as $roleName => $permissions) {
+            $role = Role::query()->firstOrCreate([
+                'name' => $roleName,
+                'guard_name' => 'web',
+                'campaign_id' => $campaign->id,
+            ]);
+
+            $role->syncPermissions($permissions);
+        }
+
+        $this->syncExistingSupportersToRole($campaign);
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
     }
 
     public function assignSupporterRoleToUsers(Campaign $campaign, array $userIds): void
@@ -234,6 +265,10 @@ class CampaignRoleService
 
     public function rolesForCampaign(?Campaign $campaign): Collection
     {
+        if ($campaign) {
+            $this->ensureStandardRoles($campaign);
+        }
+
         $roles = Role::query()
             ->with('permissions')
             ->where('guard_name', 'web')
@@ -261,5 +296,101 @@ class CampaignRoleService
                 $role->users_count = (int) ($counts[$role->id] ?? 0);
                 return $role;
             });
+    }
+
+    private function renameLegacyRoles(Campaign $campaign): void
+    {
+        foreach (self::LEGACY_ROLE_NAMES as $legacyName => $standardName) {
+            $legacy = Role::query()
+                ->where('name', $legacyName)
+                ->where('guard_name', 'web')
+                ->where('campaign_id', $campaign->id)
+                ->first();
+
+            if (! $legacy) {
+                continue;
+            }
+
+            $standardExists = Role::query()
+                ->where('name', $standardName)
+                ->where('guard_name', 'web')
+                ->where('campaign_id', $campaign->id)
+                ->whereKeyNot($legacy->id)
+                ->exists();
+
+            if (! $standardExists) {
+                $legacy->forceFill(['name' => $standardName])->save();
+            }
+        }
+    }
+
+    private function standardRolePermissions(): array
+    {
+        $existingCampaignPermissions = Permission::query()
+            ->where('guard_name', 'web')
+            ->where('name', 'like', 'campaign.%')
+            ->pluck('name')
+            ->all();
+        $existing = array_flip($existingCampaignPermissions);
+        $onlyExisting = fn (array $permissions): array => array_values(array_filter(
+            $permissions,
+            fn (string $permission): bool => isset($existing[$permission])
+        ));
+
+        return [
+            self::COORDINATOR_ROLE => $existingCampaignPermissions,
+            self::SUPPORTER_ROLE => $onlyExisting([
+                'campaign.supporters.view',
+                'campaign.votation-point.view',
+            ]),
+            self::LEADER_ROLE => $onlyExisting([
+                'campaign.supporters.view',
+                'campaign.supporters.refer',
+                'campaign.lists.view',
+                'campaign.lists.create',
+                'campaign.votation-point.view',
+            ]),
+            self::CALL_CENTER_ROLE => $onlyExisting(User::CALL_CENTER_CAMPAIGN_PERMISSIONS),
+            self::TECH_SUPPORT_ROLE => $existingCampaignPermissions,
+        ];
+    }
+
+    private function syncExistingSupportersToRole(Campaign $campaign): void
+    {
+        $role = Role::query()
+            ->where('name', self::SUPPORTER_ROLE)
+            ->where('guard_name', 'web')
+            ->where('campaign_id', $campaign->id)
+            ->first();
+
+        if (! $role) {
+            return;
+        }
+
+        $assignedUserIds = DB::table(config('permission.table_names.model_has_roles', 'model_has_roles'))
+            ->where('role_id', $role->id)
+            ->where('model_type', User::class)
+            ->where('campaign_id', $campaign->id)
+            ->pluck('model_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        DB::table('campaign_user')
+            ->where('campaign_id', $campaign->id)
+            ->where('validate', '!=', 2)
+            ->when($assignedUserIds, fn ($query) => $query->whereNotIn('user_id', $assignedUserIds))
+            ->orderBy('user_id')
+            ->chunkById(1000, function ($memberships) use ($campaign, $role) {
+                $rows = $memberships
+                    ->map(fn ($membership) => [
+                        'role_id' => $role->id,
+                        'model_type' => User::class,
+                        'model_id' => (int) $membership->user_id,
+                        'campaign_id' => $campaign->id,
+                    ])
+                    ->all();
+
+                DB::table(config('permission.table_names.model_has_roles', 'model_has_roles'))->insertOrIgnore($rows);
+            }, 'user_id');
     }
 }

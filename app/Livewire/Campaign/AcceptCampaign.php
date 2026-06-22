@@ -49,7 +49,15 @@ class AcceptCampaign extends Component
             $this->error_type = 'used';
             return;
         }
-        if($this->user->belongsToCampaign((int) $invitation->campaign_id)){
+        $supporterMembership = $this->campaign->foreign_users()
+            ->where('users.id', $invitation->user_id)
+            ->first();
+        $activeStaffMembership = $this->campaign->staff_users()
+            ->where('users.id', $invitation->user_id)
+            ->wherePivot('status', true)
+            ->exists();
+
+        if($activeStaffMembership || (int) ($supporterMembership?->pivot?->validate ?? -1) === 1){
             if (! $this->user->password) {
                 $this->acepted = true;
                 return;
@@ -89,9 +97,11 @@ class AcceptCampaign extends Component
 
             $campaign = Campaign::query()->findOrFail($invitation->campaign_id);
 
-            $alreadyMember = $campaign->foreign_users()
+            $supporterMembership = $campaign->foreign_users()
                 ->where('users.id', $invitation->user_id)
-                ->exists()
+                ->first();
+
+            $alreadyMember = ((int) ($supporterMembership?->pivot?->validate ?? -1) === 1)
                 || $campaign->staff_users()
                     ->where('users.id', $invitation->user_id)
                     ->wherePivot('status', true)
@@ -103,11 +113,19 @@ class AcceptCampaign extends Component
                 return false;
             }
 
-            $campaign->foreign_users()->attach($invitation->user_id, [
-                'reffer_by' => $invitation->reffer_id,
-                'validate' => 0,
-                'approach' => 4,
-            ]);
+            if ($supporterMembership) {
+                $campaign->foreign_users()->updateExistingPivot($invitation->user_id, [
+                    'reffer_by' => $invitation->reffer_id,
+                    'validate' => 0,
+                    'approach' => 4,
+                ]);
+            } else {
+                $campaign->foreign_users()->attach($invitation->user_id, [
+                    'reffer_by' => $invitation->reffer_id,
+                    'validate' => 0,
+                    'approach' => 4,
+                ]);
+            }
 
             $invitation->forceFill([
                 'accepted_at' => now(),

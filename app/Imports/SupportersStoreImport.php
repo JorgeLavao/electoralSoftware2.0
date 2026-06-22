@@ -6,6 +6,7 @@ use App\Models\DocumentType;
 use App\Models\Campaign;
 use App\Models\User;
 use App\Services\CampaignInvitationService;
+use App\Services\CampaignRoleService;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -275,6 +276,15 @@ class SupportersStoreImport extends AbstractSupportersImport
 
         if ($newMemberships !== []) {
             DB::table('campaign_user')->insertOrIgnore($newMemberships);
+        }
+
+        $campaign = Campaign::query()->find($this->campaignId);
+
+        if ($campaign) {
+            app(CampaignRoleService::class)->assignSupporterRoleToUsers(
+                $campaign,
+                collect($usersToInvite)->pluck('id')->all()
+            );
         }
 
         $this->sendInvitations($usersToInvite);

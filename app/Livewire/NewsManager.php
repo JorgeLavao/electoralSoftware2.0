@@ -88,7 +88,7 @@ class NewsManager extends Component
 
         $this->resetFields();
 
-        return redirect()->route('news.manager');
+        return redirect()->route('dashboard');
     }
 
     public function updatedImage(): void

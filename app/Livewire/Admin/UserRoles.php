@@ -23,8 +23,8 @@ class UserRoles extends Component
 {
     use WithPagination;
 
-    private const COORDINATOR_ROLE = 'Coordinador Campaña';
-    private const LEGACY_COORDINATOR_ROLE = 'Coordinador de Campaña';
+    private const COORDINATOR_ROLE = 'Coordinador de Campaña';
+    private const LEGACY_COORDINATOR_ROLE = 'Coordinador Campaña';
     private const CALL_CENTER_ROLE = 'Call Center';
 
     protected string $paginationTheme = 'tailwind';
@@ -659,7 +659,7 @@ class UserRoles extends Component
         $this->roleUserResultIds = $this->campaignUsersQuery($campaign)
             ->where(function ($query) use ($term) {
                 $query->search($term)
-                    ->orWhere('email', 'like', '%'.$term.'%');
+                    ->orWhereRaw('LOWER(email) LIKE ?', ['%'.mb_strtolower($term).'%']);
             })
             ->when($selectedRoleUserIds, fn ($query) => $query->whereNotIn('users.id', $selectedRoleUserIds))
             ->whereNotIn('users.id', $assignedRoleUserIds)
@@ -756,7 +756,7 @@ class UserRoles extends Component
 
                 $query->where(function ($subQuery) use ($term) {
                     $subQuery->search($term)
-                        ->orWhere('email', 'like', '%'.$term.'%');
+                        ->orWhereRaw('LOWER(email) LIKE ?', ['%'.mb_strtolower($term).'%']);
                 });
             });
 
@@ -821,7 +821,7 @@ class UserRoles extends Component
             $supporterResults = $this->campaignUsersQuery($currentCampaign)
                 ->where(function ($query) use ($term) {
                     $query->search($term)
-                        ->orWhere('email', 'like', '%'.$term.'%');
+                        ->orWhereRaw('LOWER(email) LIKE ?', ['%'.mb_strtolower($term).'%']);
                 })
                 ->limit(8)
                 ->get();
