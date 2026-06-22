@@ -25,6 +25,7 @@ class IndexPoint extends Component
     public $user = null;
     public $notFound = false;
     public $isComplete = false;
+    public $isEditing = false;
 
     public $stand;
     public $address;
@@ -56,6 +57,9 @@ class IndexPoint extends Component
             'user',
             'notFound',
             'isComplete',
+            'isEditing',
+            'department',
+            'municipality',
             'stand',
             'address',
             'table'
@@ -79,13 +83,21 @@ class IndexPoint extends Component
             $this->table = $point->table;
 
             $this->isComplete = true;
+            $this->isEditing = false;
         } else {
             // 🔥 NO EXISTE → CREAR
             $this->isComplete = false;
+            $this->isEditing = true;
 
-            $this->department = $this->user->department;
-            $this->municipality = $this->user->municipality;
+            $this->department = data_get(json_decode($this->user->foreing_aditional_info?->department, true), 'name');
+            $this->municipality = data_get(json_decode($this->user->foreing_aditional_info?->municipality, true), 'name');
         }
+    }
+
+    public function startEditing()
+    {
+        $this->authorize('manageVotationPoint', $this->campaign);
+        $this->isEditing = true;
     }
 
     public function save()
@@ -98,9 +110,17 @@ class IndexPoint extends Component
         }
 
         $this->validate([
+            'department' => 'required',
+            'municipality' => 'required',
             'stand' => 'required',
             'address' => 'required',
             'table' => 'required',
+        ], [
+            'department.required' => 'Debe seleccionar el departamento.',
+            'municipality.required' => 'Debe seleccionar el municipio.',
+            'stand.required' => 'Debe ingresar el puesto.',
+            'address.required' => 'Debe ingresar el nombre de la instituciÃ³n.',
+            'table.required' => 'Debe ingresar la mesa.',
         ]);
 
         // 🔥 CREA O ACTUALIZA
@@ -118,6 +138,7 @@ class IndexPoint extends Component
         session()->flash('success', 'Datos guardados correctamente');
 
         $this->isComplete = true;
+        $this->isEditing = false;
     }
 
     public function clearSearch()
@@ -127,6 +148,7 @@ class IndexPoint extends Component
             'user',
             'notFound',
             'isComplete',
+            'isEditing',
             'department',
             'municipality',
             'stand',
