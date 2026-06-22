@@ -54,7 +54,7 @@ class AddSupporter extends Component
     #[Validate('max:50',    message : 'Este campo no puede tener más de 50 caracteres.')]
     public $paternal_surname;
 
-    #[Validate('sometimes')]
+    #[Validate('nullable')]
     #[Validate('string',    message : 'Este campo debe contener solo texto.')]
     #[Validate('max:50',    message : 'Este campo no puede tener más de 50 caracteres.')]
     public $maternal_surname;

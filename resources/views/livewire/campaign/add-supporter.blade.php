@@ -124,7 +124,7 @@
                 </div>
                 <div class="container-v">
                     <div class="group-form-v">
-                        <label for="maternal_surname">Segundo Apellido<span class="text-red-500">*</span></label>
+                        <label for="maternal_surname">Segundo Apellido</label>
                         <input type="text" id="maternal_surname" wire:model="maternal_surname"
                             wire:loading.attr="disabled" placeholder="Digite el segundo apellido (opcional)">
                     </div>
