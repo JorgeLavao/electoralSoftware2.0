@@ -3,9 +3,12 @@
 namespace App\Imports;
 
 use App\Models\DocumentType;
+use App\Models\Campaign;
 use App\Models\User;
+use App\Services\CampaignInvitationService;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class SupportersStoreImport extends AbstractSupportersImport
 {
@@ -233,6 +236,7 @@ class SupportersStoreImport extends AbstractSupportersImport
 
         $now = now();
         $newMemberships = [];
+        $usersToInvite = [];
 
         foreach ($storedRows as $storedRow) {
             /** @var User $user */
@@ -266,10 +270,40 @@ class SupportersStoreImport extends AbstractSupportersImport
             }
 
             $this->imported++;
+            $usersToInvite[] = $user;
         }
 
         if ($newMemberships !== []) {
             DB::table('campaign_user')->insertOrIgnore($newMemberships);
+        }
+
+        $this->sendInvitations($usersToInvite);
+    }
+
+    protected function sendInvitations(array $users): void
+    {
+        if ($users === []) {
+            return;
+        }
+
+        $campaign = Campaign::query()->find($this->campaignId);
+
+        if (! $campaign) {
+            return;
+        }
+
+        $invitationService = app(CampaignInvitationService::class);
+
+        foreach ($users as $user) {
+            try {
+                $invitationService->send($campaign, $user, $this->refferId);
+            } catch (\Throwable $e) {
+                Log::error('Imported supporter invitation failed', [
+                    'campaign_id' => $this->campaignId,
+                    'user_id' => $user->id ?? null,
+                    'exception' => $e,
+                ]);
+            }
         }
     }
 

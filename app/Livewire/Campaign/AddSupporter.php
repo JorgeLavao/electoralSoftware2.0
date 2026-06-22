@@ -2,20 +2,15 @@
 
 namespace App\Livewire\Campaign;
 
-use App\Mail\InviteToCampaign;
 use App\Models\Campaign;
 use App\Models\DocumentType;
-use App\Models\Invitation;
 use App\Models\User;
-use App\Services\ClientesMas\ClientesMasMessagingException;
-use App\Services\ClientesMas\ClientesMasMailer;
+use App\Services\CampaignInvitationService;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Str;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
@@ -127,7 +122,7 @@ class AddSupporter extends Component
         try{
             DB::transaction(function () {
                 $user = $this->updateUserData();
-                $this->sendEmail($user);
+                app(CampaignInvitationService::class)->send($this->campaign, $user, (int) Auth::id());
             });
             session()->flash('success', 'Invitación enviada correctamente.');
 
@@ -163,48 +158,6 @@ class AddSupporter extends Component
             'celphone'           => $this->celphone,
             'email'              => strtolower($this->email),
         ]);
-    }
-
-    private function sendEmail($user){
-        Invitation::where('user_id', $user->id)->where('active', true)->update(['active' => false]);
-        $token = Str::uuid()->toString();
-        //create invitation
-        $invitation = new Invitation();
-        $invitation->user_id    = $user->id;
-        $invitation->campaign_id= $this->campaign->id;
-        $invitation->expires_at = now()->addHours(48);
-        $invitation->reffer_id  = Auth::user()->id;
-        $invitation->token      = $token;
-        $invitation->active     = true;
-        $invitation->save();
-        //send email
-        $mailer = app(ClientesMasMailer::class);
-
-        if ($mailer->enabled()) {
-            try {
-                $mailer->sendCampaignInvitation($this->campaign, $user, $invitation);
-                return;
-            } catch (ClientesMasMessagingException $exception) {
-                Log::warning('Clientes Mas campaign invitation email failed; falling back to Laravel mail.', [
-                    'campaign_id' => $this->campaign->id,
-                    'invitation_id' => $invitation->id,
-                    'user_id' => $user->id,
-                    'status' => $exception->status,
-                    'context' => $exception->context,
-                ]);
-            }
-        }
-
-        try {
-            Mail::to($user->email)->send(new InviteToCampaign($this->campaign, $user->first_name, $invitation->token, $invitation->expires_at));
-        } catch (\Throwable $exception) {
-            Log::error('Campaign invitation fallback mail failed', [
-                'campaign_id' => $this->campaign->id,
-                'invitation_id' => $invitation->id,
-                'user_id' => $user->id,
-                'exception' => $exception,
-            ]);
-        }
     }
 
     private function isDocumentUniqueConstraintViolation(QueryException $e): bool

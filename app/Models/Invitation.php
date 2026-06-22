@@ -13,6 +13,7 @@ class Invitation extends Model
         'user_id',
         'campaign_id',
         'reffer_id',
+        'token',
         'expires_at',
         'accepted_at',
         'active'
