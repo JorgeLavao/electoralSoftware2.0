@@ -24,7 +24,7 @@ class IndexSupporters extends Component
     public $count_requests;
     public $suspensions;
     public $filter = null;
-    public int $perPage = 25;
+    public int $perPage = 10;
     public array $perPageOptions = [10, 25, 50, 100];
 
     protected CampaignRoleService $campaignRoles;
@@ -57,7 +57,7 @@ class IndexSupporters extends Component
     {
         $this->perPage = in_array((int) $value, $this->perPageOptions, true)
             ? (int) $value
-            : 25;
+            : 10;
 
         $this->resetPage();
     }

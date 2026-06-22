@@ -87,7 +87,7 @@ class IndexCommittee extends Component
     public bool $showFilters = false;
     public bool $hasSearched = false;
     public array $appliedFilters = [];
-    public int $perPage = 25;
+    public int $perPage = 10;
     public array $perPageOptions = [10, 25, 50, 100];
     public int $totalResults = 0;
 
@@ -435,7 +435,7 @@ class IndexCommittee extends Component
     {
         $this->perPage = in_array((int) $this->perPage, $this->perPageOptions, true)
             ? (int) $this->perPage
-            : 25;
+            : 10;
 
         $this->resetPage();
         $this->selected_result_ids = [];

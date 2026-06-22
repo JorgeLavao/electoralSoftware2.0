@@ -87,7 +87,7 @@ class CreateList extends Component
     public ?string $profile_photo_filter = null;
     public bool $hasSearched = false;
     public bool $showMap = false;
-    public int $perPage = 25;
+    public int $perPage = 10;
     public array $perPageOptions = [10, 25, 50, 100];
     public int $totalResults = 0;
     public array $appliedFilters = [];
@@ -442,7 +442,7 @@ class CreateList extends Component
     {
         $this->perPage = in_array((int) $this->perPage, $this->perPageOptions, true)
             ? (int) $this->perPage
-            : 25;
+            : 10;
 
         $this->resetPage();
         $this->showMap = false;
