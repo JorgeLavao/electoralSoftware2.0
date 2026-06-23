@@ -112,18 +112,59 @@ class OcupationSeeders extends Seeder
             ['name' => 'Ingeniero ambiental', 'status' => 1],
             ['name' => 'Bombero', 'status' => 1],
             ['name' => 'Paramédico', 'status' => 1],
+            ['name' => 'Administrador de empresas', 'status' => 1],
+            ['name' => 'Administrador de sistemas', 'status' => 1],
+            ['name' => 'Agente de ventas', 'status' => 1],
+            ['name' => 'Ama de casa', 'status' => 1],
+            ['name' => 'Analista contable', 'status' => 1],
+            ['name' => 'Analista de mercadeo', 'status' => 1],
+            ['name' => 'Asesor de call center', 'status' => 1],
+            ['name' => 'Auxiliar administrativo', 'status' => 1],
+            ['name' => 'Auxiliar contable', 'status' => 1],
+            ['name' => 'Auxiliar de bodega', 'status' => 1],
+            ['name' => 'Auxiliar de cocina', 'status' => 1],
+            ['name' => 'Auxiliar logistico', 'status' => 1],
+            ['name' => 'Call Center', 'status' => 1],
+            ['name' => 'Camionero', 'status' => 1],
+            ['name' => 'Community manager', 'status' => 1],
+            ['name' => 'Cuidador', 'status' => 1],
+            ['name' => 'Desempleado', 'status' => 1],
+            ['name' => 'Diseñador UX/UI', 'status' => 1],
+            ['name' => 'Domiciliario', 'status' => 1],
+            ['name' => 'Electricista', 'status' => 1],
+            ['name' => 'Empleada domestica', 'status' => 1],
+            ['name' => 'Emprendedor', 'status' => 1],
+            ['name' => 'Estudiante', 'status' => 1],
+            ['name' => 'Guarda de seguridad', 'status' => 1],
+            ['name' => 'Independiente', 'status' => 1],
+            ['name' => 'Ingeniero de software', 'status' => 1],
+            ['name' => 'Mecanico', 'status' => 1],
+            ['name' => 'Mercaderista', 'status' => 1],
+            ['name' => 'Mototaxista', 'status' => 1],
+            ['name' => 'Ninguna', 'status' => 1],
+            ['name' => 'Otra', 'status' => 1],
+            ['name' => 'Panadero', 'status' => 1],
+            ['name' => 'Pensionado', 'status' => 1],
+            ['name' => 'Programador', 'status' => 1],
+            ['name' => 'Recursos humanos', 'status' => 1],
+            ['name' => 'Servicio al cliente', 'status' => 1],
+            ['name' => 'Soporte tecnico', 'status' => 1],
+            ['name' => 'Tecnico de redes', 'status' => 1],
+            ['name' => 'Transportador', 'status' => 1],
         ];
 
         $now = Carbon::now();
 
         // Insertar las ocupaciones en la base de datos
         foreach ($occupations as $occupation) {
-            DB::table('occupations')->insert([
-                'name' => $occupation['name'],
-                'status' => $occupation['status'],
-                'created_at' => $now,
-                'updated_at' => $now,
-            ]);
+            DB::table('occupations')->updateOrInsert(
+                ['name' => $occupation['name']],
+                [
+                    'status' => $occupation['status'],
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]
+            );
         }
     }
 }

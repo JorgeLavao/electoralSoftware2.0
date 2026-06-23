@@ -231,19 +231,13 @@
 
                         <div class="container-v">
                             <div class="group-form-v">
-                                <label for="occupation_search">Ocupacion<span class="text-red-500">*</span></label>
-                                <input
-                                    id="occupation_search"
-                                    type="text"
-                                    list="profile_occupation_options"
-                                    placeholder="Escriba para buscar su ocupacion"
-                                    wire:model.live.debounce.300ms="occupationSearch"
-                                    required>
-                                <datalist id="profile_occupation_options">
+                                <label for="occupation">Ocupacion<span class="text-red-500">*</span></label>
+                                <select id="occupation" wire:model="occupation" required>
+                                    <option value="">Seleccione</option>
                                     @foreach ($occupations as $occupationOption)
-                                        <option value="{{ $occupationOption->name }}"></option>
+                                        <option value="{{ $occupationOption->id }}">{{ $occupationOption->name }}</option>
                                     @endforeach
-                                </datalist>
+                                </select>
                             </div>
                             @error('occupation') <x-toast.error-toast :message="$message" /> @enderror
                         </div>
