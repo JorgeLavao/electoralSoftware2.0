@@ -54,14 +54,15 @@ function initUbicacionModal() {
         autocomplete.addListener('place_changed', () => {
             const place = autocomplete.getPlace();
             if (!place.geometry?.location) return;
+            const address = place.formatted_address || place.name || '';
             centerAndMark(place.geometry.location);
-            setAddress(place.formatted_address || place.name || '');
-            syncToLivewire(place.geometry.location);
+            setAddress(address);
+            syncToLivewire(place.geometry.location, address);
         });
     }
     // --- Click en el mapa → colocar/ mover marcador ---
     map.addListener('click', (e) => {
-        centerAndMark(e.latLng);;
+        centerAndMark(e.latLng);
         syncToLivewire(e.latLng);
     });
 
@@ -77,7 +78,11 @@ function initUbicacionModal() {
     function updateFromInputs(){
         const lat = parseFloat(latEl.value);
         const lng = parseFloat(lngEl.value);
-        if (isFinite(lat) && isFinite(lng)) centerAndMark({ lat, lng });
+        if (isFinite(lat) && isFinite(lng)) {
+            const ll = { lat, lng };
+            centerAndMark(ll);
+            syncToLivewire(ll);
+        }
     }
     latEl?.addEventListener('change', updateFromInputs);
     lngEl?.addEventListener('change', updateFromInputs);
@@ -100,6 +105,8 @@ function initUbicacionModal() {
     if (isFinite(latVal) && isFinite(lngVal)) {
         centerAndMark({ lat: latVal, lng: lngVal }, true);
     }
+
+    google.maps.event.trigger(map, 'resize');
 }
 
 // Helpers
@@ -125,16 +132,29 @@ function setAddress(addr) {
     if (adr) adr.value = addr;
 }
 
-function syncToLivewire(latLng) {
+function syncToLivewire(latLng, address = null) {
     if (!window.Livewire) return;
     const lat = typeof latLng.lat === 'function' ? latLng.lat() : latLng.lat;
     const lng = typeof latLng.lng === 'function' ? latLng.lng() : latLng.lng;
-    Livewire.dispatch('coords-updated', { lat, lng });
+
+    if (address) {
+        Livewire.dispatch('coords-updated', { lat, lng, address });
+        return;
+    }
+
+    geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+        const resolvedAddress = status === 'OK' && results?.[0]?.formatted_address
+            ? results[0].formatted_address
+            : '';
+
+        setAddress(resolvedAddress);
+        Livewire.dispatch('coords-updated', { lat, lng, address: resolvedAddress });
+    });
 }
 
 //disparador
 window.addEventListener('open-ubicacion-modal', () => {
     loadMaps(() => {
-        requestAnimationFrame(() => initUbicacionModal());
+        setTimeout(() => initUbicacionModal(), 75);
     });
 });

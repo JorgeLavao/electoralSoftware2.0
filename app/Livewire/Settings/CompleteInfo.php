@@ -25,6 +25,7 @@ class CompleteInfo extends Component
     public $lng = null;
     public $gender;
     public $occupation;
+    public string $occupationSearch = '';
     public $vehicle;
     public $zone;
     public $department;
@@ -50,9 +51,9 @@ class CompleteInfo extends Component
 
         $user = Auth::user();
 
-        $this->documents_type = DocumentType::all();
-        $this->genders = Gender::where('status', true)->get();
-        $this->occupations = Occupation::where('status', true)->get();
+        $this->documents_type = DocumentType::query()->orderBy('name')->get();
+        $this->genders = Gender::query()->where('status', true)->orderBy('name')->get();
+        $this->occupations = Occupation::query()->where('status', true)->orderBy('name')->get();
         $this->age_ranges = DB::table('age_ranges')->where('status', true)->get();
 
         $this->doc_type = $user->document_type_id;
@@ -78,6 +79,15 @@ class CompleteInfo extends Component
         }
 
         return $this->documents_type->firstWhere('id', $this->doc_type);
+    }
+
+    public function updatedOccupationSearch(string $value): void
+    {
+        $occupation = $this->occupations->first(
+            fn ($occupation) => str($occupation->name)->lower()->trim()->toString() === str($value)->lower()->trim()->toString()
+        );
+
+        $this->occupation = $occupation?->id;
     }
 
     #[On('ubicacion-seleccionada')]

@@ -146,8 +146,7 @@ class CampaignRoleService
         $permissionIds = Permission::query()
             ->where('guard_name', 'web')
             ->whereIn('name', [
-                'campaign.supporters.view',
-                'campaign.votation-point.view',
+                'campaign.news.view',
             ])
             ->pluck('id');
 
@@ -174,7 +173,11 @@ class CampaignRoleService
                 'campaign_id' => $campaign->id,
             ]);
 
-            $role->syncPermissions($permissions);
+            if ($role->wasRecentlyCreated) {
+                $role->syncPermissions($permissions);
+            } elseif ($roleName === self::SUPPORTER_ROLE && $this->hasLegacySupporterPermissions($role)) {
+                $role->syncPermissions($permissions);
+            }
         }
 
         $this->syncExistingSupportersToRole($campaign);
@@ -340,8 +343,7 @@ class CampaignRoleService
         return [
             self::COORDINATOR_ROLE => $existingCampaignPermissions,
             self::SUPPORTER_ROLE => $onlyExisting([
-                'campaign.supporters.view',
-                'campaign.votation-point.view',
+                'campaign.news.view',
             ]),
             self::LEADER_ROLE => $onlyExisting([
                 'campaign.supporters.view',
@@ -352,6 +354,20 @@ class CampaignRoleService
             ]),
             self::CALL_CENTER_ROLE => $onlyExisting(User::CALL_CENTER_CAMPAIGN_PERMISSIONS),
             self::TECH_SUPPORT_ROLE => $existingCampaignPermissions,
+        ];
+    }
+
+    private function hasLegacySupporterPermissions(Role $role): bool
+    {
+        $current = $role->permissions()
+            ->pluck('name')
+            ->sort()
+            ->values()
+            ->all();
+
+        return $current === [
+            'campaign.supporters.view',
+            'campaign.votation-point.view',
         ];
     }
 

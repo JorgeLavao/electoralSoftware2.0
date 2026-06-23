@@ -210,13 +210,19 @@
                 <div class="grop-columns-2">
                     <div class="container-v">
                         <div class="group-form-v">
-                            <label for="occupation">Ocupación<span class="text-red-500">*</span></label>
-                            <select id="occupation" required wire:model='occupation'>
-                                <option value="" hidden>Seleccione</option>
+                            <label for="occupation_search">Ocupación<span class="text-red-500">*</span></label>
+                            <input
+                                id="occupation_search"
+                                type="text"
+                                list="occupation_options"
+                                placeholder="Escriba para buscar su ocupación"
+                                required
+                                wire:model.live.debounce.300ms="occupationSearch">
+                            <datalist id="occupation_options">
                                 @foreach ($occupations as $occupation)
-                                <option value="{{ $occupation->id }}">{{ $occupation->name }}</option>
+                                    <option value="{{ $occupation->name }}"></option>
                                 @endforeach
-                            </select>
+                            </datalist>
                         </div>
                         <div>
                             @error('occupation')

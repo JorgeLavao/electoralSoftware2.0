@@ -24,11 +24,11 @@ class LocationModal extends Component
     }
 
     #[On('coords-updated')]
-    public function updateCoords($lat, $lng)
+    public function updateCoords($lat, $lng, $address = null)
     {
         $this->latitud  = $lat;
         $this->longitud = $lng;
-        $this->address  = $this->geocodeCoordinates($this->latitud, $this->longitud);
+        $this->address  = $address ?: $this->geocodeCoordinates($this->latitud, $this->longitud);
     }
 
     public function closeModal()
@@ -45,10 +45,14 @@ class LocationModal extends Component
     }
 
     public function saveAdrress(){
+        $lat = $this->latitud;
+        $lng = $this->longitud;
+        $address = $this->address;
+
         $this->dispatch('ubicacion-seleccionada', [
-            'lat' => $this->latitud,
-            'lng' => $this->longitud,
-            'address' => $this->address,
+            'lat' => $lat,
+            'lng' => $lng,
+            'address' => $address,
         ]);
         $this->closeModal();
     }

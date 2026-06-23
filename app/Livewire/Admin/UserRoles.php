@@ -241,7 +241,7 @@ class UserRoles extends Component
         $this->authorizeAccess();
         $role = $this->findManageableRole((int) $this->selectedRoleId);
         $campaign = $this->requireCampaign();
-        $permissionIds = $this->validCampaignPermissionIds($this->rolePermissionIds);
+        $permissions = $this->validCampaignPermissions($this->rolePermissionIds);
         $addUserIds = $this->validCampaignUserIds($campaign, $this->roleUserIds);
         $removeUserIds = $this->validCampaignUserIds($campaign, $this->roleRemovedUserIds);
 
@@ -263,9 +263,9 @@ class UserRoles extends Component
 
         $this->validate($rules);
 
-        DB::transaction(function () use ($campaign, $role, $permissionIds, $addUserIds, $removeUserIds) {
+        DB::transaction(function () use ($campaign, $role, $permissions, $addUserIds, $removeUserIds) {
             $role->forceFill(['name' => trim($this->editingRoleName)])->save();
-            $role->syncPermissions($permissionIds);
+            $role->syncPermissions($permissions);
             $this->syncRoleUserChanges($campaign, $role, $addUserIds, $removeUserIds);
         });
 
@@ -631,6 +631,13 @@ class UserRoles extends Component
     protected function validCampaignPermissionIds(array $permissionIds): array
     {
         return app(CampaignRoleService::class)->validCampaignPermissionIds($permissionIds);
+    }
+
+    protected function validCampaignPermissions(array $permissionIds): Collection
+    {
+        return Permission::query()
+            ->whereIn('id', $this->validCampaignPermissionIds($permissionIds))
+            ->get();
     }
 
     protected function validCampaignUserIds(Campaign $campaign, array $userIds): array

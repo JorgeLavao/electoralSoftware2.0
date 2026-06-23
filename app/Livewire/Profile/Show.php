@@ -32,6 +32,7 @@ class Show extends Component
 
     public $gender;
     public $occupation;
+    public string $occupationSearch = '';
     public $vehicle;
     public $age_id;
     public $birth_day;
@@ -131,6 +132,15 @@ class Show extends Component
         session()->flash('complementary_status', 'Información complementaria actualizada correctamente.');
     }
 
+    public function updatedOccupationSearch(string $value): void
+    {
+        $occupation = $this->occupations->first(
+            fn ($occupation) => str($occupation->name)->lower()->trim()->toString() === str($value)->lower()->trim()->toString()
+        );
+
+        $this->occupation = $occupation?->id;
+    }
+
     public function updateLocationInformation(): void
     {
         $profile = $this->profile();
@@ -217,6 +227,7 @@ class Show extends Component
 
         $this->gender = $profile?->gender_id;
         $this->occupation = $profile?->occupation_id;
+        $this->occupationSearch = $this->occupations->firstWhere('id', $this->occupation)?->name ?? '';
         $this->vehicle = is_null($profile?->vehicle) ? '' : (string) (int) $profile->vehicle;
         $this->age_id = $profile?->age_range_id;
         $this->birth_day = $profile?->birth_day;
