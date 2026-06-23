@@ -15,6 +15,7 @@ use App\Livewire\Committee\IndexCommittee;
 use App\Livewire\List\CreateList;
 use App\Livewire\List\EditList;
 use App\Livewire\Point\IndexPoint;
+use App\Livewire\Profile\Show as ShowProfile;
 use App\Livewire\Settings\Appearance;
 use App\Livewire\Settings\CompleteInfo;
 use App\Livewire\Settings\Password;
@@ -69,20 +70,7 @@ Route::middleware(['auth'])->group(function () {
         return view('news-manager', compact('news'));
     })->middleware('verified')->name('news.edit');
 
-    Route::get('/mi-perfil', function () {
-        $user = auth()->user()->loadMissing([
-            'foreign_document_type',
-            'foreing_aditional_info.foreign_gender',
-            'foreing_aditional_info.foreign_occupations',
-            'foreing_aditional_info.foreign_range_age',
-        ]);
-
-        $profile = $user->foreing_aditional_info;
-        $department = $profile?->department ? json_decode($profile->department, true) : null;
-        $municipality = $profile?->municipality ? json_decode($profile->municipality, true) : null;
-
-        return view('profile.show', compact('user', 'profile', 'department', 'municipality'));
-    })->middleware('verified')->name('profile.show');
+    Route::get('/mi-perfil', ShowProfile::class)->middleware('verified')->name('profile.show');
 
     Route::patch('/mi-perfil/foto', function (Request $request) {
         $validated = $request->validate([
